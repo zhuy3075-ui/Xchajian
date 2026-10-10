@@ -110,6 +110,7 @@ function parseAuthorFromElement(userNameEl: Element): { name: string; handle: st
   let handle = 'unknown';
 
   for (const link of links) {
+    if (link.querySelector('time')) continue;
     const text = link.textContent?.trim() || '';
     if (text.startsWith('@')) {
       handle = text;
@@ -132,7 +133,9 @@ function parseAuthorFromElement(userNameEl: Element): { name: string; handle: st
   // Fallback: quoted-tweet blocks wrap the whole quote in an outer link, so the
   // inner name / handle render as plain spans (zero <a> tags). Parse from text.
   if (name === 'Unknown' || handle === 'unknown' || isTimestampLabel(name)) {
-    const txt = (userNameEl.textContent || '').replace(/\s+/g, ' ').trim();
+    const authorText = userNameEl.cloneNode(true) as Element;
+    authorText.querySelectorAll('time').forEach(time => time.remove());
+    const txt = (authorText.textContent || '').replace(/\s+/g, ' ').trim();
     const handleMatch = txt.match(/@[A-Za-z0-9_]+/);
     if (handleMatch && handle === 'unknown') handle = handleMatch[0];
     if (handleMatch && (name === 'Unknown' || isTimestampLabel(name))) {

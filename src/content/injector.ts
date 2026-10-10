@@ -7,6 +7,7 @@ import { decorateSelection, enterSelection, exitSelection } from './selection';
 import { pageSourceOfPath, type XPage } from '../shared/x-routes';
 import { initInlineObsidian } from './obsidian-inline';
 import { copyComment } from './comment-copy';
+import { displayPostTimes } from './post-time';
 
 initInlineObsidian();
 
@@ -299,6 +300,7 @@ function decorateArticleTopBar(): void {
 
 let scanScheduled = false;
 function scan(): void {
+  displayPostTimes();
   if (!showInlineButton) return;
   const articles = document.querySelectorAll('article[role="article"]');
   articles.forEach(decorateArticleActionBar);
@@ -415,7 +417,7 @@ const observer = new MutationObserver(() => {
   });
 });
 
-observer.observe(document.body, { childList: true, subtree: true });
+observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['datetime'] });
 scan();
 harvestTimeline();
 
