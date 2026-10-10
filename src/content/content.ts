@@ -9,8 +9,18 @@ import { extractArticle } from './article';
 import { extractTweetAsync } from './tweet';
 import { waitForArticle } from './wait';
 import { exportPdf } from './pdf-export';
+import { initObsidianWorker } from './obsidian-inline';
 
 type AutoAction = 'download' | 'copy' | 'obsidian';
+
+initObsidianWorker(async (singleTweet) => {
+  if (!await waitForArticle()) throw new Error('等待推文超时，请确认页面已加载且已登录');
+  const settings = await loadSettings();
+  const response = await extract({ includeMetadata: settings.includeMetadata || settings.inlineStats, singleTweet });
+  if (!response.success || !response.data) throw new Error(response.error || '采集失败，请重试');
+  const result = postProcess(response.data, markdownOptions(settings, 'obsidian'));
+  return { markdown: result.markdown, filename: result.filename, handle: response.data.author.handle, sourceUrl: response.data.sourceUrl };
+});
 
 // ─── Main Extraction Entry Point ────────────────────────────────────
 

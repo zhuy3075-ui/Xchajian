@@ -20,6 +20,7 @@ import { buildZip, zipDataUrl } from './zip';
 import { resolveVideoUrls } from './resolve-video';
 import { initDukou } from '../dukou/background';
 import { initLens } from '../lens/background';
+import { initObsidianCapture } from './obsidian-capture';
 
 // ─── Context menu: Save / Copy tweet as Markdown ────────────────────
 
@@ -106,6 +107,7 @@ initBatch();
 initFastBatch();
 initDukou();
 initLens();
+initObsidianCapture();
 
 // One-time migration: project renamed tweet2md → XClipper in v2.0.0. Existing
 // users have preferences stored under the old `tweet2md_settings` key. Copy

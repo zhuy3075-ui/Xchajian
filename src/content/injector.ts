@@ -5,6 +5,9 @@
 import { getStatusUrl, normalizeStatusUrl } from './status-url';
 import { decorateSelection, enterSelection, exitSelection } from './selection';
 import { pageSourceOfPath, type XPage } from '../shared/x-routes';
+import { initInlineObsidian } from './obsidian-inline';
+
+initInlineObsidian();
 
 const BUTTON_ATTR = 'data-xclipper-injected';
 let decorated = new WeakSet<Element>();
@@ -68,7 +71,7 @@ try {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-function buildIcon(): SVGElement {
+function buildIcon(obsidian = false): SVGElement {
   // Mirrors X's own action-bar icon style: solid currentColor fill, no stroke.
   // Arrow path is X's share-icon arrow flipped vertically (download direction);
   // tray path is X's share-icon tray unchanged — it works as a "catch" tray.
@@ -83,7 +86,9 @@ function buildIcon(): SVGElement {
   const path = document.createElementNS(SVG_NS, 'path');
   path.setAttribute(
     'd',
-    'M12 16l5.7-5.7-1.41-1.42L13 12.18V2.59h-2V12.18l-3.3-3.3-1.41 1.42L12 16zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z'
+    obsidian
+      ? 'M5 3h12a2 2 0 0 1 2 2v4h-2V5H5v14h7v2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 4h8v2H7zm0 4h5v2H7zm10 1h2v3h3v2h-3v3h-2v-3h-3v-2h3z'
+      : 'M12 16l5.7-5.7-1.41-1.42L13 12.18V2.59h-2V12.18l-3.3-3.3-1.41 1.42L12 16zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z'
   );
   svg.appendChild(path);
 
@@ -123,13 +128,13 @@ function singleFromEvent(e: Event): boolean {
   return me.shiftKey === true || me.altKey === true;
 }
 
-function makeButton(onClick: (e: Event) => void): HTMLElement {
+function makeButton(onClick: (e: Event) => void, obsidian = false): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.setAttribute(BUTTON_ATTR, '1');
   wrapper.setAttribute('role', 'button');
   wrapper.setAttribute('tabindex', '0');
-  wrapper.setAttribute('aria-label', 'Save as Markdown');
-  wrapper.title = 'Save as Markdown (XClipper)\nShift/Alt-click: just this tweet';
+  wrapper.setAttribute('aria-label', obsidian ? '添加到 Obsidian' : 'Save as Markdown');
+  wrapper.title = obsidian ? '添加到 Obsidian\nShift/Alt + 点击：只采集此条推文' : 'Save as Markdown (XClipper)\nShift/Alt-click: just this tweet';
   wrapper.style.cssText = [
     'display:inline-flex',
     'align-items:center',
@@ -141,7 +146,7 @@ function makeButton(onClick: (e: Event) => void): HTMLElement {
     'transition:background-color 0.15s,color 0.15s',
     'user-select:none',
   ].join(';');
-  wrapper.appendChild(buildIcon());
+  wrapper.appendChild(buildIcon(obsidian));
 
   wrapper.addEventListener('mouseenter', () => {
     wrapper.style.backgroundColor = 'rgba(29,155,240,0.1)';
@@ -165,6 +170,14 @@ function makeButton(onClick: (e: Event) => void): HTMLElement {
   });
 
   return wrapper;
+}
+
+function makeObsidianButton(url: () => string): HTMLElement {
+  return makeButton((event) => {
+    window.dispatchEvent(new CustomEvent('xclipper:obsidian', {
+      detail: { url: url(), single: singleFromEvent(event) },
+    }));
+  }, true);
 }
 
 // X renders icons at different sizes and slightly different gray values
@@ -219,9 +232,12 @@ function decorateArticleActionBar(article: Element): void {
   const container = document.createElement('div');
   container.style.cssText = 'display:flex;align-items:center;';
   container.appendChild(btn);
+  const obsidianBtn = makeObsidianButton(() => getStatusUrl(article) || url);
+  container.appendChild(obsidianBtn);
   actionBar.appendChild(container);
 
   matchSiblingIcon(actionBar, btn, btn.querySelector('svg'));
+  matchSiblingIcon(actionBar, obsidianBtn, obsidianBtn.querySelector('svg'));
 
   decorated.add(article);
 }
@@ -262,8 +278,11 @@ function decorateArticleTopBar(): void {
   const container = document.createElement('div');
   container.style.cssText = 'display:flex;align-items:center;';
   container.appendChild(btn);
+  const obsidianBtn = makeObsidianButton(() => window.location.href);
+  container.appendChild(obsidianBtn);
   candidate.appendChild(container);
   matchSiblingIcon(candidate, btn, btn.querySelector('svg'));
+  matchSiblingIcon(candidate, obsidianBtn, obsidianBtn.querySelector('svg'));
   articleTopBarDecorated.add(candidate);
 }
 
