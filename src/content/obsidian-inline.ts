@@ -2,9 +2,9 @@ import { loadSettings } from '../shared/settings';
 import { resolveObsidianTarget } from '../shared/obsidian';
 import { recordExport } from '../shared/review-prompt';
 import { normalizeStatusUrl } from './status-url';
-import { captureObsidianCard } from './obsidian-card';
+import { captureExpandedObsidianCard, obsidianCardUrl } from './obsidian-card';
 import { postProcess, markdownOptions } from '../shared/post-process';
-import { saveObsidianNote, openObsidianConnection } from '../shared/obsidian-files';
+import { saveObsidianNote, openObsidianConnection, CONNECT_REQUIRED } from '../shared/obsidian-files';
 
 export type ObsidianCapture = { markdown: string; filename: string; handle: string; sourceUrl: string };
 const MARKER = /^#xclipper-obsidian=([\w-]{20,80})(?:&single=(1))?$/;
@@ -17,8 +17,14 @@ export function initInlineObsidian(): void {
   let pending: string | null = null;
   let receiving: string | null = null;
   let panel: HTMLElement | null = null;
+  let resumeAfterConnection: (() => void) | null = null;
+  window.addEventListener('focus', () => { resumeAfterConnection?.(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resumeAfterConnection?.();
+  });
 
   function notice(text: string): HTMLElement {
+    resumeAfterConnection = null;
     panel?.remove();
     panel = document.createElement('section');
     panel.id = 'xclipper-obsidian-status';
@@ -60,7 +66,8 @@ export function initInlineObsidian(): void {
     const status = card.querySelector('p')!;
     let saving = false;
     const save = async (): Promise<void> => {
-      if (saving) return;
+      if (saving || panel !== card || !card.isConnected) return;
+      resumeAfterConnection = null;
       saving = true;
       retry.hidden = true;
       connect.hidden = true;
@@ -74,15 +81,22 @@ export function initInlineObsidian(): void {
         void recordExport();
         setTimeout(() => { if (panel === card) card.remove(); }, 3000);
       } catch (err) {
-        status.textContent = `保存失败，正文已保留：${err instanceof Error ? err.message : String(err)}`;
-        retry.hidden = false;
+        const message = err instanceof Error ? err.message : String(err);
+        const needsConnection = message === CONNECT_REQUIRED;
+        status.textContent = needsConnection
+          ? '还未获得仓库写入权限，正文已保留。请点击“连接仓库目录”，选择 X智库 根文件夹并允许写入；返回此页会自动继续保存。'
+          : `保存失败，正文已保留：${message}`;
+        retry.hidden = needsConnection;
         connect.hidden = false;
         dismiss.hidden = false;
       } finally { saving = false; }
     };
     const retry = button(card, '重试保存', () => { void save(); });
-    const connect = button(card, '连接仓库目录', openObsidianConnection);
-    const dismiss = button(card, '关闭提示', () => card.remove());
+    const connect = button(card, '连接仓库目录', () => {
+      resumeAfterConnection = () => { void save(); };
+      openObsidianConnection();
+    });
+    const dismiss = button(card, '关闭提示', () => { resumeAfterConnection = null; card.remove(); });
     retry.hidden = connect.hidden = dismiss.hidden = true;
     // Once submitted, the background owns the write. Closing this notice
     // would not cancel it, so only failed requests expose dismiss controls.
@@ -105,7 +119,19 @@ export function initInlineObsidian(): void {
     const run = async (): Promise<void> => {
       if (detail.article instanceof Element) {
         const discussionUrl = normalizeStatusUrl(window.location.href);
-        const captured = captureObsidianCard(detail.article);
+        if (!discussionUrl && detail.article.querySelector('[data-testid="tweet-text-show-more-link"], [data-testid="article-cover-image"]')) {
+          const cardUrl = obsidianCardUrl(detail.article);
+          if (!cardUrl) throw new Error('找不到这条推文自身的链接，请刷新后重试');
+          waiting.querySelector('p')!.textContent = '正在通过临时详情页采集完整正文，完成后自动关闭…';
+          const response = await chrome.runtime.sendMessage({ action: 'XCLIPPER_OBSIDIAN_START', url: cardUrl, token, single: true });
+          if (!response?.ok) throw new Error(response?.error || '无法打开采集详情页，请刷新插件后重试');
+          if (response.result && pending === token) {
+            await handoff(response.result, () => pending === token);
+            if (pending === token) pending = null;
+          }
+          return;
+        }
+        const captured = await captureExpandedObsidianCard(detail.article, () => pending === token);
         const isComment = discussionUrl !== null && captured.sourceUrl !== discussionUrl;
         const settings = await loadSettings();
         if (pending !== token) return;

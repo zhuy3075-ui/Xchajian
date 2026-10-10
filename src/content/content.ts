@@ -11,12 +11,28 @@ import { extractTweetAsync } from './tweet';
 import { waitForArticle } from './wait';
 import { exportPdf } from './pdf-export';
 import { initObsidianWorker } from './obsidian-inline';
+import { captureExpandedObsidianCard, obsidianCardUrl } from './obsidian-card';
+import { normalizeStatusUrl } from './status-url';
 
 type AutoAction = 'download' | 'copy' | 'obsidian';
 
 initObsidianWorker(async (singleTweet) => {
   if (!await waitForArticle()) throw new Error('等待推文超时，请确认页面已加载且已登录');
   const settings = await loadSettings();
+  if (singleTweet && !isArticlePage()) {
+    const expectedUrl = normalizeStatusUrl(window.location.href);
+    let article: Element | undefined;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      article = Array.from(document.querySelectorAll('article')).find(el => obsidianCardUrl(el) === expectedUrl);
+      if (article) break;
+      if (normalizeStatusUrl(window.location.href) !== expectedUrl) throw new Error('详情页已切换，已取消采集');
+      await delay(150);
+    }
+    if (!article) throw new Error('目标推文尚未加载，请稍后重试');
+    const captured = await captureExpandedObsidianCard(article, () => normalizeStatusUrl(window.location.href) === expectedUrl);
+    const result = postProcess(captured, markdownOptions(settings, 'obsidian'));
+    return { markdown: result.markdown, filename: result.filename, handle: captured.author.handle, sourceUrl: captured.sourceUrl };
+  }
   const response = await extract({ includeMetadata: settings.includeMetadata || settings.inlineStats, singleTweet });
   if (!response.success || !response.data) throw new Error(response.error || '采集失败，请重试');
   const result = postProcess(response.data, markdownOptions(settings, 'obsidian'));
