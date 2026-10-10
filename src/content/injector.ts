@@ -172,10 +172,10 @@ function makeButton(onClick: (e: Event) => void, obsidian = false): HTMLElement 
   return wrapper;
 }
 
-function makeObsidianButton(url: () => string): HTMLElement {
+function makeObsidianButton(url: () => string, article?: Element): HTMLElement {
   return makeButton((event) => {
     window.dispatchEvent(new CustomEvent('xclipper:obsidian', {
-      detail: { url: url(), single: singleFromEvent(event) },
+      detail: { url: url(), single: singleFromEvent(event), article },
     }));
   }, true);
 }
@@ -232,7 +232,8 @@ function decorateArticleActionBar(article: Element): void {
   const container = document.createElement('div');
   container.style.cssText = 'display:flex;align-items:center;';
   container.appendChild(btn);
-  const obsidianBtn = makeObsidianButton(() => getStatusUrl(article) || url);
+  const obsidianBtn = makeObsidianButton(() => getStatusUrl(article) || url, article);
+  obsidianBtn.title = '保存此条内容到 Obsidian（不采集整串评论）';
   container.appendChild(obsidianBtn);
   actionBar.appendChild(container);
 

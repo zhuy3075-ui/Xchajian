@@ -13,6 +13,7 @@ import { postProcess, markdownOptions, buildFilename, type PostProcessResult } f
 import { buildFormatExport, type ExportFormat } from '../shared/export-formats';
 import { recordExport } from '../shared/review-prompt';
 import { buildObsidianTargetUrl, resolveObsidianTarget } from '../shared/obsidian';
+import { writeFocusedClipboard } from '../shared/focused-clipboard';
 import { hostMatches } from '../shared/media';
 import { renderMarkdown } from '../ast/render-markdown';
 import { resolveLocalVideo, type VideoAttachment } from '../shared/local-video';
@@ -314,7 +315,7 @@ export function initActions(): void {
             : '正在自动发送到 Obsidian…', 'info');
           try {
             if (useClipboard) {
-              try { await navigator.clipboard.writeText(result.markdown); }
+              try { await writeFocusedClipboard(result.markdown, new AbortController().signal, () => showStatus('内容已采集，切回此窗口后将自动保存，无需再次点击。', 'info')); }
               catch { throw new Error('无法写入剪贴板，请保持当前窗口打开后重试自动保存。'); }
             }
             // Browser-managed tab creation does not need a second popup click.

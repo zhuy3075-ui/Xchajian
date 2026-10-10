@@ -2,6 +2,9 @@ import { loadSettings } from '../shared/settings';
 import { buildObsidianTargetUrl, resolveObsidianTarget } from '../shared/obsidian';
 import { recordExport } from '../shared/review-prompt';
 import { normalizeStatusUrl } from './status-url';
+import { captureObsidianCard } from './obsidian-card';
+import { postProcess, markdownOptions } from '../shared/post-process';
+import { writeFocusedClipboard } from '../shared/focused-clipboard';
 
 export type ObsidianCapture = { markdown: string; filename: string; handle: string; sourceUrl: string };
 const MARKER = /^#xclipper-obsidian=([\w-]{20,80})(?:&single=(1))?$/;
@@ -41,12 +44,13 @@ export function initInlineObsidian(): void {
     button(card, '关闭提示', () => card.remove());
   }
 
-  async function handoff(result: ObsidianCapture, isCurrent: () => boolean): Promise<void> {
+  async function handoff(result: ObsidianCapture, isCurrent: () => boolean, isComment = false): Promise<void> {
     if (!result || typeof result.markdown !== 'string' || !result.markdown.trim() ||
         typeof result.filename !== 'string' || typeof result.handle !== 'string') throw new Error('未采集到完整正文，请重试');
     const settings = await loadSettings();
     if (!isCurrent()) throw new Error('采集等待已取消');
-    const target = resolveObsidianTarget(result.filename, settings, result.handle);
+    const target = resolveObsidianTarget(result.filename, isComment ? { ...settings, obsidianGroupByAuthor: false } : settings, result.handle);
+    if (isComment) target.path = target.path.slice(0, -result.filename.length) + `评论/${result.filename}`;
     const fullUrl = buildObsidianTargetUrl(result.markdown, target);
     const useClipboard = fullUrl.length > 1800;
     const url = useClipboard ? buildObsidianTargetUrl(null, target) : fullUrl;
@@ -62,13 +66,16 @@ export function initInlineObsidian(): void {
       card.append(hint);
     }
     let launching = false;
+    const controller = new AbortController();
     const launch = async (): Promise<void> => {
       if (launching) return;
       launching = true;
       retry.hidden = true;
       retry.disabled = true;
       try {
-        if (useClipboard) await navigator.clipboard.writeText(result.markdown);
+        if (useClipboard) await writeFocusedClipboard(result.markdown, controller.signal, () => {
+          status.textContent = '内容已采集，切回此页面后将自动保存，无需再次点击。';
+        });
         if (panel !== card || !card.isConnected) return;
         // Run the protocol on the original page, which remains alive for the
         // browser's confirmation. A URI launch is not a filesystem-save ack.
@@ -86,7 +93,7 @@ export function initInlineObsidian(): void {
     };
     const retry = button(card, '重试自动保存', () => { void launch(); });
     retry.hidden = true;
-    button(card, '关闭提示', () => { card.remove(); });
+    button(card, '关闭提示', () => { controller.abort(); card.remove(); });
     // The original page owns the complete result before it acknowledges the
     // worker. A blocked clipboard/protocol launch leaves a real-click retry.
     await launch();
@@ -100,12 +107,26 @@ export function initInlineObsidian(): void {
     const token = crypto.randomUUID();
     const inPlace = url === normalizeStatusUrl(window.location.href);
     pending = token;
-    const waiting = notice('正在采集完整内容…');
+    const waiting = notice(detail.article instanceof Element ? '正在保存此条内容…' : '正在采集完整内容…');
     button(waiting, '取消等待', () => {
       if (pending === token) pending = null;
       waiting.remove();
     });
     const run = async (): Promise<void> => {
+      if (detail.article instanceof Element) {
+        const discussionUrl = normalizeStatusUrl(window.location.href);
+        const captured = captureObsidianCard(detail.article);
+        const isComment = discussionUrl !== null && captured.sourceUrl !== discussionUrl;
+        const settings = await loadSettings();
+        if (pending !== token) return;
+        const options = markdownOptions(settings, 'obsidian');
+        if (isComment) options.filenameTemplate = '{handle}-{id}';
+        const result = postProcess(captured, options);
+        const context = `\n\n---\n内容作者：${captured.author.name} (${captured.author.handle})\n\n发布时间：${captured.date || '未提供'}\n\n原文链接：${captured.sourceUrl}${discussionUrl && discussionUrl !== captured.sourceUrl ? `\n\n采集时的讨论页：${discussionUrl}` : ''}\n`;
+        await handoff({ markdown: result.markdown + context, filename: result.filename, handle: captured.author.handle, sourceUrl: captured.sourceUrl }, () => pending === token, isComment);
+        if (pending === token) pending = null;
+        return;
+      }
       const response = await chrome.runtime.sendMessage({ action: 'XCLIPPER_OBSIDIAN_START', url, token, single: detail.single === true });
       if (!response?.ok) throw new Error(response?.error || '无法打开采集详情页，请刷新插件后重试');
       if (response.result && pending === token) {
