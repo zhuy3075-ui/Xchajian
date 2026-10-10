@@ -8,6 +8,10 @@ import { writeFocusedClipboard } from '../shared/focused-clipboard';
 
 export type ObsidianCapture = { markdown: string; filename: string; handle: string; sourceUrl: string };
 const MARKER = /^#xclipper-obsidian=([\w-]{20,80})(?:&single=(1))?$/;
+// This local build uses the user's dedicated comment library, independently
+// of the main-post export folder configured in the popup.
+const COMMENT_FOLDER = 'E:/x-obsidian/X智库/09_评论';
+const COMMENT_INDEX = '[[09_评论/评论索引|返回评论索引]]';
 
 export function initInlineObsidian(): void {
   let pending: string | null = null;
@@ -49,8 +53,9 @@ export function initInlineObsidian(): void {
         typeof result.filename !== 'string' || typeof result.handle !== 'string') throw new Error('未采集到完整正文，请重试');
     const settings = await loadSettings();
     if (!isCurrent()) throw new Error('采集等待已取消');
-    const target = resolveObsidianTarget(result.filename, isComment ? { ...settings, obsidianGroupByAuthor: false } : settings, result.handle);
-    if (isComment) target.path = target.path.slice(0, -result.filename.length) + `评论/${result.filename}`;
+    const target = resolveObsidianTarget(result.filename, isComment
+      ? { ...settings, obsidianFolder: COMMENT_FOLDER, obsidianGroupByAuthor: false }
+      : settings, result.handle);
     const fullUrl = buildObsidianTargetUrl(result.markdown, target);
     const useClipboard = fullUrl.length > 1800;
     const url = useClipboard ? buildObsidianTargetUrl(null, target) : fullUrl;
@@ -122,7 +127,7 @@ export function initInlineObsidian(): void {
         const options = markdownOptions(settings, 'obsidian');
         if (isComment) options.filenameTemplate = '{handle}-{id}';
         const result = postProcess(captured, options);
-        const context = `\n\n---\n内容作者：${captured.author.name} (${captured.author.handle})\n\n发布时间：${captured.date || '未提供'}\n\n原文链接：${captured.sourceUrl}${discussionUrl && discussionUrl !== captured.sourceUrl ? `\n\n采集时的讨论页：${discussionUrl}` : ''}\n`;
+        const context = `\n\n---\n内容作者：${captured.author.name} (${captured.author.handle})\n\n发布时间：${captured.date || '未提供'}\n\n原文链接：${captured.sourceUrl}${discussionUrl && discussionUrl !== captured.sourceUrl ? `\n\n采集时的讨论页：${discussionUrl}` : ''}${isComment ? `\n\n采集时间：${new Date().toISOString()}\n\n采集范围：仅本条已展开评论，不代表完整评论区。\n\n${COMMENT_INDEX}` : ''}\n`;
         await handoff({ markdown: result.markdown + context, filename: result.filename, handle: captured.author.handle, sourceUrl: captured.sourceUrl }, () => pending === token, isComment);
         if (pending === token) pending = null;
         return;
