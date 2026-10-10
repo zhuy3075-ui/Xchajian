@@ -1,0 +1,59 @@
+// Tier-1 export mode: Single ↔ Batch. The selection is remembered across
+// popup opens, and batch-ui forces Batch when it finds a job already running
+// so reopening the popup mid-job lands on the progress, not on Single.
+
+import { syncBatchControls } from './settings-form';
+import { syncFastBatchMode } from './fast-batch-ui';
+
+const MODE_KEY = 'lastExportMode';
+const OPEN_KEY = 'exportSettingsOpen';
+
+const tabSingle = document.getElementById('tab-mode-single');
+const tabBatch = document.getElementById('tab-mode-batch');
+const panelSingle = document.getElementById('panel-single');
+const panelBatch = document.getElementById('batch-section');
+// Format + output controls only apply to batch runs, so they ride with the mode.
+const batchFormatControls = document.getElementById('batch-format-controls');
+// Export settings is collapsible; default expanded in Single, collapsed in Batch
+// (Batch adds the Fast toggle + tabs + progress, so it needs the vertical room).
+// Those are only defaults — the user's own fold, per mode, is remembered below.
+const exportSettings = document.getElementById('export-settings') as HTMLDetailsElement | null;
+const openState = { single: true, batch: false };
+let currentSingle = true;
+
+export function setExportMode(single: boolean, persist = true): void {
+  currentSingle = single;
+  tabSingle?.classList.toggle('active', single);
+  tabBatch?.classList.toggle('active', !single);
+  tabSingle?.setAttribute('aria-selected', String(single));
+  tabBatch?.setAttribute('aria-selected', String(!single));
+  panelSingle?.classList.toggle('hidden', !single);
+  panelBatch?.classList.toggle('hidden', single);
+  batchFormatControls?.classList.toggle('hidden', single);
+  if (exportSettings) exportSettings.open = single ? openState.single : openState.batch;
+  // Fast Batch bar + red glow ride with the mode too (batch-only).
+  syncFastBatchMode(single);
+  // The format-gated toggle disabling depends on mode, so re-sync after the
+  // batch controls' visibility flips.
+  syncBatchControls();
+  if (persist) chrome.storage.local.set({ [MODE_KEY]: single ? 'single' : 'batch' });
+}
+
+export function initModeTabs(): void {
+  tabSingle?.addEventListener('click', () => setExportMode(true));
+  tabBatch?.addEventListener('click', () => setExportMode(false));
+  // Remember the fold the user leaves each mode in, so it survives re-open.
+  exportSettings?.addEventListener('toggle', () => {
+    openState[currentSingle ? 'single' : 'batch'] = exportSettings.open;
+    chrome.storage.local.set({ [OPEN_KEY]: openState });
+  });
+  chrome.storage.local.get([MODE_KEY, OPEN_KEY], (res) => {
+    const saved = res[OPEN_KEY] as Partial<typeof openState> | undefined;
+    if (saved) {
+      if (typeof saved.single === 'boolean') openState.single = saved.single;
+      if (typeof saved.batch === 'boolean') openState.batch = saved.batch;
+    }
+    if (res[MODE_KEY] === 'batch') setExportMode(false, false);
+    else if (exportSettings) exportSettings.open = openState.single;
+  });
+}

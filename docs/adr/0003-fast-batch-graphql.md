@@ -1,0 +1,196 @@
+# ADR 0003 — Fast Batch: acquire tweets via X's internal GraphQL (opt-in)
+
+- Status: **Accepted — implemented for Bookmarks, Profile, and Likes (threads + Article bodies via per-item TweetDetail). Extended 2026-07-11 with Recent/Resume/Date-range fetch modes + per-mode continuation cursors (see "Pagination modes & cursors"). Amended 2026-08-31: the Standard/Fast toggle + Super Fast toggle became one `Manual | Auto | Super` engine selector, and the bespoke consent dialog became Chrome's own optional-permission prompt (see "Engine selector supersedes the toggles").**
+- Date: 2026-06-13 (implemented 2026-06-14; pagination modes 2026-07-11; engine selector 2026-08-31)
+- Deciders: @zendegani
+- Relates to: ADR 0001 (Content AST), ADR 0002 (Batch export)
+- Supersedes: — (adds an alternate acquisition path; does **not** replace ADR 0002)
+
+## Context
+
+ADR 0002 batch acquires content by **navigating a worker tab to each
+permalink and reading the rendered DOM**. Measured floor on real bookmarks:
+**~2.4 s/item** — `nav` ~0.37 s, `waitForArticle` ~0.7 s, thread-walk ~1.4 s.
+The last two are *rendering time*, not slack: they exist because we read the
+DOM. The adaptive-settle work (branch `perf/batch-throttle-interstitial`)
+squeezed the walk ~25 %, but the DOM approach is at its floor.
+
+Faster competitors (e.g. the "Toolbox/Fast" bookmarks exporter, source
+inspected) skip rendering entirely. Their mechanism, verified:
+
+1. A `MAIN`-world content script monkey-patches `XMLHttpRequest` to observe
+   x.com's own `Bookmarks` GraphQL calls and read the JSON `responseText`.
+2. The background uses `chrome.webRequest.onBeforeSendHeaders` to capture the
+   session's `authorization: Bearer …` and `x-csrf-token` headers, then
+   **re-issues the GraphQL request itself**, paginating by `cursor` and
+   parsing `bookmark_timeline_v2.timeline.instructions[].entries`.
+
+This is **not** the paid Developer API (no key, no cost). It is x.com's own
+**private/undocumented GraphQL**, reached with the user's existing logged-in
+session. 100 bookmarks ≈ a few JSON pages ≈ a few seconds.
+
+The AST architecture (ADR 0001) means only **acquisition** is in question:
+renderers, `postProcess`, every format, the folder/JSON/combined sinks, the
+dedup ledger, and filename logic are pure `Document → output` and are reused
+unchanged. The problem reduces to: **obtain a `Document` per tweet from JSON
+instead of from the DOM.**
+
+## Decision (proposed)
+
+Add **Fast Batch** as a *second, opt-in* batch acquisition path beside the
+existing DOM worker-tab path — not a replacement.
+
+| # | Decision | Rationale |
+|---|---|---|
+| 1 | **Two modes, both kept.** Current batch stays as **Batch** (default, no new permission, no consent). Add a **Fast Batch** tab/toggle. | Privacy/ToS-conscious users keep a fully working batch; nobody loses the feature by declining. (User's framing.) |
+| 2 | **Fast Batch is gated behind explicit, one-time consent.** A dialog states plainly: it reads your X session's auth token to call X's private API directly; it's faster; data still never leaves your browser; X may rate-limit. Stored as a setting (`fastBatchConsent`), revocable. | Token use is a meaningfully different posture; consent must be informed and deliberate, not a silent default. |
+| 3 | **Acquisition = capture-and-replay GraphQL**, not hardcoded query-ids. Capture the live request URL (carries the rotating query-id + `features`) and the `authorization`/`x-csrf-token` headers via `webRequest`; re-issue with our own `cursor`. | Query-ids and `features` rotate; replaying the *observed* request survives rotation. Hardcoding would break constantly. |
+| 4 | **Fetch from the background** with `credentials:'include'` (cookies ride via `host_permissions`) + captured csrf header. Seed headers from any live x.com GraphQL request (passively, or by briefly visiting the source page once). | No long-lived worker tab; simpler orchestration. The only thing a tab is needed for is seeding auth once. |
+| 5 | **New `Document` producer: `jsonToAst` (tweet JSON → AST)**, sibling to `domToAst`. Lives in `src/graphql/` (or `src/content/json-to-ast/`), depends only on the JSON shape, never the DOM — mirrors the ADR 0001 plane split. | Keeps the AST the single source of truth; all renderers/sinks work untouched. |
+| 6 | **Reuse the ADR 0002 orchestrator shape**: background-owned job, `chrome.storage.session` persistence, dedup ledger, sinks, pause/resume, the interstitial/rate-limit auto-pause. Swap "navigate worker tab → BATCH_ITEM_RESULT" for "fetch page → map entries → render → sink". | Maximal reuse; the queue/sink/UI machinery is identical. |
+| 7 | **Pace GraphQL politely** (the throttle/auto-pause concept carries over): modest gap between pages, and **pause on HTTP 429 / GraphQL `errors`** with a clear reason, exactly like the DOM path's interstitial pause. | X rate-limits GraphQL; "never hammer" (ADR 0002 #7) applies here too. |
+| 8 | **JSON fixtures + `.ast.json` snapshots** mirror the HTML-fixture test discipline (ADR 0002 testing): captured GraphQL responses (gitignored) → committed mapper-output snapshots. | The mapper is the fragile part; snapshot it so schema drift is caught. |
+
+### Non-goals (this ADR)
+
+- Replacing the DOM path for single-item export (popup/inline/context-menu) —
+  one tweet is already fast; the DOM path stays the proven default there.
+- Removing the DOM batch path — it is the no-consent fallback (#1).
+
+## The hard part: JSON → AST mapping
+
+Everything downstream is free; this table is ~all the real work. Source is the
+GraphQL `tweet_results.result` object (`legacy` + siblings).
+
+| AST (`src/ast/types.ts`) | GraphQL source | Notes / quirk risk |
+|---|---|---|
+| `author` | `core.user_results.result.legacy.{name,screen_name}`, `…verified`/`is_blue_verified`, avatar `…profile_image_url_https` | verified flag moved fields over time |
+| `date` | `legacy.created_at` | parse X's format |
+| `text` (InlineNode[]) | `note_tweet.note_tweet_results.result.text` **if present** (long-form), else `legacy.full_text`; entities from `…richtext`/`legacy.entities` | **Highest risk.** Must replicate DOM extractor's URL expansion (`entities.urls[].expanded_url`), mention/hashtag/cashtag → `EntityNode`, and **stripping trailing t.co media links** + the quoted-tweet self-link |
+| `media` (MediaItem[]) | `legacy.extended_entities.media[]` → photo / video / animated_gif; video picks highest-bitrate mp4 `video_info.variants[]` | poster = `media_url_https`; alt = `ext_alt_text` |
+| `poll` | `card.legacy.binding_values` (`choiceN_label`, `choiceN_count`, `end_datetime`) | card-type sniff |
+| `linkCard` | `card.legacy` summary/summary_large_image bindings (title, description, domain, image) | distinguish from poll/article cards |
+| `articleCard` / `quotedTweet` | `quoted_status_result.result` → **recurse** `jsonToAst` | recursion gives quotes/embeds for free (same property as DOM path) |
+| `engagement` | `legacy.{reply,retweet,favorite,quote,bookmark}_count`, `views.count` | trivial |
+| `ThreadNode` | timeline self-thread module **or** `TweetDetail` conversation per root | see phasing — parity gap if skipped |
+| `ArticleNode` | X Article long-form (separate GraphQL field/op) | **Second-highest risk** — distinct content model; defer |
+
+## Phasing (proposed)
+
+- **Phase 1 — Bookmarks, single tweets.** `Bookmarks` op; map tweet + quote +
+  media + cards + polls + engagement. Threads exported as their **root tweet
+  only** (documented parity gap vs. DOM batch). Proves the whole pipeline end
+  to end behind the consent gate. *This is the milestone that demonstrates the
+  10×.*
+- **Phase 2 — Likes + Profile sources.** `Likes`, `UserTweets`
+  (+ `UserByScreenName` for the rest-id). Same mapper.
+- **Phase 3 — Parity.** Thread expansion via `TweetDetail`; X Articles. Closes
+  the gaps so Fast Batch ≈ DOM batch in completeness, not just speed.
+
+## Consequences
+
+- **Speed:** ~0.1–0.3 s/item, trivially parallel — bookmarks/likes/profile go
+  from minutes to seconds. The headline win.
+- **New permission:** `webRequest` (host-scoped to x.com). Needs justification,
+  an issue, and a **PRIVACY.md** update (manifest minimal-permissions rule).
+- **New maintenance surface:** `jsonToAst` re-derives quirk handling the DOM
+  extractor earned over time; X schema drift breaks it (mitigated by #8).
+  Two acquisition paths to keep working.
+- **ToS posture shift:** from "reads the page you're already shown" to "calls
+  X's private API on your behalf." Mitigated user-side by opt-in consent (#2);
+  must be documented honestly project-side.
+- **Rate limits:** X caps GraphQL; large jobs can 429 → handled by the
+  carried-over auto-pause (#7).
+- **Reuse:** renderers, `postProcess`, all formats, sinks, dedup, filenames,
+  combined/JSON outputs — **unchanged**.
+
+## Risks & mitigations
+
+| Risk | Mitigation |
+|---|---|
+| X rotates query-ids / `features` | Capture-and-replay the live request (#3), don't hardcode |
+| GraphQL response schema drifts | JSON fixtures + `.ast.json` snapshots (#8); fail loud per ADR 0002's "unsupported branches throw" ethos |
+| Auth header not yet captured | Seed from a one-time x.com visit / passive capture (#4); clear UX if unavailable |
+| Rate-limited mid-job | 429/`errors` → auto-pause with reason, resumable (#7) |
+| User uncomfortable with token use | Opt-in only; DOM batch remains the default (#1, #2) |
+
+## Resolved decisions (2026-06-13)
+
+Proceeding on the recommended options so Phase 1 can start:
+
+1. **Surface → mode toggle.** A **Standard / Fast ⚡** toggle on the existing
+   batch bar, applied to whichever source (Bookmarks/Likes/Profile/Selection)
+   is selected — reuses the source tabs instead of duplicating them.
+2. **Phase-1 thread handling → ship root-tweet-only** behind the consent gate,
+   with a visible "threads/articles use Standard batch for now" hint. Thread
+   (`TweetDetail`) + Article parity is Phase 3; decision #1 keeps both modes,
+   so completeness is never lost — Standard covers the gap meanwhile.
+3. **Branch → own feature branch** `feat/fast-batch-graphql`, off `main`,
+   independent of the in-flight `perf/batch-throttle-interstitial` work.
+
+### Build order within Phase 1
+
+1. **Pure `jsonToAst` mapper + tests** (no Chrome APIs, no manifest change) —
+   the de-risking step, *scaffolded now*. Fixtures are **modeled on X's
+   documented GraphQL schema and must be re-validated against a real captured
+   response** (needs a logged-in session) before the fetch layer is trusted.
+2. Auth capture (`webRequest`) + background GraphQL fetch/pagination — **needs
+   the permission decision + PRIVACY.md; deferred to review.**
+3. Consent gate + Standard/Fast toggle UI — **deferred to review.**
+4. Orchestration: reuse the ADR 0002 sinks / dedup / pause machinery.
+
+## Pagination modes & cursors (2026-07-11, issue #83)
+
+Fast Batch originally re-paginated the source feed **from the top every run**
+(dropping any captured cursor), skipping ledger-dedup'd items, capped at a small
+page window. Once a user's exported history grew past that window, each run spent
+its whole page budget re-scanning already-exported items and returned fewer
+(eventually zero) new ones — a large feed (thousands of bookmarks) became
+unreachable, and the run got slower while doing it. Three **fetch modes** (a
+`Recent | Resume | Date range` switch in the popup) replace the single top-scan.
+State lives in `src/background/fast-batch.ts`; the keys in `batch-state.ts`.
+
+| Mode | Start point | Page window | Cursor | Date filter |
+|---|---|---|---|---|
+| **Recent** | top of feed | `RECENT_MAX_PAGES` (~25 pages) | none | — |
+| **Resume** | saved cursor (top on first run) | `RESUME_MAX_PAGES` (~150 pages ≈ ~3000 posts) | reads + advances `RESUME_CURSOR_KEY` | — |
+| **Date range** | top | ~150 pages/run | reads + advances `DATE_CURSOR_KEY` | on (by tweet date) |
+
+| # | Decision | Rationale |
+|---|---|---|
+| 9 | **Two independent cursors, never crossed.** `RESUME_CURSOR_KEY` (`{[source]: cursor}`) is a positional backfill frontier only Resume reads/writes. `DATE_CURSOR_KEY` (`{[source]: {cursor, from, to}}`) is Date-range's own continuation, **tagged with the window** so a changed range restarts from the top. Recent touches neither. **Reset history** clears both, alongside the export + incomplete ledgers. | Date range must never move the resume position, so a user can grab a specific month mid-backfill without confusing where Resume continues. Giving Date range its own cursor lets it still crawl a whole large feed across runs (~3000 posts/run). |
+| 10 | **The frontier advances only past *fully consumed* pages.** A page cut short by the per-run item cap is re-fetched next run (the ledger dedups what was already taken); the frontier is **not** saved on cancel. | No mid-page items are lost, and a cancelled run — which may have paginated past items it never wrote — doesn't skip them next time. |
+| 11 | **Deep modes are paced.** Resume and Date range page far more than Recent, so they insert a politeness gap (`RESUME_PAGE_DELAY_MS`) between feed pages; Recent's short window skips it. | A burst of many back-to-back feed requests is exactly what trips X's soft block (#7 carried into the feed, not just TweetDetail). |
+| 12 | **Run size matches the expansion budget, not the page cap.** A run collects **150 posts** (`FAST_BATCH_MAX_ITEMS`) to match the ~150 per-account `TweetDetail` calls X allows before rate-limiting. | Collecting more (the old 200) left the overflow as un-expanded stubs, and since the next run completes that backlog first, the leftover **compounded** upward each run. (The 150 here is unrelated to the coincidental ~150-page feed window.) |
+| 13 | **Incomplete backlog is retried by id, feed-independent.** Posts a prior rate-limited run left as stubs are completed by a direct `TweetDetail` fetch **by id** at the start of the next run (any mode), not by re-encountering them in the feed. Stubs live in an `_incomplete_rerun_to_complete/` subfolder, un-ledgered and out of the combined/manifest until completed. | Resume and Date range move *past* the stubs' feed positions, and Recent never reaches deep ones — so re-collection can't be relied on to finish them (issue #81 refined). |
+| 14 | **Dedup stores both ids a post can appear under.** Edited tweets, and thread-replies that re-root to the thread's first tweet on expansion, get a different canonical id than the bookmarks feed lists; the ledger records **both** the feed id and the expanded/canonical id. | Storing only the canonical id meant the next run's feed (which lists the other id) never matched, and the post re-exported every run. |
+| 15 | **Super Fast skips thread expansion, trading depth for run size (issue #85).** An opt-in popup toggle sends `expandThreads: false`; with no per-item `TweetDetail` budget to honor, the run cap rises from 150 to `SUPER_FAST_MAX_ITEMS` (3000 — the page budget, ~150 pages × ~20 posts). Threads export as their root post only; **articles are still expanded** (their body only exists via `TweetDetail`) and the incomplete backlog still completes first. | Expansion, not pagination, is what rate-limits a run — one request *per item* vs. one per ~20 items. Measured on a real feed, a no-expand run walked ~48 pages and exported 1012 items in one go (vs. ~7 runs at 150), while its 66 remaining `TweetDetail` calls (backlog + articles) stayed under the limit; the rate-limit stop (#7) remains the safety net for those. |
+
+## Engine selector supersedes the toggles (2026-08-31)
+
+Decisions #1/#2 shipped as a **Standard / Fast ⚡** toggle plus a bespoke
+consent dialog, and #15 added a second, separate **Super Fast** toggle. Two
+independent booleans encoded three mutually exclusive behaviours, so the
+invalid fourth state (Super on, Fast off) had to be defended against, and
+neither toggle said what the other engine would do. The consent dialog also
+duplicated a prompt Chrome shows anyway when an optional permission is
+requested. What shipped instead:
+
+| # | Decision | Rationale |
+|---|---|---|
+| 16 | **One three-way engine selector replaces both toggles.** `type BatchMode = 'manual' \| 'auto' \| 'super'` (`src/popup/fast-batch-ui.ts`), rendered as a `Manual \| Auto \| Super` segmented control with a caption per engine. **Manual** is the ADR 0002 worker-tab path and the default; **Auto** is Fast Batch with thread expansion; **Super** is Fast Batch with `expandThreads: false` (#15's mechanism, unchanged). The old `FAST_MODE_KEY`/`FAST_SUPER_KEY` booleans are migrated to the mode string on read. | Three exclusive engines are one choice, not two booleans — the impossible state stops existing, and each engine's cost is stated in its caption at the moment of choosing. Renaming "Standard" to "Manual" says what the user does (scroll the feed), not merely that it is the older path. |
+| 17 | **Consent is Chrome's own optional-permission prompt.** Picking Auto or Super calls `chrome.permissions.request({permissions:['webRequest'], origins:['*://x.com/*']})`; the `fastBatchConsent` setting is gone. Revoking the permission drops the selector back to Manual. | Chrome's prompt is the trustworthy surface for a permission grant — unspoofable, and revocable in the browser's own UI. Our dialog restated it in a place users have no reason to trust more, and could drift out of sync with the permission's real state. Decision #2's *substance* (informed, deliberate, revocable) is kept; only the surface changed. |
+| 18 | **Auto/Super expose Stop, not pause/resume, and no determinate bar.** Decision #6 assumed the ADR 0002 pause machinery carried over. It does not: collection is open-ended (the total is unknown until the feed ends) and Super streams writes in parallel, so a fraction would be fake. The popup hides the bar and the Pause button for any Fast run (`#view-main.fast-on .batch-bar`), leaving `[■] Bookmarks · Fetching… 1300` plus the step lights. Manual keeps its bar and pause, where the total is known and writes are sequential. | Better to show a true open-ended count than a progress bar that cannot be honest. A rate-limited or stopped run is resumed by re-running (#10, #13), which is the real continuation mechanism here — pause would imply a held in-memory position that the background job does not keep. |
+
+Retroactively, this means #1's "toggle", #2's consent dialog, #6's "pause/resume"
+reuse, and #15's "opt-in popup toggle" name the *shape* of a decision that has
+since changed; the underlying choices they record — two paths kept, informed
+consent, orchestration reuse, and depth-for-volume — all still hold.
+
+## References
+
+- ADR 0001 — Content AST architecture
+- ADR 0002 — Batch export (DOM worker-tab path; orchestration reused here)
+- AST schema: `docs/ast-schema.md`, `src/ast/types.ts`
+- Mechanism confirmed in: `_local/fast/{content_v2,background}.*.js` (webRequest
+  header capture + GraphQL cursor replay)

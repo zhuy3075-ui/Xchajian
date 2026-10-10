@@ -1,0 +1,2412 @@
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --bg-primary: #ffffff;
+  --bg-elevated: #f0f3f5;
+  --bg-hover: #e4e8eb;
+  --accent: #1d9bf0;
+  --accent-glow: rgba(29, 155, 240, 0.25);
+  --accent-tint: rgba(29, 155, 240, 0.12);
+  --accent-hover: #1a8cd8;
+  --text-primary: #0f1419;
+  --text-secondary: #536471;
+  --success: #00ba7c;
+  --success-bg: rgba(0, 186, 124, 0.12);
+  --error: #f4212e;
+  --error-bg: rgba(244, 33, 46, 0.12);
+  --warning: #9a6700;
+  --warning-bg: rgba(212, 167, 44, 0.14);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --toggle-off-bg: rgba(0, 0, 0, 0.1);
+  --toggle-off-knob: #8b98a5;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* How long the tooltip waits before appearing on hover (mirrors native
+   * title= behavior). Reverts to 0 on mouse-leave so the tooltip
+   * disappears immediately rather than lingering. */
+  --tooltip-delay: 500ms;
+  --tooltip-fade: 120ms;
+  --font: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #0f1419;
+    --bg-elevated: #1a2734;
+    --bg-hover: #1e3044;
+    --text-primary: #e7e9ea;
+    --text-secondary: #71767b;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --toggle-off-bg: rgba(255, 255, 255, 0.1);
+    --toggle-off-knob: var(--text-secondary);
+    --warning: #e3b341;
+    --warning-bg: rgba(227, 179, 65, 0.12);
+  }
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Hide the document scrollbar visual entirely. The popup width must stay
+ * constant when content crosses the scroll threshold (e.g. switching the
+ * field picker from default → Obsidian mode), and an actual scrollbar is
+ * rarely useful at the popup's narrow width — wheel/trackpad still scrolls. */
+html {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chromium, Safari */
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  width: 416px;
+  min-height: 200px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Container ─────────────────────────────────────────────── */
+.popup-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+/* ─── Header ────────────────────────────────────────────────── */
+.popup-header {
+  text-align: center;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.logo-text .accent {
+  color: var(--accent);
+}
+
+.tagline {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* Settings view is a focused config panel — drop the intro copy AND the
+   header logo so the box stays compact. `:has()` is fine for an extension
+   targeting modern Chrome. */
+.popup-container:has(#view-settings:not(.hidden)) .popup-header,
+.popup-container:has(#view-settings:not(.hidden)) .popup-footer {
+  display: none;
+}
+
+/* ─── Button Group ─────────────────────────────────────────── */
+/* Single-export picker: the format grid on the start side, the Download/Copy
+ * actions stacked on the end side. Both columns share full height so the two
+ * action buttons line up with the grid. */
+.export-picker {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* Five format selectors. md is a tall button in the center column spanning
+ * both rows; html/json/txt/csv sit at the four corners (dice-5 layout). */
+.format-grid {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 6px;
+}
+
+#btn-fmt-html { grid-column: 1; grid-row: 1; }
+#btn-fmt-json { grid-column: 3; grid-row: 1; }
+#btn-fmt-md   { grid-column: 2; grid-row: 1 / 3; }
+#btn-fmt-txt  { grid-column: 1; grid-row: 2; }
+#btn-fmt-csv  { grid-column: 3; grid-row: 2; }
+
+.btn-fmt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border: 1px solid var(--text-secondary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition),
+    border-color var(--transition);
+}
+
+.btn-fmt .btn-icon {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.btn-fmt:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+/* Selected format: accent outline + tint, matching the Download/Copy buttons
+ * below so the active target reads as "wired to" those actions. */
+.btn-fmt[aria-checked="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+/* md is the primary format — larger, stacked icon over label, filling the
+ * tall center cell. */
+.btn-fmt-md {
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.btn-fmt-md .btn-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Download + Copy stacked vertically, each filling half the picker height. */
+.export-actions {
+  flex: 0 0 132px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.export-actions .btn-action {
+  flex: 1 1 0;
+  width: 100%;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  /* Explicit half-width (minus half the row gap). flex: 1 with auto
+   * min-width let content sizing creep in and made the outlined Obsidian
+   * button render wider than the filled Download/Copy buttons, even though
+   * its label fit easily. Pinning the basis kills the asymmetry. */
+  flex: 0 0 calc(50% - 4px);
+  min-width: 0;
+  padding: 10px 10px;
+  /* Transparent 1px border so outlined variants (.btn-obsidian) have the
+   * same computed height as filled ones — border-box only includes the
+   * border when an explicit height is set; with height:auto, a border
+   * adds to total height. */
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: 13px;
+  white-space: nowrap;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
+  position: relative;
+  /* overflow visible so [data-tooltip]::after (Obsidian hint) can render
+   * above the button. The ::before gradient inherits border-radius so it
+   * still stays inside the rounded box. */
+  overflow: visible;
+}
+
+.btn-action::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.btn-action:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 20px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.btn-action:hover::before {
+  opacity: 1;
+}
+
+.btn-action:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* PDF (red outline) + Obsidian (purple outline) share one row. The popup is
+ * sized so both buttons fit at their natural half-width without shrinking,
+ * and the Obsidian hint lives on the button itself via [data-tooltip]. */
+.action-row {
+  --obsidian: #7C3AED;
+  --obsidian-glow: rgba(124, 58, 237, 0.18);
+  --pdf: #dc2626;
+  --pdf-glow: rgba(220, 38, 38, 0.18);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-pdf {
+  background: transparent;
+  color: var(--pdf);
+  border: 1px solid var(--pdf);
+}
+.btn-pdf .btn-icon {
+  color: var(--pdf);
+}
+.btn-pdf:hover {
+  background: var(--pdf-glow);
+  color: var(--pdf);
+  box-shadow: 0 4px 16px var(--pdf-glow);
+}
+.btn-pdf:active {
+  box-shadow: 0 2px 8px var(--pdf-glow);
+}
+
+.btn-obsidian {
+  background: transparent;
+  color: var(--obsidian);
+  border: 1px solid var(--obsidian);
+}
+
+.btn-obsidian:hover {
+  background: var(--obsidian-glow);
+  color: var(--obsidian);
+  box-shadow: 0 4px 16px var(--obsidian-glow);
+}
+
+.btn-obsidian:active {
+  box-shadow: 0 2px 8px var(--obsidian-glow);
+}
+
+.btn-obsidian .btn-icon {
+  color: var(--obsidian);
+}
+
+/* ─── Review prompt banner ──────────────────────────────────── */
+.review-banner {
+  position: relative;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-glow);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.review-banner.hidden {
+  display: none;
+}
+
+.review-close {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.review-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.review-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.review-text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  /* room so the text never runs under the close button */
+  padding-inline-end: 18px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.review-rate {
+  flex: 1;
+  padding: 8px 10px;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.review-rate:hover {
+  background: var(--accent-hover);
+}
+
+.review-later {
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.review-later:hover {
+  color: var(--text-primary);
+}
+
+/* Download (.btn-primary) + Copy (.btn-secondary): outlined accent, matching
+ * the PDF/Obsidian buttons. The old solid fill read like the active tab
+ * toggle; outlining keeps all four action buttons consistent. */
+.btn-primary,
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.btn-primary .btn-icon,
+.btn-secondary .btn-icon {
+  color: var(--accent);
+}
+.btn-primary:hover,
+.btn-secondary:hover {
+  background: var(--accent-tint);
+  color: var(--accent);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:active,
+.btn-secondary:active {
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* ─── Loading State ─────────────────────────────────────────── */
+.btn-action.loading .btn-icon {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+/* ─── Status ────────────────────────────────────────────────── */
+.status {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  transition:
+    opacity var(--transition),
+    transform var(--transition);
+}
+
+.status.hidden {
+  display: none;
+}
+
+.status.success {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(0, 186, 124, 0.2);
+}
+
+.status.error {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid rgba(244, 33, 46, 0.2);
+}
+
+.status.info {
+  background: rgba(29, 155, 240, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(29, 155, 240, 0.2);
+}
+
+/* ─── Footer ────────────────────────────────────────────────── */
+.popup-footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Pulled out of the flex flow so the centered "Issues…" cluster stays
+ * actually centered relative to the popup width. */
+.footer-version {
+  position: absolute;
+  inset-inline-start: 0;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+
+.footer-version:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.footer-feedback {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.footer-github {
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition: opacity var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.footer-github:hover {
+  opacity: 1;
+}
+
+.footer-github-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Mirror of .footer-version on the right edge: a one-tap link to the Web Store
+ * review page (same target as the post-30-export review banner). */
+.footer-review {
+  position: absolute;
+  inset-inline-end: 0;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  transition: opacity var(--transition), color var(--transition);
+  display: flex;
+  align-items: center;
+}
+
+.footer-review:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.footer-review-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+/* ─── View Switching ────────────────────────────────────────── */
+.popup-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popup-main.hidden {
+  display: none;
+}
+
+/* ─── Settings gear (top end corner) ───────────────────────── */
+.btn-settings-icon {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition: background var(--transition), color var(--transition), opacity var(--transition);
+  z-index: 1;
+}
+
+.btn-settings-icon:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.btn-settings-icon.hidden {
+  display: none;
+}
+
+.btn-settings-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ─── Settings topbar: Back on the left, help-icon on the right ── */
+.settings-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.settings-help-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.settings-help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  cursor: help;
+  border-radius: 50%;
+  transition: opacity var(--transition), color var(--transition), background var(--transition);
+}
+
+.settings-help-icon:hover,
+.settings-help-icon:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.settings-help-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* CSS tooltip: instant, contained inside the popup. Native title tooltips
+ * have a ~500ms delay and render via the OS, which lets them spill outside
+ * the Chrome extension popup window. */
+.settings-help-hint {
+  position: absolute;
+  top: 28px;
+  inset-inline-end: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-2px);
+  /* No delay on the hide side — when the user moves away the tooltip
+   * disappears without a hangover. The 500ms delay only kicks in when
+   * we transition INTO the hover state. */
+  transition: opacity var(--tooltip-fade), transform var(--tooltip-fade), visibility 0s linear var(--tooltip-fade);
+  pointer-events: none;
+}
+
+.settings-help-wrap:hover .settings-help-hint,
+.settings-help-icon:focus-visible + .settings-help-hint {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity var(--tooltip-fade) var(--tooltip-delay), transform var(--tooltip-fade) var(--tooltip-delay), visibility 0s linear var(--tooltip-delay);
+}
+
+/* ─── Generic in-popup tooltip ([data-tooltip]) ─────────────── */
+/* Native title= tooltips have a 500ms OS-controlled delay and render
+ * outside the popup window. Anything with a data-tooltip attribute gets
+ * an instant CSS tooltip instead. Position above the element by default;
+ * the gear button overrides to position below. */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:not([data-tooltip=""])::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  z-index: 30;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 9px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.4;
+  color: var(--text-primary);
+  text-align: start;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--tooltip-fade), transform var(--tooltip-fade), visibility 0s linear var(--tooltip-fade);
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  transition: opacity var(--tooltip-fade) var(--tooltip-delay), transform var(--tooltip-fade) var(--tooltip-delay), visibility 0s linear var(--tooltip-delay);
+}
+
+/* Gear button sits at the top-right with top:14px — its tooltip would be
+ * clipped above the popup. Anchor below and to the right edge so the
+ * label extends leftward into the popup instead of off-screen. */
+/* Field-label tooltips sit close to the popup's start edge — anchor them to
+ * the host's start (not centered) so long messages don't overflow off-screen. */
+.field-text-label[data-tooltip]::after {
+  inset-inline-start: 0;
+  transform: translateX(0) translateY(2px);
+}
+.field-text-label[data-tooltip]:hover::after,
+.field-text-label[data-tooltip]:focus-visible::after {
+  transform: translateX(0) translateY(0);
+}
+
+.btn-settings-icon[data-tooltip] {
+  /* Re-assert the gear's own positioning — the generic [data-tooltip]
+   * rule above sets position:relative, which would otherwise win on
+   * source order and drop the gear into normal flow. */
+  position: absolute;
+}
+
+.btn-settings-icon[data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 4px);
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  transform: translateY(-2px);
+}
+
+.btn-settings-icon[data-tooltip]:hover::after,
+.btn-settings-icon[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
+}
+
+/* Action-row buttons sit near opposite popup edges. Anchor their tooltips to
+ * logical edges so each box grows toward the row's interior in both LTR and
+ * RTL locales instead of being centered past the popup boundary. */
+.action-row .btn-action:first-child[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-start: 0;
+  transform: translateY(2px);
+}
+
+.action-row .btn-action:last-child[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-end: 0;
+  transform: translateY(2px);
+}
+
+.action-row .btn-action:first-child[data-tooltip]:hover::after,
+.action-row .btn-action:first-child[data-tooltip]:focus-visible::after,
+.action-row .btn-action:last-child[data-tooltip]:hover::after,
+.action-row .btn-action:last-child[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
+}
+
+/* The format grid's corner buttons sit at the picker's edges — a centered
+ * tooltip would spill off the popup and get clipped. Anchor the left column
+ * (html/txt) to the start edge and the right column (json/csv) to the end
+ * edge so each grows inward (mirrors the action-row rule above). */
+#btn-fmt-html[data-tooltip]::after,
+#btn-fmt-txt[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-start: 0;
+  transform: translateY(2px);
+}
+
+#btn-fmt-json[data-tooltip]::after,
+#btn-fmt-csv[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-end: 0;
+  transform: translateY(2px);
+}
+
+#btn-fmt-html[data-tooltip]:hover::after,
+#btn-fmt-html[data-tooltip]:focus-visible::after,
+#btn-fmt-txt[data-tooltip]:hover::after,
+#btn-fmt-txt[data-tooltip]:focus-visible::after,
+#btn-fmt-json[data-tooltip]:hover::after,
+#btn-fmt-json[data-tooltip]:focus-visible::after,
+#btn-fmt-csv[data-tooltip]:hover::after,
+#btn-fmt-csv[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
+}
+
+/* Reset dedup sits at the popup's end edge — a centered tooltip would spill
+ * off-screen, so anchor it to that edge and let it grow inward. */
+#btn-batch-reset[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-end: 0;
+  transform: translateY(2px);
+}
+#btn-batch-reset[data-tooltip]:hover::after,
+#btn-batch-reset[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  /* Vertical padding is intentionally small — the popup-main flex `gap`
+   * handles inter-row spacing; padding only needs to provide a clickable
+   * hit area around the text. */
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.nav-link:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.nav-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.nav-link:hover .nav-icon {
+  opacity: 1;
+}
+
+.nav-arrow {
+  margin-inline-start: auto;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.nav-back .nav-arrow {
+  margin-inline-start: 0;
+  margin-inline-end: 4px;
+}
+
+/* ─── Fast Batch toggle (sits above Export settings) ──────────── */
+/* Batch engine selector: Manual | Auto | Super — one segmented control that
+ * replaces the old Fast on/off + Super on/off toggles. Full-width so it reads as
+ * a primary choice; the fetch-mode segment (.fast-seg) below twins its shape. */
+.batch-mode {
+  display: flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.batch-mode.hidden {
+  display: none;
+}
+
+.mode-seg-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 6px;
+  border: none;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.mode-seg-btn + .mode-seg-btn {
+  border-left: 1px solid var(--border-subtle);
+}
+
+/* Selected engine — the batch accent (same blue as the Export button + the
+ * fetch-mode segment) for every engine, Manual included. The "uses your X
+ * session" signal is carried by the red (i) beside the caption, not by a red
+ * segment. */
+.mode-seg-btn.active {
+  background: var(--batch);
+  color: #fff;
+}
+
+.mode-seg-btn .beta-badge {
+  opacity: 0.7;
+}
+
+/* Locked (an export is running) — can't switch engines mid-run. */
+.batch-mode.locked .mode-seg-btn {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.batch-mode.locked .mode-seg-btn.active {
+  opacity: 1;
+}
+
+/* Field box: groups a segmented control with its always-on caption behind one
+ * subtle border, so it's unambiguous which explanation belongs to which toggle.
+ * The elevated background sets the box off from the segments inside it (which
+ * keep their own outline on --bg-primary). */
+.mode-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.mode-field.hidden {
+  display: none;
+}
+
+/* The caption explains scroll mode + quality (engine field) or the fetch mode
+ * (Recent/Resume/Date range field), replacing the old info-ⓘ and hover hints.
+ * Fixed two-line height so switching options never shifts the layout below. */
+.mode-field-caption {
+  margin: 0;
+  min-height: 2.7em;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+/* Engine caption + an (i) at its end (Auto/Super only) that carries the deeper
+ * "how it works / soft rate limit / re-run after ~15 min" note, keeping the
+ * always-on caption short. Bottom-aligned so the (i) sits by the last line. */
+.mode-caption-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.mode-caption-row .mode-field-caption {
+  flex: 1;
+}
+
+/* Shown for Auto/Super only — it is the single red mark in the batch view, the
+ * "uses your logged-in X session" signal that used to colour the whole engine
+ * segment and the active source tab. */
+.mode-info {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-bottom: 1px;
+  color: var(--error);
+  cursor: help;
+}
+
+.mode-info.hidden {
+  display: none;
+}
+
+.mode-info svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* The (i) sits at the popup's right edge — anchor its tooltip to the end edge so
+ * it grows inward instead of clipping off-screen. */
+.mode-info[data-tooltip]::after {
+  left: auto;
+  inset-inline-end: 0;
+  transform: translateX(0) translateY(2px);
+}
+
+.mode-info[data-tooltip]:hover::after,
+.mode-info[data-tooltip]:focus-visible::after {
+  transform: translateX(0) translateY(0);
+}
+
+.fast-locked-hint {
+  margin: -2px 0 0;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--error);
+}
+
+.fast-locked-hint.hidden {
+  display: none;
+}
+
+/* Flood warning: Auto/Super with un-zipped per-item output would drop
+ * thousands of entries on the downloads shelf — nudge toward the Zip toggle
+ * or Combined output. A normal-flow block between the engine selector and
+ * the fetch-mode segment, so showing it pushes the latter down. */
+.flood-hint {
+  margin: -2px 0 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  border-radius: var(--radius-sm);
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.flood-hint.hidden {
+  display: none;
+}
+
+/* Fast Batch date-range filter (shown only while Fast is armed). */
+.fast-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.fast-date-range.hidden {
+  display: none;
+}
+
+.fast-date-label {
+  margin-right: 2px;
+}
+
+.fast-date-input {
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+.fast-date-sep {
+  opacity: 0.6;
+}
+
+/* Fetch-mode segment (Recent | Resume | Date range) — twins the engine selector
+ * above it: full-width, same border/radius, one step smaller (it's a sub-setting
+ * of Auto/Super, not a primary choice). */
+.fast-seg {
+  display: flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.fast-seg-btn {
+  flex: 1;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 6px;
+  border: none;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.fast-seg-btn + .fast-seg-btn {
+  border-left: 1px solid var(--border-subtle);
+}
+
+/* Selected fetch mode uses the batch accent (same blue as the Export button) —
+ * a neutral "selected" that sits under the red engine toggle without adding a
+ * third heavy colour. */
+.fast-seg-btn.active {
+  background: var(--batch);
+  color: #fff;
+}
+
+/* Fast Batch step lights: Page → Tweet → Fetch → Expand. */
+.fast-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.fast-steps.hidden {
+  display: none;
+}
+
+.fast-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fast-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--toggle-off-bg);
+  flex-shrink: 0;
+}
+
+/* States set on the .fast-step container. */
+.fast-step[data-state="ready"] .fast-step-dot,
+.fast-step[data-state="done"] .fast-step-dot {
+  background: var(--success);
+}
+.fast-step[data-state="missing"] .fast-step-dot {
+  background: var(--error);
+}
+.fast-step[data-state="active"] .fast-step-dot {
+  background: var(--accent);
+  animation: fast-step-pulse 1s ease-in-out infinite;
+}
+.fast-step[data-state="missing"] .fast-step-label {
+  color: var(--error);
+}
+
+@keyframes fast-step-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Anchor step tooltips to the start edge so the leftmost one doesn't clip. */
+.fast-step[data-tooltip]::after {
+  left: 0;
+  transform: translateX(0) translateY(2px);
+}
+.fast-step[data-tooltip]:hover::after,
+.fast-step[data-tooltip]:focus-visible::after {
+  transform: translateX(0) translateY(0);
+}
+
+/* Fast Batch has no honest determinate total — collection is open-ended and
+ * Super Fast streams its writes in parallel — so the fill bar can only fake a
+ * fraction. Hide it during any Fast run; the live count text, step lights, and
+ * Stop button carry the real feedback. Standard batch (no .fast-on) keeps its
+ * bar, where the total is known and writes are sequential. */
+#view-main.fast-on .batch-bar {
+  display: none;
+}
+
+/* With the bar gone, the Stop button would otherwise sit alone on its own row
+ * above the status text. Lay the control row and the status text on one line so
+ * a Fast run reads "[■] Bookmarks · Fetching… 1300" and reclaims that row.
+ * (:not(.hidden) so the idle display:none still wins.) */
+#view-main.fast-on #batch-progress:not(.hidden) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#view-main.fast-on #batch-progress-text {
+  margin-top: 0;
+}
+
+/* ─── Options Toggles ───────────────────────────────────────── */
+.options {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-group + .option-group {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* When the group is a <details>, collapse the inter-row gap when closed so
+ * the summary sits flush against the next section's top border. */
+details.option-group:not([open]) {
+  gap: 0;
+}
+
+.option-group-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  padding: 0;
+  user-select: none;
+}
+
+.option-group-summary::-webkit-details-marker {
+  display: none;
+}
+
+.option-group-summary .option-group-label {
+  margin-bottom: 0;
+}
+
+.option-group-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition: transform var(--transition);
+}
+
+details.option-group[open] .option-group-chevron {
+  transform: rotate(180deg);
+}
+
+.option-group-summary:hover .option-group-chevron {
+  opacity: 1;
+}
+
+.option-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+  transition: opacity var(--transition);
+}
+
+.toggle-label.hidden {
+  display: none;
+}
+
+.toggle-label:hover {
+  opacity: 0.9;
+}
+
+.toggle-label.disabled {
+  cursor: not-allowed;
+}
+
+/* Dim only the label's visible children — NOT the container itself.
+ * A parent-level opacity would cascade into the [data-tooltip]::after
+ * pseudo-element, making the tooltip text unreadable (issue #38). */
+.toggle-label.disabled .toggle-text,
+.toggle-label.disabled .toggle-switch {
+  opacity: 0.4;
+}
+
+.toggle-label.disabled:hover .toggle-text,
+.toggle-label.disabled:hover .toggle-switch {
+  opacity: 0.4;
+}
+
+.toggle-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.toggle-label:has(.toggle-input:checked) .toggle-text {
+  color: var(--text-primary);
+}
+
+.toggle-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity var(--transition);
+}
+
+.toggle-label:has(.toggle-input:checked) .toggle-icon {
+  opacity: 1;
+  stroke: var(--accent);
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--toggle-off-bg);
+  border-radius: 10px;
+  flex-shrink: 0;
+  transition:
+    background var(--transition),
+    box-shadow var(--transition);
+}
+
+.toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  /* Anchor to physical left (not inset-inline-start) so the thumb's OFF→ON
+   * travel is always physical left→right, regardless of document direction.
+   * Toggle semantics (right = ON) stay consistent across LTR and RTL locales. */
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--toggle-off-knob);
+  border-radius: 50%;
+  transition:
+    transform var(--transition),
+    background var(--transition);
+}
+
+.toggle-input:checked + .toggle-switch {
+  background: rgba(29, 155, 240, 0.3);
+  box-shadow: 0 0 8px rgba(29, 155, 240, 0.15);
+}
+
+.toggle-input:checked + .toggle-switch::after {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+/* Obsidian-friendly toggle: paint icon + switch in Obsidian purple when
+ * checked so the toggle, its icon, and the Add-to-Obsidian button share
+ * one visual identity. */
+.toggle-obsidian:has(.toggle-input:checked) .toggle-icon {
+  color: #7C3AED;
+  stroke: #7C3AED;
+}
+
+.toggle-obsidian .toggle-input:checked + .toggle-switch {
+  background: rgba(124, 58, 237, 0.3);
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.15);
+}
+
+.toggle-obsidian .toggle-input:checked + .toggle-switch::after {
+  background: #7C3AED;
+}
+
+/* ─── Text-field option (Obsidian vault, etc.) ──────────────── */
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.field-text {
+  flex-shrink: 0;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.field-label-stacked {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.field-label-stacked .field-input {
+  width: 100%;
+}
+
+.obsidian-path-help {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.field-preview.obsidian-path-preview {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.obsidian-path-preview .field-preview-value {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.obsidian-save-target {
+  display: block;
+  margin-block: 6px;
+  overflow-wrap: anywhere;
+}
+
+.field-label-stacked .field-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Inline "Reset" action inside a stacked field label ──────────── */
+.field-inline-action {
+  margin-inline-start: auto;
+  font-family: inherit;
+  font-size: 10.5px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px 8px;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.field-inline-action:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.field-inline-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* ─── Tag chips (preview underneath the tags input) ─────────────── */
+.tag-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 18px;
+  margin-top: 2px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Input + popover wrapper, host for the autocomplete dropdown ─ */
+.field-with-popover {
+  position: relative;
+  display: block;
+}
+
+.placeholder-autocomplete {
+  position: absolute;
+  top: calc(100% + 2px);
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  z-index: 15;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.placeholder-autocomplete[hidden] {
+  display: none;
+}
+
+.placeholder-autocomplete-item {
+  appearance: none;
+  background: transparent;
+  border: none;
+  text-align: start;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--text-primary);
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.placeholder-autocomplete-item:hover,
+.placeholder-autocomplete-item.highlighted {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+/* Greyed-out look when the tags field can't be used (Obsidian-friendly off,
+ * metadata off, or tags YAML entry disabled in the picker). */
+.field-label.disabled {
+  opacity: 0.55;
+}
+.field-label.disabled .field-input,
+.field-label.disabled .field-inline-action {
+  cursor: not-allowed;
+}
+
+.field-info-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.field-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  cursor: help;
+  border-radius: 50%;
+  transition: opacity var(--transition), color var(--transition);
+}
+
+.field-info:hover,
+.field-info:focus-visible,
+.field-info[aria-expanded="true"] {
+  opacity: 1;
+  color: var(--accent);
+  outline: none;
+}
+
+.field-info svg {
+  width: 14px;
+  height: 14px;
+}
+
+.field-hint {
+  position: absolute;
+  top: 22px;
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+  z-index: 10;
+  width: max-content;
+  max-width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 11.5px;
+  color: var(--text-primary);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-2px);
+  transition: opacity var(--tooltip-fade), transform var(--tooltip-fade), visibility 0s linear var(--tooltip-fade);
+  pointer-events: none;
+}
+
+.field-hint[data-show="true"] {
+  /* Visibility is toggled in JS via mouseenter/mouseleave/focus/blur on the
+   * adjacent ⓘ button. CSS `:hover` could leak in subtle ways depending on
+   * layout/flex sizing of the icon's hit box; explicit listeners guarantee
+   * the popover only appears while the cursor is on the ⓘ itself. */
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity var(--tooltip-fade) var(--tooltip-delay), transform var(--tooltip-fade) var(--tooltip-delay), visibility 0s linear var(--tooltip-delay);
+}
+
+.field-hint-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.field-hint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-hint-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1.35;
+}
+
+.field-hint-list code {
+  flex-shrink: 0;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  padding: 1px 5px;
+  background: var(--bg-hover, var(--bg-secondary, rgba(0, 0, 0, 0.06)));
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+}
+
+.field-hint-list span {
+  color: var(--text-secondary);
+}
+
+.field-preview {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.field-preview-label {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.field-preview-value {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ─── Frontmatter field picker ──────────────────────────────── */
+.fm-picker.disabled {
+  opacity: 0.45;
+}
+
+.fm-picker.disabled .fm-field,
+.fm-picker.disabled .fm-picker-select-all {
+  cursor: not-allowed;
+}
+
+.option-group-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: help;
+  transition: opacity var(--transition);
+  /* The summary is space-between-flex; the auto end-margin claims all the
+   * leftover horizontal space so the help icon hugs the label and the chevron
+   * still sits at the row's end edge. */
+  margin-inline-end: auto;
+}
+
+.option-group-summary:hover .option-group-help {
+  opacity: 1;
+}
+
+.option-group-help svg {
+  width: 13px;
+  height: 13px;
+}
+
+.fm-picker-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.fm-picker-mode-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.fm-picker-select-all {
+  font-family: inherit;
+  font-size: 10.5px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 2px 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.fm-picker-select-all:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.fm-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.fm-picker-list[hidden] {
+  display: none;
+}
+
+/* Column-major field layout: items flow top-to-bottom in column 1, then
+ * continue in column 2. The browser balances column heights automatically,
+ * which keeps the 5+5 (default) and 8+7 (Obsidian) splits even without
+ * manual row counts. break-inside on each row prevents a label getting
+ * sliced across a column boundary. */
+.fm-picker-fields {
+  column-count: 2;
+  column-gap: 14px;
+}
+
+.fm-picker-fields .fm-field {
+  break-inside: avoid;
+}
+
+.fm-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.fm-field:has(.fm-field-input:checked) .fm-field-name {
+  color: var(--text-primary);
+}
+
+.fm-field-name {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The checkbox itself is hidden — clicks land on the label, the visual
+ * .toggle-switch-mini reflects the state. */
+.fm-field-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.toggle-switch-mini {
+  position: relative;
+  width: 22px;
+  height: 12px;
+  background: var(--toggle-off-bg);
+  border-radius: 7px;
+  flex-shrink: 0;
+  transition: background var(--transition), box-shadow var(--transition);
+}
+
+.toggle-switch-mini::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  /* See .toggle-switch::after — physical anchor keeps ON=right everywhere. */
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--toggle-off-knob);
+  border-radius: 50%;
+  transition: transform var(--transition), background var(--transition);
+}
+
+.fm-field-input:checked + .toggle-switch-mini {
+  background: rgba(29, 155, 240, 0.3);
+  box-shadow: 0 0 6px rgba(29, 155, 240, 0.15);
+}
+
+.fm-field-input:checked + .toggle-switch-mini::after {
+  transform: translateX(10px);
+  background: var(--accent);
+}
+
+.fm-field-input:disabled + .toggle-switch-mini {
+  cursor: not-allowed;
+}
+
+/* ─── Animations ────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popup-container {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ─── Batch export (bookmarks) ─────────────────────────────────────── */
+
+/* ─── Tier-1 export mode tabs (Single | Batch) ──────────────── */
+.export-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+}
+
+.export-tab {
+  flex: 1;
+  font: 700 13px/1 var(--font);
+  padding: 9px 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition),
+    box-shadow var(--transition);
+}
+
+.export-tab:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+.export-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* "Beta" pill on the Batch tab. Outlined in currentColor so it stays legible
+ * in both tab states — grey when inactive, white-on-accent when active. */
+.beta-badge {
+  margin-inline-start: 5px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  opacity: 0.75;
+}
+
+/* Tier-1 panels (Single / Batch) are borderless — the mode tabs above carry
+ * the framing, so the buttons keep full width (German labels need the room). */
+.export-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.export-panel.hidden {
+  display: none;
+}
+
+.export-panel .batch-tabs {
+  margin-bottom: 0;
+}
+
+.batch-section {
+  --batch: #0ea5e9;
+  --batch-glow: rgba(14, 165, 233, 0.18);
+}
+
+.batch-section.hidden {
+  display: none;
+}
+
+.btn-batch {
+  width: 100%;
+  background: transparent;
+  color: var(--batch);
+  border: 1px solid var(--batch);
+}
+
+/* The Export button is text-only (no leading source icon). */
+.btn-batch .btn-icon {
+  display: none;
+}
+
+/* Reset queue / history sit on the status row; keep their labels one line. */
+.batch-dedup-row .batch-ctl {
+  white-space: nowrap;
+}
+.btn-batch .btn-icon {
+  color: var(--batch);
+}
+.btn-batch:hover {
+  background: var(--batch-glow);
+  color: var(--batch);
+  box-shadow: 0 4px 16px var(--batch-glow);
+}
+.btn-batch:active {
+  box-shadow: 0 2px 8px var(--batch-glow);
+}
+
+.batch-progress.hidden {
+  display: none;
+}
+
+.batch-bar {
+  height: 8px;
+  flex: 1;
+  border-radius: 9999px;
+  background: rgba(14, 165, 233, 0.15);
+  overflow: hidden;
+}
+
+.batch-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 9999px;
+  background: var(--batch);
+  transition: width 300ms ease;
+}
+
+/* Player-style control row: pause/resume + stop in front, the bar fills the
+ * rest, and the status text sits on its own line below. */
+.batch-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-progress-row.hidden {
+  display: none;
+}
+
+.batch-progress-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-secondary, #71767b);
+  /* Wrap long status/hint messages instead of truncating them. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.batch-controls {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.batch-controls.hidden {
+  display: none;
+}
+
+.batch-ctl {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--batch);
+  background: transparent;
+  color: var(--batch);
+  cursor: pointer;
+}
+.batch-ctl:hover {
+  background: var(--batch-glow);
+}
+
+/* Pause / stop as compact square icon buttons sitting in front of the bar. */
+.batch-ctl-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+.batch-ico {
+  width: 14px;
+  height: 14px;
+}
+
+.batch-ico.hidden {
+  display: none;
+}
+
+.btn-batch.hidden,
+.batch-ctl.hidden {
+  display: none;
+}
+
+.batch-dedup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #71767b);
+  margin-top: 6px;
+}
+
+.batch-dedup-row.hidden {
+  display: none;
+}
+
+.batch-ctl-group {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Reset buttons stay put and just grey out when not applicable, so the row
+ * doesn't change size/layout as a collection grows or a run finishes.
+ * Grey via color/border, NOT opacity — opacity on the button cascades into its
+ * [data-tooltip]::after and renders the hint half-transparent (issue #38). The
+ * tooltip sets its own color, so a color/border change leaves it fully legible. */
+.batch-ctl:disabled {
+  color: color-mix(in srgb, var(--batch) 42%, transparent);
+  border-color: color-mix(in srgb, var(--batch) 28%, transparent);
+  cursor: default;
+}
+.batch-ctl:disabled:hover {
+  background: transparent;
+}
+
+/* Dim only the disabled button's children — NOT the button itself. A
+ * parent-level opacity cascades into the [data-tooltip]::after
+ * pseudo-element and renders the hint semi-transparent (same rule as the
+ * issue #38 fix for toggle labels). The batch button is the one action
+ * button that sits disabled WITH a tooltip (off the bookmarks page). */
+.btn-batch:disabled {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--batch) 45%, transparent);
+}
+.btn-batch:disabled .btn-icon,
+.btn-batch:disabled .btn-label {
+  opacity: 0.5;
+}
+.btn-batch:disabled:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.batch-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+
+.batch-tabs.hidden {
+  display: none;
+}
+
+.batch-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+}
+
+.batch-tab-icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* Don't re-color the active tab on hover — the icon is white on a blue
+ * fill, so tinting it blue would make it vanish. */
+.batch-tab:hover:not(:disabled):not(.active) {
+  color: var(--batch);
+}
+
+.batch-tab.active {
+  background: var(--batch);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--batch-glow);
+}
+
+.batch-tab:disabled {
+  cursor: default;
+  /* Dim via color, not opacity, so the tab's [data-tooltip] stays readable. */
+  color: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+}
+.batch-tab:disabled .batch-tab-icon {
+  opacity: 0.45;
+}
+
+/* Icon tabs lean on tooltips for their names; the first/last sit at the
+ * popup edges, so anchor those to the logical edge to grow inward instead
+ * of spilling off-screen (same pattern as .action-row / .format-row). */
+.batch-tabs .batch-tab:first-child[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-start: 0;
+  transform: translateY(2px);
+}
+
+.batch-tabs .batch-tab:last-child[data-tooltip]::after {
+  left: auto;
+  right: auto;
+  inset-inline-end: 0;
+  transform: translateY(2px);
+}
+
+.batch-tabs .batch-tab:first-child[data-tooltip]:hover::after,
+.batch-tabs .batch-tab:first-child[data-tooltip]:focus-visible::after,
+.batch-tabs .batch-tab:last-child[data-tooltip]:hover::after,
+.batch-tabs .batch-tab:last-child[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
+}
+
+/* Long profile handles: keep the label on one line and ellipsize. */
+.btn-batch .btn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-icon.hidden {
+  display: none;
+}
+
+/* ─── Batch format + output (in the Export settings box) ────── */
+.batch-format-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Batch-only — hidden in Single mode (mode.ts toggles `.hidden`). Needs an
+ * explicit override since `.batch-format-controls` sets its own display. */
+.batch-format-controls.hidden {
+  display: none;
+}
+
+.batch-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* Long translations ("Desactivado | Imágenes | Multimedia") outgrow the row:
+   * let the control drop to its own line rather than be shrunk into the
+   * segmented group's `overflow: hidden`, which silently ate the last option. */
+  flex-wrap: wrap;
+}
+
+/* A basis, not `auto`: the wrap decision then compares this floor — not the
+ * label's full single-line width — against what the control needs, so a label
+ * that can simply wrap its own text (en, de, ja, zh) keeps the one-line row.
+ * Short labels (Format, Output) keep the default basis and never force a wrap. */
+.batch-field > .toggle-text {
+  flex: 1 1 150px;
+}
+
+.batch-field > .segmented,
+.batch-field > .batch-select {
+  flex: none;
+  /* Keeps the control right-aligned on the line it wraps onto. */
+  margin-inline-start: auto;
+}
+
+.batch-field-label {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.batch-select {
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Segmented radio group: visible labels over visually-hidden radios. */
+.segmented {
+  position: relative;
+  display: inline-flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.seg-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.seg-label {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  /* White segments (like the fetch-mode control) so the control reads as its own
+   * pill instead of showing the grey settings panel through the gaps. */
+  background: var(--bg-primary);
+  cursor: pointer;
+  user-select: none;
+  border-inline-start: 1px solid var(--border-subtle);
+  transition: background var(--transition), color var(--transition);
+}
+
+.seg-label:first-of-type {
+  border-inline-start: none;
+}
+
+.seg-label:hover {
+  background: var(--bg-hover);
+}
+
+.seg-input:checked + .seg-label,
+.seg-input:checked + .seg-label:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.seg-input:disabled + .seg-label,
+.seg-input:disabled + .seg-label:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+/* ...but a disabled segment that is still the selection keeps its fill, or the
+ * greyed-out group shows no selection at all and reads as if it were Off.
+ * Needs the extra :checked to outrank the equal-specificity rule above. */
+.seg-input:checked:disabled + .seg-label,
+.seg-input:checked:disabled + .seg-label:hover {
+  background: var(--accent);
+  color: #fff;
+  opacity: 0.4;
+}
+
+/* The save-locally row greys with the same rule as the toggle rows, but it's a
+ * .batch-field wrapping a segmented control rather than a .toggle-label, so it
+ * needs its own selector. Dim the label only — never the container, which
+ * carries the data-tooltip whose ::after would inherit the opacity (issue #38).
+ * The segments dim themselves via .seg-input:disabled above. */
+.save-local-field.disabled .toggle-text {
+  opacity: 0.4;
+}
+
+/* Keyboard focus on the (hidden) radio shows on its label. */
+.seg-input:focus-visible + .seg-label {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Article distribution entry, kept independent of the export mode controls. */
+.dukou-entry { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.dukou-entry button { flex: 1; padding: 9px 8px; border: 1px solid #bf3b1f; border-radius: 7px; background: transparent; color: #bf3b1f; cursor: pointer; font: inherit; font-size: 12px; }
+.dukou-entry button:hover { background: #bf3b1f; color: #fff; }
+.dukou-entry button:disabled { opacity: .5; cursor: wait; }
+.dukou-entry p { flex-basis: 100%; margin: 0; font-size: 12px; }
+.dukou-entry p:empty { display: none; }
+
+/* Unified feature navigation; text identity replaces graphic branding. */
+:root { --accent:#245bd8; --accent-hover:#1946aa; --accent-tint:rgba(36,91,216,.10); --accent-glow:rgba(36,91,216,.2); }
+@media (prefers-color-scheme:dark) { :root { --accent:#79a7ff; --accent-hover:#9cbeff; --accent-tint:rgba(121,167,255,.14); } }
+.popup-header { text-align:left; padding-right:35px; }
+.workspace-title { font-size:23px; font-weight:700; letter-spacing:-.6px; }
+.workspace-subtitle { font-size:12px; line-height:1.6; color:var(--text-secondary); margin-top:5px; }
+.feature-nav { display:flex; padding:4px; gap:3px; background:var(--bg-elevated); border-radius:10px; margin-bottom:12px; }
+.feature-nav>* { flex:1; border:0; font:600 12px var(--font); text-align:center; padding:11px 4px; border-radius:7px; color:var(--text-secondary); background:transparent; }
+.feature-nav button { cursor:pointer; }
+.feature-nav [aria-current] { background:var(--bg-primary); color:var(--accent); box-shadow:0 1px 3px #0000000d; }
+.feature-nav button:hover { background:var(--bg-hover); color:var(--text-primary); }
+.feature-nav button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.dukou-entry { display:block; padding:0; border:0; background:transparent; }
+.dukou-entry #btn-dukou-capture { width:100%; font-size:12px; min-height:36px; border:1px solid var(--border-subtle); color:var(--text-secondary); background:var(--bg-primary); }

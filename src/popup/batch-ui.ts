@@ -1,0 +1,693 @@
+// Popup UI for batch export (ADR 0002, Phases B–C). The background owns the
+// job; this module only starts/controls it and polls BATCH_STATUS for
+// progress — the popup can close and reopen mid-job without losing anything.
+//
+// Layout: a Bookmarks | Profile | Likes | Selection icon-tab strip over one
+// action button, so every source is always discoverable without stretching
+// the popup. A tab's button activates when the current page matches its source
+// (Selection works on any x.com timeline); otherwise it's disabled with a
+// "where to go" hint. While the popup is open on a matching page, the count
+// re-polls so scrolling behind the popup updates the "(N new)" label live.
+// "N new" excludes items a previous job already exported (the background's
+// ledger); Reset clears that memory.
+
+import type {
+  BatchStartResponse,
+  BatchStatusResponse,
+  HarvestResponse,
+} from '../types/messages';
+import { hostMatches } from '../shared/media';
+import { loadSettings } from '../shared/settings';
+import { pageSourceOfPath, type XPage } from '../shared/x-routes';
+// Pure module (no chrome.* at import time) — safe to share with the popup.
+import {
+  EXPORTED_LEDGER_KEY,
+  INCOMPLETE_LEDGER_KEY,
+  RESUME_CURSOR_KEY,
+  DATE_CURSOR_KEY,
+  statusIdOf,
+} from '../background/batch-state';
+import {
+  batchBarFill,
+  batchDedupRow,
+  batchDedupText,
+  batchProgress,
+  batchProgressText,
+  btnBatch,
+  btnBatchCancel,
+  btnBatchIconBookmarks,
+  btnBatchIconProfile,
+  btnBatchIconSelection,
+  btnBatchIconLikes,
+  btnBatchIconTimeline,
+  btnBatchLabel,
+  btnBatchPause,
+  btnBatchReset,
+  btnBatchResetQueue,
+  tabBatchBookmarks,
+  tabBatchProfile,
+  tabBatchSelection,
+  tabBatchLikes,
+  tabBatchTimeline,
+} from './dom';
+import { setExportMode } from './mode';
+import { getFastMode, isFastActive, startFastExport, cancelFast, setStandardJobActive, resumeFastIfActive, updateFastSteps } from './fast-batch-ui';
+
+type JobSnapshot = NonNullable<BatchStatusResponse['job']>;
+type BatchTab = 'bookmarks' | 'profile' | 'selection' | 'likes' | 'timeline';
+
+// The pause button swaps between a pause and a play (resume) glyph.
+const icoPause = btnBatchPause.querySelector('.batch-ico-pause');
+const icoPlay = btnBatchPause.querySelector('.batch-ico-play');
+// Hidden as a unit when idle so the bar doesn't keep a leading gap.
+const batchControls = document.querySelector('.batch-controls');
+
+const JOB_POLL_MS = 800;
+const COUNT_POLL_MS = 1000;
+const t = (key: string, fallback: string): string => chrome.i18n.getMessage(key) || fallback;
+
+const TAB_BUTTONS: Record<BatchTab, HTMLButtonElement> = {
+  bookmarks: tabBatchBookmarks,
+  profile: tabBatchProfile,
+  selection: tabBatchSelection,
+  likes: tabBatchLikes,
+  timeline: tabBatchTimeline,
+};
+
+// Per-tab action-button icons (bookmark, user, check-square, heart, home) — all
+// live in the HTML; the inactive ones are hidden.
+const TAB_ICONS: Record<BatchTab, SVGElement> = {
+  bookmarks: btnBatchIconBookmarks,
+  profile: btnBatchIconProfile,
+  selection: btnBatchIconSelection,
+  likes: btnBatchIconLikes,
+  timeline: btnBatchIconTimeline,
+};
+
+// Sources with a fixed URL we can open directly (no handle needed). Likes is
+// your own and now sits at a fixed address under History, so it qualifies too;
+// only Profile is per-account and can't be opened generically.
+const OPEN_URLS: Partial<Record<BatchTab, string>> = {
+  bookmarks: 'https://x.com/i/history',
+  likes: 'https://x.com/i/history/likes',
+  timeline: 'https://x.com/home',
+};
+
+let activeTab: BatchTab = 'bookmarks';
+// One job at a time (the background enforces this — one worker window,
+// politeness throttle toward X). Tabs stay browsable mid-job; this flag
+// just keeps the start button disabled everywhere while a job runs, except
+// where it can append to that job (see `appendable`).
+let jobIsActive = false;
+// True when the action button should ADD the loaded items to the running
+// job's queue (same-source job in progress) instead of starting a new one.
+let appendable = false;
+// When the active tab's source has a canonical URL but the user isn't on it,
+// the action button becomes "Open <page>" and navigates there instead of
+// exporting. Only sources that need no handle (bookmarks, likes, timeline)
+// qualify.
+let openTarget: string | undefined;
+// Last polled snapshot, so a tab switch can re-evaluate progress visibility
+// immediately instead of waiting for the next poll.
+let lastJob: JobSnapshot | undefined;
+let jobPollTimer: ReturnType<typeof setInterval> | undefined;
+let countPollTimer: ReturnType<typeof setInterval> | undefined;
+let pageTabId: number | undefined;
+let pageIsX = false;
+// Current page URL — lets Fast read the profile handle without the injector
+// (Fast uses captured GraphQL, so it works even when the page wasn't reloaded).
+let pageUrl: string | undefined;
+
+async function fetchJob(): Promise<JobSnapshot | undefined> {
+  try {
+    const resp = (await chrome.runtime.sendMessage({
+      action: 'BATCH_STATUS',
+    })) as BatchStatusResponse | undefined;
+    return resp?.job;
+  } catch {
+    return undefined;
+  }
+}
+
+// `unreachable` distinguishes "injector didn't respond" (page needs a reload
+// after an extension update) from "responded but this isn't a batch source".
+type HarvestResult = HarvestResponse & { unreachable?: boolean };
+
+async function harvest(): Promise<HarvestResult> {
+  if (pageTabId === undefined) return { source: null, urls: [] };
+  try {
+    const resp = (await chrome.tabs.sendMessage(pageTabId, {
+      action: 'XCLIPPER_HARVEST',
+    })) as HarvestResponse | undefined;
+    return resp ?? { source: null, urls: [] };
+  } catch {
+    // Injector not present (page needs a reload after extension update).
+    return { source: null, urls: [], unreachable: true };
+  }
+}
+
+async function loadLedgerSet(): Promise<Set<string>> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(EXPORTED_LEDGER_KEY, (result) => {
+      const raw = result[EXPORTED_LEDGER_KEY];
+      resolve(new Set(Array.isArray(raw) ? raw.filter((v) => typeof v === 'string') : []));
+    });
+  });
+}
+
+function setButton(label: string, enabled: boolean, tooltip: string): void {
+  btnBatchLabel.textContent = label;
+  if (jobIsActive && !appendable) {
+    btnBatch.disabled = true;
+    btnBatch.setAttribute('data-tooltip', t('batch_running', 'A batch job is already running.'));
+    return;
+  }
+  btnBatch.disabled = !enabled;
+  btnBatch.setAttribute('data-tooltip', tooltip);
+}
+
+// Refresh the action button for the active tab. Counts only apply when the
+// current page matches the tab's source; otherwise the button points the
+// user at the right page.
+// Early-return branches of refreshIdleUi: no dedup info applies — hide the row
+// and grey both reset buttons together. Each branch assigns the buttons' FINAL
+// state exactly once (here, or after the main paths' awaits); a transient
+// "default disabled" at the top would get painted whenever the awaited storage
+// read is slow — e.g. right after a big export, while Chrome is still flushing
+// hundreds of downloads — making the buttons flicker every poll tick (#87).
+function hideDedupAndResets(): void {
+  batchDedupRow.classList.add('hidden');
+  btnBatchResetQueue.disabled = true;
+  btnBatchReset.disabled = true;
+}
+
+async function refreshIdleUi(): Promise<void> {
+  appendable = false;
+  openTarget = undefined;
+  // Fast Batch (armed via the red toggle) overrides per-page gating: it fetches
+  // through the GraphQL session, so it doesn't need the source page loaded.
+  if (getFastMode()) {
+    await refreshFastIdle();
+    return;
+  }
+  await refreshStandardIdle();
+}
+
+// Fast-mode idle state. Phase 1 is bookmarks / profile / likes only — Selection
+// and Timeline have no GET-paginated feed, so they point back with a "turn Fast
+// off" hint. The dedup row stays visible so layout is stable.
+async function refreshFastIdle(): Promise<void> {
+  if (activeTab === 'selection' || activeTab === 'timeline') {
+    hideDedupAndResets();
+    setButton(
+      activeTab === 'timeline'
+        ? t('btn_batch_timeline', 'Export timeline')
+        : t('btn_batch_select', 'Select tweets…'),
+      false,
+      activeTab === 'timeline'
+        ? t('btn_batch_fast_no_timeline', 'Timeline is only available in Manual — switch to Manual to export your home feed.')
+        : t('btn_batch_fast_no_selection', 'Selection is only available in Manual — switch to Manual to pick tweets by hand.')
+    );
+    return;
+  }
+  // bookmarks / profile / likes — Fast paginates from the top via cursor (no
+  // harvested collection), so "Reset queue" is always greyed; "Reset history"
+  // greys when the ledger is empty.
+  const ledger = await loadLedgerSet();
+  btnBatchResetQueue.disabled = true;
+  btnBatchReset.disabled = ledger.size === 0;
+  batchDedupText.textContent =
+    ledger.size > 0 ? `${ledger.size} ${t('batch_already_exported', 'already exported')}` : '';
+  batchDedupRow.classList.remove('hidden');
+  let label: string;
+  let hint: string;
+  if (activeTab === 'profile') {
+    // Handle from the URL, not the injector — Fast doesn't need the page.
+    const handle = handleFromUrl(pageUrl);
+    label = `${t('btn_batch_profile', 'Export posts')}${handle ? ` @${handle}` : ''}`;
+    hint = t('btn_batch_fast_profile_hint', "Fetch this profile's own posts through your X session — much faster. Reposts are skipped.");
+  } else if (activeTab === 'likes') {
+    label = t('btn_batch_likes', 'Export likes');
+    hint = t('btn_batch_fast_likes_hint', 'Fetch your liked posts through your X session — much faster. Expands threads & articles.');
+  } else {
+    label = t('btn_batch', 'Export bookmarks');
+    hint = t('btn_batch_fast_hint', 'Fetch all your bookmarks through your X session — much faster. Expands threads & articles; stops politely if X rate-limits.');
+  }
+  setButton(label, !isFastActive(), hint);
+  void updateFastSteps(activeTab); // refresh the Page/Tweet readiness lights
+}
+
+// Standard (worker-tab) idle state: harvest the current page, then either gate
+// with a "where to go" hint or render the export/append button.
+async function refreshStandardIdle(): Promise<void> {
+  const { source, handle, urls, unreachable } = await harvest();
+
+  // After an extension reload the page still runs the old/no content script
+  // (the same situation Single export reports). Every batch source needs it,
+  // so surface the same "reload the page" hint rather than a misleading state.
+  if (unreachable && pageIsX) {
+    hideDedupAndResets();
+    const label =
+      activeTab === 'bookmarks' ? t('btn_batch', 'Export bookmarks')
+        : activeTab === 'profile' ? t('btn_batch_profile', 'Export posts')
+          : activeTab === 'likes' ? t('btn_batch_likes', 'Export likes')
+            : activeTab === 'timeline' ? t('btn_batch_timeline', 'Export timeline')
+              : t('btn_batch_select', 'Select tweets…');
+    // Keep it ENABLED — a disabled button can't show its tooltip in Chrome, so
+    // the reason would be invisible. Clicking surfaces the reload hint (like
+    // Single export does), which the user found clear.
+    setButton(label, true, t('error_reload', 'Reload the page and try again.'));
+    return;
+  }
+
+  if (activeTab === 'selection') {
+    hideDedupAndResets();
+    setButton(
+      t('btn_batch_select', 'Select tweets…'),
+      pageIsX,
+      pageIsX
+        ? t('btn_batch_select_hint', 'Pick individual tweets on the current page with checkboxes, then export the selection.')
+        : t('btn_batch_open_x', 'Open x.com to batch-export bookmarks, a profile, or a selection.')
+    );
+    return;
+  }
+
+  if (gateWrongSource(source)) return;
+
+  await renderOnSourceButton(urls, handle);
+}
+
+// When the active tab's source doesn't match the current page, show a greyed
+// button — or an "Open <page>" for the sources with a canonical URL. Returns
+// true when it rendered such a gate, so the caller stops.
+function gateWrongSource(source: HarvestResult['source']): boolean {
+  if (activeTab === 'bookmarks' && source !== 'bookmarks') {
+    hideDedupAndResets();
+    openTarget = OPEN_URLS.bookmarks;
+    setButton(
+      t('btn_batch_go_bookmarks', 'Open Bookmarks'),
+      true,
+      t('btn_batch_open_bookmarks', 'Open your Bookmarks page, then scroll to load posts and export.')
+    );
+    return true;
+  }
+  if (activeTab === 'profile' && source !== 'profile') {
+    hideDedupAndResets();
+    setButton(
+      t('btn_batch_profile', 'Export posts'),
+      false,
+      t('btn_batch_open_profile', 'Open a profile page on x.com to export its posts. Reposts are skipped.')
+    );
+    return true;
+  }
+  if (activeTab === 'likes' && source !== 'likes') {
+    hideDedupAndResets();
+    openTarget = OPEN_URLS.likes;
+    setButton(
+      t('btn_batch_go_likes', 'Open Likes'),
+      true,
+      t('btn_batch_open_likes', 'Open your Likes page on x.com to export the posts you have liked.')
+    );
+    return true;
+  }
+  if (activeTab === 'timeline' && source !== 'timeline') {
+    hideDedupAndResets();
+    openTarget = OPEN_URLS.timeline;
+    setButton(
+      t('btn_batch_go_timeline', 'Open Timeline'),
+      true,
+      t('btn_batch_open_timeline', 'Open your home timeline, then scroll to load posts and export.')
+    );
+    return true;
+  }
+  return false;
+}
+
+// On the active tab's own source: the button exports the loaded items, or APPENDS
+// them to a running same-source job (bookmarks always; a profile only when it's
+// the same handle). "N new" excludes the exported ledger and, while appending,
+// whatever the queue already holds.
+async function renderOnSourceButton(urls: string[], handle: string | undefined): Promise<void> {
+  const onSameSourceJob =
+    jobIsActive &&
+    lastJob?.origin === activeTab &&
+    (activeTab !== 'profile' || (lastJob?.handle ?? '') === (handle ?? ''));
+  appendable = onSameSourceJob;
+
+  const queued = onSameSourceJob ? new Set(lastJob?.queuedIds ?? []) : undefined;
+  const ledger = await loadLedgerSet();
+  const fresh = urls.filter((u) => {
+    const id = statusIdOf(u);
+    return !id || (!ledger.has(id) && !queued?.has(id));
+  });
+  const skipped = urls.length - fresh.length;
+  const base = onSameSourceJob
+    ? t('btn_batch_add', 'Add to queue')
+    : activeTab === 'profile'
+      ? `${t('btn_batch_profile', 'Export posts')}${handle ? ` @${handle}` : ''}`
+      : activeTab === 'likes'
+        ? t('btn_batch_likes', 'Export likes')
+        : activeTab === 'timeline'
+          ? t('btn_batch_timeline', 'Export timeline')
+          : t('btn_batch', 'Export bookmarks');
+  const suffix = skipped > 0 ? ` (${fresh.length} ${t('batch_new', 'new')})` : ` (${fresh.length})`;
+  const tooltip = onSameSourceJob
+    ? t('btn_batch_add_hint', 'Add the newly-loaded posts to the running batch queue.')
+    : activeTab === 'profile'
+      ? t('btn_batch_profile_hint', "Export this profile's own posts loaded on the page as Markdown files into one folder. Reposts are skipped; scroll to load more.")
+      : activeTab === 'likes'
+        ? t('btn_batch_likes_hint', 'Export every liked post loaded on this page as Markdown files into one folder. Scroll your Likes page to load more.')
+        : activeTab === 'timeline'
+          ? t('btn_batch_timeline_hint', 'Export every post loaded in your home timeline as Markdown files into one folder. Scroll to load more.')
+          : t('btn_batch_hint', 'Export every bookmark loaded on this page as Markdown files into one folder. Scroll the bookmarks page to load more.');
+  setButton(base + suffix, fresh.length > 0, tooltip);
+  // The control row is always shown here (stable layout); the two buttons just
+  // GREY OUT when not applicable instead of disappearing:
+  //  • Reset queue — enabled when there's a gathered collection to restart.
+  //  • Reset history ("N already exported") — enabled when past runs skipped items.
+  // Both disabled while appending to a live job (its queue-exclusion handles it).
+  btnBatchResetQueue.disabled = !(urls.length > 0) || onSameSourceJob;
+  const historyEnabled = skipped > 0 && !onSameSourceJob;
+  btnBatchReset.disabled = !historyEnabled;
+  batchDedupText.textContent = historyEnabled ? `${skipped} ${t('batch_already_exported', 'already exported')}` : '';
+  batchDedupRow.classList.remove('hidden');
+}
+
+// Fast can't do Selection or Timeline (no GET-paginated feed), so disable those
+// tabs while Fast is armed (and bounce off them if active). The tabs dim via
+// color, not opacity, so their tooltips stay readable (issue #38).
+function applyFastTabGating(): void {
+  const fast = getFastMode();
+  const sel = TAB_BUTTONS.selection;
+  sel.disabled = fast;
+  sel.setAttribute(
+    'data-tooltip',
+    fast
+      ? t('batch_tab_selection_fast', 'Switch to Manual to pick tweets by hand')
+      : t('batch_tab_selection', 'Selection')
+  );
+  const tl = TAB_BUTTONS.timeline;
+  tl.disabled = fast;
+  tl.setAttribute(
+    'data-tooltip',
+    fast
+      ? t('batch_tab_timeline_fast', 'Switch to Manual to export your home feed')
+      : t('batch_tab_timeline', 'Timeline')
+  );
+  if (fast && (activeTab === 'selection' || activeTab === 'timeline')) setActiveTab('bookmarks');
+}
+
+function setActiveTab(tab: BatchTab): void {
+  activeTab = tab;
+  (Object.keys(TAB_BUTTONS) as BatchTab[]).forEach((k) => {
+    TAB_BUTTONS[k].classList.toggle('active', k === tab);
+    TAB_ICONS[k].classList.toggle('hidden', k !== tab);
+  });
+  // A running job's progress follows the job, not the tab — keep it visible on
+  // every tab while active; only hide it once idle.
+  if (jobIsActive && lastJob) {
+    render(lastJob);
+  } else if (!isFastActive()) {
+    // A running Fast Batch owns the progress bar (its own poller) — don't hide it.
+    batchProgress.classList.add('hidden');
+  }
+  void refreshIdleUi();
+  startCountPolling();
+}
+
+// Short label for whose/which job is running, so progress stays meaningful even
+// when you've navigated to a different page (e.g. another profile).
+function jobWho(job: JobSnapshot): string {
+  if (job.origin === 'profile' && job.handle) return `@${job.handle}`;
+  if (job.origin === 'bookmarks') return t('group_bookmarks', 'Bookmarks');
+  if (job.origin === 'likes') return t('batch_tab_likes', 'Likes');
+  if (job.origin === 'timeline') return t('batch_tab_timeline', 'Timeline');
+  if (job.origin === 'selection') return t('batch_tab_selection', 'Selection');
+  return '';
+}
+
+function render(job: JobSnapshot): void {
+  lastJob = job;
+  // Always show the running job's progress — it belongs to the job, not to a
+  // tab/page, so navigating elsewhere (e.g. another profile) must not hide it.
+  batchProgress.classList.remove('hidden');
+  const processed = job.completed + job.failed;
+  const pct = job.total > 0 ? Math.round((processed / job.total) * 100) : 0;
+  batchBarFill.style.width = `${pct}%`;
+
+  const active = job.status === 'running' || job.status === 'paused';
+  jobIsActive = active;
+  setStandardJobActive(active); // lock the Fast toggle + keep the box blue while Standard runs
+  // The start button's enabled state + tooltip are owned entirely by
+  // setButton (via refreshIdleUi) — render must not touch them, or the two
+  // pollers fight and the button flickers between disabled and append-enabled.
+  // The button stays visible so its label keeps counting as the user scrolls;
+  // the controls + bar sit below it.
+  batchControls?.classList.toggle('hidden', !active);
+  btnBatchPause.classList.toggle('hidden', !active);
+  btnBatchCancel.classList.toggle('hidden', !active);
+  const paused = job.status === 'paused';
+  icoPlay?.classList.toggle('hidden', !paused);
+  icoPause?.classList.toggle('hidden', paused);
+  btnBatchPause.setAttribute(
+    'aria-label',
+    paused ? t('batch_resume', 'Resume') : t('batch_pause', 'Pause')
+  );
+
+  const who = jobWho(job);
+  const prefix = who ? `${who} · ` : '';
+  const failedSuffix =
+    job.failed > 0 ? ` · ${job.failed} ${t('batch_failed', 'failed')}` : '';
+  if (job.status === 'running') {
+    batchProgressText.textContent = `${prefix}${processed}/${job.total}${failedSuffix}`;
+  } else if (job.status === 'paused') {
+    const reason = job.pauseReason ? ` · ${job.pauseReason}` : '';
+    batchProgressText.textContent = `${prefix}${t('batch_paused', 'Paused')} — ${processed}/${job.total}${failedSuffix}${reason}`;
+  } else {
+    const label = job.status === 'done' ? t('batch_done', 'Done') : t('batch_stopped', 'Stopped');
+    batchProgressText.textContent = `${prefix}${label} — ${job.completed} ${t('batch_exported', 'exported')}${failedSuffix}`;
+  }
+}
+
+function stopJobPolling(): void {
+  if (jobPollTimer !== undefined) {
+    clearInterval(jobPollTimer);
+    jobPollTimer = undefined;
+  }
+}
+
+function startJobPolling(): void {
+  stopJobPolling();
+  jobPollTimer = setInterval(async () => {
+    const job = await fetchJob();
+    if (!job) {
+      stopJobPolling();
+      return;
+    }
+    render(job);
+    if (job.status === 'done' || job.status === 'cancelled') {
+      stopJobPolling();
+      await backToIdle();
+    }
+  }, JOB_POLL_MS);
+}
+
+function stopCountPolling(): void {
+  if (countPollTimer !== undefined) {
+    clearInterval(countPollTimer);
+    countPollTimer = undefined;
+  }
+}
+
+function startCountPolling(): void {
+  stopCountPolling();
+  if (pageTabId === undefined || !pageIsX || activeTab === 'selection') return;
+  countPollTimer = setInterval(() => void refreshIdleUi(), COUNT_POLL_MS);
+}
+
+// Job finished/stopped: re-enable starting and resume live counts. The
+// final report stays visible until the user switches tabs.
+async function backToIdle(): Promise<void> {
+  jobIsActive = false;
+  setStandardJobActive(false); // Standard job ended — unlock the Fast toggle
+  await refreshIdleUi();
+  startCountPolling();
+}
+
+async function control(controlAction: 'pause' | 'resume' | 'cancel'): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({ action: 'BATCH_CONTROL', control: controlAction });
+  } catch {
+    // background unreachable — next poll will reflect reality
+  }
+  const job = await fetchJob();
+  if (job) render(job);
+}
+
+async function startExport(): Promise<void> {
+  // Armed Fast Batch routes the paginated sources (bookmarks/profile/likes)
+  // through the GraphQL path (own progress poller in fast-batch-ui). Selection
+  // isn't Fast-compatible (its tab is disabled while Fast is armed).
+  if (getFastMode() && activeTab !== 'selection' && activeTab !== 'timeline') {
+    // Fast reads the profile handle from the URL (no injector needed).
+    await startFastExport(activeTab, activeTab === 'profile' ? handleFromUrl(pageUrl) : undefined);
+    return;
+  }
+
+  if (activeTab === 'selection') {
+    if (pageTabId === undefined) return;
+    chrome.tabs.sendMessage(pageTabId, { action: 'XCLIPPER_SELECTION', enable: true }, () => {
+      if (chrome.runtime.lastError) {
+        // Injector gone (page not reloaded after the extension update).
+        batchProgress.classList.remove('hidden');
+        batchProgressText.textContent = t('error_reload', 'Reload the page and try again.');
+        return;
+      }
+      window.close(); // hand the page over to selection mode
+    });
+    return;
+  }
+
+  btnBatch.disabled = true;
+  const { urls, handle, unreachable } = await harvest();
+  // Page wasn't reloaded after the extension update → injector unreachable.
+  // Show the same hint Single export gives, instead of a misleading failure.
+  if (unreachable && pageIsX) {
+    batchProgress.classList.remove('hidden');
+    batchProgressText.textContent = t('error_reload', 'Reload the page and try again.');
+    btnBatch.disabled = false;
+    return;
+  }
+  const settings = await loadSettings();
+  const resp = (await chrome.runtime.sendMessage({
+    action: 'BATCH_START',
+    urls,
+    origin: activeTab,
+    format: settings.batchFormat,
+    output: settings.batchOutput,
+    ...(activeTab === 'profile' && handle ? { handle } : {}),
+  })) as BatchStartResponse | undefined;
+  if (!resp?.success) {
+    batchProgress.classList.remove('hidden');
+    batchProgressText.textContent = resp?.error || t('batch_start_failed', 'Could not start the batch.');
+    await backToIdle();
+    return;
+  }
+  const job = await fetchJob();
+  if (job) render(job);
+  startJobPolling();
+}
+
+// Add the page's freshly-loaded items to the running same-source job. The
+// background dedupes against the queue and ledger; we then re-poll so the
+// count and progress reflect the longer queue.
+async function appendExport(): Promise<void> {
+  btnBatch.disabled = true;
+  const { urls } = await harvest();
+  await chrome.runtime.sendMessage({ action: 'BATCH_APPEND', urls });
+  const job = await fetchJob();
+  if (job) render(job); // refresh lastJob.queuedIds before recomputing the count
+  await refreshIdleUi();
+}
+
+// Take the user to a source's page (Bookmarks/Timeline) when they aren't on it:
+// navigate the current x.com tab if there is one, else open a new tab. They then
+// scroll to load posts and export (Standard reads the loaded DOM).
+function openSourcePage(url: string): void {
+  if (pageIsX && pageTabId !== undefined) {
+    void chrome.tabs.update(pageTabId, { url });
+  } else {
+    void chrome.tabs.create({ url });
+  }
+  window.close();
+}
+
+// Empty the injector's gathered collection so it restarts from the current
+// scroll position, then refresh the count.
+async function resetQueue(): Promise<void> {
+  if (pageTabId === undefined) return;
+  try {
+    await chrome.tabs.sendMessage(pageTabId, { action: 'XCLIPPER_HARVEST_RESET' });
+  } catch {
+    // injector gone (page needs a reload) — refreshIdleUi will surface that
+  }
+  await refreshIdleUi();
+}
+
+export async function initBatchUi(): Promise<void> {
+  btnBatch.addEventListener('click', () => {
+    if (openTarget) return void openSourcePage(openTarget);
+    void (appendable ? appendExport() : startExport());
+  });
+  btnBatchCancel.addEventListener('click', () => void (isFastActive() ? cancelFast() : control('cancel')));
+  // Fast toggle armed/disarmed, or a fast run finished → re-evaluate the button
+  // and the Selection tab (which Fast disables).
+  window.addEventListener('xclipper-fast-changed', () => {
+    applyFastTabGating();
+    void refreshIdleUi();
+  });
+  btnBatchPause.addEventListener('click', () => {
+    const resuming = lastJob?.status === 'paused';
+    void control(resuming ? 'resume' : 'pause');
+    if (resuming) startJobPolling();
+  });
+  btnBatchReset.addEventListener('click', () => {
+    chrome.storage.local.remove(
+      [EXPORTED_LEDGER_KEY, INCOMPLETE_LEDGER_KEY, RESUME_CURSOR_KEY, DATE_CURSOR_KEY],
+      () => void refreshIdleUi()
+    );
+  });
+  btnBatchResetQueue.addEventListener('click', () => void resetQueue());
+  (Object.keys(TAB_BUTTONS) as BatchTab[]).forEach((tab) => {
+    TAB_BUTTONS[tab].addEventListener('click', () => setActiveTab(tab));
+  });
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  pageIsX = !!tab?.id && hostMatches(tab.url || '', 'x.com', 'www.x.com');
+  if (pageIsX) pageTabId = tab!.id;
+  pageUrl = tab?.url;
+
+  const job = await fetchJob();
+  const activeJob =
+    job && (job.status === 'running' || job.status === 'paused') ? job : undefined;
+  if (activeJob) {
+    setExportMode(false, false); // reopening mid-job lands on Batch, not Single
+    render(activeJob); // sets jobIsActive, so tab setup below keeps Start disabled
+    startJobPolling();
+  } else if (await resumeFastIfActive()) {
+    // A Fast Batch run is still going in the background — land on Batch so its
+    // progress (with whose export) is visible; fast-batch-ui owns the polling.
+    setExportMode(false, false);
+  }
+
+  // Land on the running job's origin tab (so its progress is visible), else the
+  // tab matching the current page. The injector reports the source; if it can't
+  // (page not reloaded after an extension update), fall back to the URL so we
+  // still focus e.g. Bookmarks. Selection is the last resort (any x.com page).
+  const { source } = await harvest();
+  setActiveTab(activeJob?.origin ?? source ?? sourceFromUrl(tab?.url) ?? (pageIsX ? 'selection' : 'bookmarks'));
+  applyFastTabGating(); // reflect Fast state if it was restored armed
+}
+
+// Best-effort page type from the URL, for initial tab focus when the injector
+// hasn't reported a source yet (e.g. right after an extension reload). Shares
+// the injector's route table so the two can't drift.
+function pageFromUrl(url: string | undefined): XPage | null {
+  if (!url) return null;
+  try {
+    return pageSourceOfPath(new URL(url).pathname);
+  } catch {
+    return null;
+  }
+}
+
+function sourceFromUrl(url: string | undefined): BatchTab | null {
+  return pageFromUrl(url)?.source ?? null;
+}
+
+// Profile handle straight from the URL — Fast doesn't need the injector, so this
+// works even when the page wasn't reloaded after an extension update.
+function handleFromUrl(url: string | undefined): string | undefined {
+  const page = pageFromUrl(url);
+  return page?.source === 'profile' ? page.handle : undefined;
+}

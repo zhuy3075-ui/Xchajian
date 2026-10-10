@@ -1,0 +1,97 @@
+.xcl-lens-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  gap: 4px;
+  flex: none;            /* 不被头部那一行压缩,宁可让名字省略 */
+  margin-left: 6px;
+  font-size: 12px;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: default;
+}
+.xcl-lens-badge > * { flex: none; white-space: nowrap; }
+.xcl-lens-line { margin: 1px 0 3px; }
+.xcl-lens-line .xcl-lens-badge { margin-left: 0; }
+.xcl-lens-main {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(29, 155, 240, 0.12);
+  color: rgb(29, 155, 240);
+  font-weight: 700;
+}
+.xcl-lens-main.t0 { background: rgba(113, 118, 123, 0.16); color: rgb(113, 118, 123); }
+.xcl-lens-main.t1 { background: rgba(29, 155, 240, 0.13);  color: rgb(29, 155, 240); }
+.xcl-lens-main.t2 { background: rgba(0, 186, 124, 0.15);   color: rgb(0, 160, 108); }
+.xcl-lens-main.t3 { background: rgba(255, 159, 10, 0.18);  color: rgb(214, 126, 0); }
+.xcl-lens-main.t4 {
+  background: linear-gradient(135deg, rgba(249, 24, 128, 0.18), rgba(255, 159, 10, 0.18));
+  color: rgb(226, 22, 116);
+}
+.xcl-lens-ratio {
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(113, 118, 123, 0.35);
+  color: rgb(113, 118, 123);
+  font-variant-numeric: tabular-nums;
+}
+.xcl-lens-tag {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(113, 118, 123, 0.18);
+  color: rgb(113, 118, 123);
+}
+.xcl-lens-tag.hi   { background: rgba(0, 186, 124, 0.15);  color: rgb(0, 150, 100); }
+.xcl-lens-tag.warn { background: rgba(249, 24, 128, 0.12); color: rgb(220, 30, 110); }
+.xcl-lens-tag.rel  { background: rgba(120, 86, 255, 0.15); color: rgb(120, 86, 255); }
+
+/* 关注/粉丝列表里被淡化的账号:鼠标移上去恢复 */
+[data-testid="UserCell"].xcl-lens-dim { opacity: 0.6; transition: opacity 0.15s; }
+[data-testid="UserCell"].xcl-lens-dim:hover { opacity: 1; }
+
+/* 悬停详情卡 */
+#xcl-lens-tip {
+  position: fixed;
+  z-index: 2147483647;
+  display: none;
+  min-width: 190px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font: 13px/1.5 -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  pointer-events: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  background: #fff;
+  color: #0f1419;
+  border: 1px solid rgba(113, 118, 123, 0.3);
+}
+#xcl-lens-tip[data-theme="dark"] { background: #16181c; color: #e7e9ea; border-color: rgba(113, 118, 123, 0.5); }
+#xcl-lens-tip .xcl-lens-tip-h { font-weight: 700; margin-bottom: 4px; }
+#xcl-lens-tip .xcl-lens-tip-r { display: flex; justify-content: space-between; gap: 16px; }
+#xcl-lens-tip .xcl-lens-tip-r span { color: rgb(113, 118, 123); }
+#xcl-lens-tip .xcl-lens-tip-r b { font-weight: 600; text-align: right; }
+#xcl-lens-tip .dim { color: rgb(113, 118, 123); font-weight: 400; }
+#xcl-lens-tip .up { color: rgb(0, 160, 108); }
+#xcl-lens-tip .down { color: rgb(226, 22, 116); }
+
+#xcl-lens-hud {
+  position: fixed; left: 8px; bottom: 8px; z-index: 99999;
+  padding: 3px 8px; font: 12px/1.4 sans-serif; color: #fff;
+  background: rgba(0, 0, 0, 0.65); border-radius: 6px; pointer-events: none;
+}
+
+.xcl-lens-badge:focus-visible { outline: 2px solid #1673c4; outline-offset: 3px; }
+.xcl-lens-dim { opacity: .6; }
+[data-testid="UserCell"].xcl-lens-dim:focus-within { opacity: 1; }
+
+/* Fixed opaque badge colors maintain contrast over both X themes. */
+.xcl-lens-main, .xcl-lens-main.t1 { background:#e8f0ff; color:#2053ac; }
+.xcl-lens-main.t0, .xcl-lens-tag { background:#edf0f4; color:#4e5b6d; }
+.xcl-lens-main.t2, .xcl-lens-tag.hi { background:#e2f4ec; color:#126442; }
+.xcl-lens-main.t3 { background:#fff0d5; color:#805100; }
+.xcl-lens-main.t4, .xcl-lens-tag.warn { background:#fce5ee; color:#a12153; }
+.xcl-lens-tag.rel { background:#ede8ff; color:#6140b4; }
+.xcl-lens-ratio { color:inherit; }
+#xcl-lens-tip { max-width:calc(100vw - 16px); }
+#xcl-lens-tip .xcl-lens-tip-r span, #xcl-lens-tip .dim { color:#526176; }
+#xcl-lens-tip[data-theme="dark"] .xcl-lens-tip-r span, #xcl-lens-tip[data-theme="dark"] .dim { color:#a9b6c7; }

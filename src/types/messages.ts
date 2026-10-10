@@ -1,0 +1,316 @@
+export interface AuthorInfo {
+  name: string;
+  handle: string;
+}
+
+export interface TweetMetadata {
+  replies?: number;
+  reposts?: number;
+  likes?: number;
+  bookmarks?: number;
+  views?: number;
+}
+
+export interface ExtractedContent {
+  type: 'tweet' | 'thread' | 'article';
+  author: AuthorInfo;
+  title?: string;
+  // Derived from `body` via renderMarkdown(). Kept on the wire so popup,
+  // background, filename, and download consumers keep working unchanged.
+  markdown: string;
+  sourceUrl: string;
+  date: string;
+  tweetId: string;
+  metadata?: TweetMetadata;
+  // Optional during the migration window — older producers may not set it.
+  // New extractor always populates it.
+  body?: import('../ast/types').Document;
+}
+
+export interface ExtractRequest {
+  action: 'EXTRACT';
+  includeMetadata?: boolean;
+}
+
+export interface DownloadRequest {
+  action: 'DOWNLOAD_MD';
+  content: string;
+  filename: string;
+  images?: { url: string; filename: string }[];
+  // Single export only: pack `content` and `images` into one .zip instead of
+  // writing the file and downloading each media item beside it. The media
+  // bytes are fetched in the background so they can go into the archive.
+  zip?: boolean;
+  // MIME type for the data: URL. Defaults to text/markdown. Set by the
+  // alternate-format exports (HTML/JSON/TXT/CSV) so the saved file carries the
+  // right type; Chrome still names the file from `filename`'s extension.
+  mime?: string;
+}
+
+// Single export, local-media saving only: ask the background to resolve this
+// post's MP4 URLs through the captured X session, since the DOM only exposes
+// posters. Answered with an empty list whenever that isn't possible — see
+// resolve-video.ts.
+export interface ResolveVideoUrlsRequest {
+  action: 'RESOLVE_VIDEO_URLS';
+  tweetId: string;
+}
+
+export interface ResolveVideoUrlsResponse {
+  // [poster path, MP4 URL] pairs — a Map doesn't survive the message boundary.
+  urls: [string, string][];
+}
+
+export interface ExportPdfRequest {
+  action: 'EXPORT_PDF';
+}
+
+// Content → background: open the print-preview tab so Chrome's native print
+// engine can render and save the PDF. The browser handles selectable text,
+// clickable links, Unicode, and pagination — see ADR 0001 "Renderer
+// decisions".
+export interface PdfPrintRequest {
+  action: 'PDF_PRINT_REQUEST';
+  html: string;
+  filenameBase: string;
+}
+
+export interface PdfPrintResponse {
+  success: boolean;
+  error?: string;
+}
+
+export interface ExtractResponse {
+  success: boolean;
+  data?: ExtractedContent;
+  error?: string;
+}
+
+// Background → content: run an in-place extraction on the current tab, used by
+// the inline button / context menu when the target tweet is already the open
+// permalink. `subAction` selects the flow; `pdf` routes to the PDF pipeline.
+export interface AutoExtractRequest {
+  action: 'XCLIPPER_AUTOEXTRACT';
+  subAction:
+    | 'download'
+    | 'copy'
+    | 'obsidian'
+    | 'pdf'
+    | 'copy-txt'
+    | 'txt'
+    | 'html'
+    | 'json'
+    | 'csv';
+  single?: boolean;
+}
+
+// Extension page → background: start a batch export job over the given status
+// permalinks (ADR 0002, Phase A). The background owns the queue, the hidden
+// worker tab, throttle/timeout policy, and the folder sink.
+export interface BatchStartRequest {
+  action: 'BATCH_START';
+  urls: string[];
+  // Which surface launched the job — the popup scopes progress display to
+  // the matching tab.
+  origin?: 'bookmarks' | 'profile' | 'selection' | 'likes' | 'timeline';
+  // Profile owner's handle when origin === 'profile'.
+  handle?: string;
+  // File format + grouping for the job (defaults: 'md' / 'separate'). PDF
+  // can't batch, so it's not an option here.
+  format?: 'md' | 'txt' | 'html' | 'json' | 'csv';
+  output?: 'separate' | 'both' | 'combined';
+}
+
+// Extension page → background: add newly-loaded permalinks to the running
+// job's queue (the user scrolled in more posts on the same source).
+export interface BatchAppendRequest {
+  action: 'BATCH_APPEND';
+  urls: string[];
+}
+
+export interface BatchStartResponse {
+  success: boolean;
+  // Items queued after normalization + dedupe + cap.
+  total?: number;
+  error?: string;
+}
+
+// Extension page → background: control a running batch job.
+export interface BatchControlRequest {
+  action: 'BATCH_CONTROL';
+  control: 'cancel' | 'pause' | 'resume';
+}
+
+// Extension page → background: snapshot of the current batch job, polled by
+// the popup progress UI (the popup may close and reopen mid-job, so progress
+// must be queryable rather than pushed).
+export interface BatchStatusRequest {
+  action: 'BATCH_STATUS';
+}
+
+export interface BatchStatusResponse {
+  job?: {
+    id: string;
+    status: 'running' | 'paused' | 'done' | 'cancelled';
+    origin?: 'bookmarks' | 'profile' | 'selection' | 'likes' | 'timeline';
+    // Set when origin === 'profile' — the popup only offers "add to queue"
+    // on the same profile.
+    handle?: string;
+    total: number;
+    completed: number;
+    failed: number;
+    folder: string;
+    // Status ids already in the queue (processed or pending), so the popup
+    // can exclude them from the "new items to add" count without re-adding.
+    queuedIds: string[];
+    // Why the job auto-paused (login/rate-limit wall, or a run of failures), so
+    // the popup can explain the stop instead of just showing "Paused".
+    pauseReason?: string;
+  };
+}
+
+// Popup → injector content script: return the status permalinks harvested
+// from the current page's timeline so far (timelines are virtualized, so the
+// injector accumulates URLs as cells scroll through). `source` says what
+// kind of page the injector recognizes — null means batch export doesn't
+// apply here.
+export interface HarvestRequest {
+  action: 'XCLIPPER_HARVEST';
+}
+
+export interface HarvestResponse {
+  source: 'bookmarks' | 'profile' | 'likes' | 'timeline' | null;
+  // Profile owner's handle when source is 'profile'.
+  handle?: string;
+  urls: string[];
+}
+
+// Popup → injector: empty the gathered collection so it restarts from the
+// current scroll position ("Reset queue"). Re-seeds from the viewport.
+export interface HarvestResetRequest {
+  action: 'XCLIPPER_HARVEST_RESET';
+}
+export interface HarvestResetResponse {
+  count: number;
+}
+
+// Popup → injector content script: enter/exit tweet selection mode — the
+// injector overlays checkboxes on timeline cells and a floating export bar.
+export interface SelectionRequest {
+  action: 'XCLIPPER_SELECTION';
+  enable: boolean;
+}
+
+// Content (worker tab) → background: finished result for the batch item the
+// worker tab currently shows. `url` is the page the result came from, so the
+// orchestrator can drop late or duplicate reports from a previous navigation.
+export interface BatchItemResultMessage {
+  action: 'BATCH_ITEM_RESULT';
+  url: string;
+  success: boolean;
+  markdown?: string;
+  filename?: string;
+  images?: { url: string; filename: string }[];
+  // The item's AST, carried for the per-job JSON sink (ADR 0002 #11).
+  doc?: import('../ast/types').Document;
+  error?: string;
+  // Set when the worker landed on a login or rate-limit wall instead of the
+  // tweet (ADR 0002 #7). A session-level stop, not a per-item failure: the
+  // orchestrator pauses the whole job with this reason rather than recording it
+  // and hammering on. Human-readable; surfaced in the popup's paused state.
+  interstitial?: string;
+  // Diagnostic phase timings for perf tuning, logged by the background (not
+  // persisted or shown to users): waitForArticle vs. extract (thread-walk + AST).
+  timings?: { waitMs: number; extractMs: number };
+}
+
+// Injector (content) → background: report the tweet permalink under the cursor
+// on `contextmenu`, used as the fallback target when the menu item fires over
+// an area that isn't a status link. `null` clears the last-known url.
+export interface ContextUrlRequest {
+  action: 'XCLIPPER_CTX_URL';
+  url: string | null;
+}
+
+// ─── Fast Batch (ADR 0003) ──────────────────────────────────────────
+// Opt-in GraphQL bookmarks export, driven from the popup. Progress is polled
+// (like BATCH_STATUS) because the popup can close mid-run. Separate from the
+// worker-tab batch job model on purpose — Fast Batch has no per-item tab.
+export interface FastBatchStartRequest {
+  action: 'FAST_BATCH_START';
+  // Which paginated source to export (Selection isn't Fast-compatible).
+  source?: 'bookmarks' | 'profile' | 'likes';
+  // Profile owner's handle — used to skip reposts (export only their own posts).
+  handle?: string;
+  // Optional YYYY-MM-DD bounds on the tweet's date; out-of-range items are
+  // skipped (and never expanded), so the TweetDetail budget is spared.
+  fromDate?: string;
+  toDate?: string;
+  expandThreads?: boolean;
+  // Fast Batch fetch mode (#83): 'recent' starts from the top of the feed
+  // (newly-added items); 'resume' continues from the saved per-source cursor
+  // (backfill a large feed across sessions); 'dateRange' deep-scans from the top
+  // for posts tweeted within fromDate..toDate — it dedups against history but
+  // never touches the resume cursor, so it can't confuse a Resume backfill.
+  paginate?: 'recent' | 'resume' | 'dateRange';
+}
+export interface FastBatchStartResponse {
+  success: boolean;
+  error?: string;
+}
+export interface FastBatchCancelRequest {
+  action: 'FAST_BATCH_CANCEL';
+}
+export interface FastBatchStatusRequest {
+  action: 'FAST_BATCH_STATUS';
+}
+// Readiness for the step lights: are the needed request templates captured?
+export interface FastBatchReadyRequest {
+  action: 'FAST_BATCH_READY';
+  source?: 'bookmarks' | 'profile' | 'likes';
+}
+export interface FastBatchReadyResponse {
+  feed: boolean; // the source's feed template was observed (page visited)
+  tweetDetail: boolean; // a tweet was opened (expansion possible)
+}
+export interface FastBatchProgress {
+  status: 'idle' | 'running' | 'done' | 'cancelled' | 'error';
+  // Human-readable phase for the progress label (e.g. "Fetching bookmarks").
+  phase: string;
+  // Which source + (for profile) whose posts — so the popup can show who's
+  // running even after navigating elsewhere / reopening.
+  source?: 'bookmarks' | 'profile' | 'likes';
+  handle?: string;
+  done: number;
+  total: number;
+  exported: number;
+  skipped: number;
+  folder?: string;
+  // Stopped early because X throttled TweetDetail — some items kept as stubs.
+  rateLimited?: boolean;
+  // Could not start: no TweetDetail request observed yet (open a tweet once).
+  needTweetDetail?: boolean;
+  error?: string;
+}
+export interface FastBatchStatusResponse {
+  progress: FastBatchProgress;
+}
+
+export type MessageRequest =
+  | ExtractRequest
+  | DownloadRequest
+  | ExportPdfRequest
+  | PdfPrintRequest
+  | AutoExtractRequest
+  | ContextUrlRequest
+  | BatchStartRequest
+  | BatchControlRequest
+  | BatchStatusRequest
+  | HarvestRequest
+  | HarvestResetRequest
+  | SelectionRequest
+  | BatchItemResultMessage
+  | FastBatchStartRequest
+  | FastBatchCancelRequest
+  | FastBatchStatusRequest
+  | FastBatchReadyRequest;

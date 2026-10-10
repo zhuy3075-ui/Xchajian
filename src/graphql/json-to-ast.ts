@@ -1,0 +1,886 @@
+// Fast Batch (ADR 0003): map X's internal GraphQL tweet JSON → the Content AST.
+//
+// This is a sibling to src/content/dom-to-ast: it produces the SAME `Document`
+// the renderers consume, so every renderer, postProcess, format, and sink works
+// unchanged. It depends only on the JSON shape — no DOM, no Chrome APIs — so it
+// is pure and unit-testable.
+//
+// ⚠️ The field paths below are MODELED ON X's documented GraphQL schema
+// (`tweet_results.result.legacy` + siblings) and validated only against the
+// hand-written fixtures in tests/. They MUST be re-checked against a REAL
+// captured response (needs a logged-in session) before the fetch layer is
+// trusted — see ADR 0003 "Build order within Phase 1". Reading is deliberately
+// defensive (optional chaining, both old/new field locations) for that reason.
+
+import type {
+  ArticleNode,
+  AuthorInfo,
+  Block,
+  BlockquoteNode,
+  Document,
+  EngagementCounts,
+  HeadingNode,
+  InlineNode,
+  LinkCardNode,
+  ListItemNode,
+  ListNode,
+  MediaItem,
+  PollNode,
+  TableNode,
+  TableRowNode,
+  TweetNode,
+} from '../ast/types';
+
+// ─── Raw JSON shapes (the subset we read) ───────────────────────────
+
+interface RawUser {
+  // Newer schema moved name/screen_name to `core`; older keeps them in `legacy`.
+  core?: { name?: string; screen_name?: string };
+  legacy?: { name?: string; screen_name?: string; verified?: boolean; profile_image_url_https?: string };
+  avatar?: { image_url?: string };
+  is_blue_verified?: boolean;
+}
+
+interface RawIndexed {
+  indices?: [number, number];
+}
+interface RawUrlEntity extends RawIndexed {
+  url?: string;
+  expanded_url?: string;
+  display_url?: string;
+}
+interface RawMentionEntity extends RawIndexed {
+  screen_name?: string;
+}
+interface RawTagEntity extends RawIndexed {
+  text?: string;
+}
+interface RawEntities {
+  urls?: RawUrlEntity[];
+  user_mentions?: RawMentionEntity[];
+  hashtags?: RawTagEntity[];
+  symbols?: RawTagEntity[];
+  media?: (RawIndexed & { url?: string })[];
+}
+
+interface RawVideoVariant {
+  bitrate?: number;
+  bit_rate?: number;
+  content_type?: string;
+  url?: string;
+}
+
+interface RawMedia {
+  type?: string; // 'photo' | 'video' | 'animated_gif'
+  media_url_https?: string;
+  ext_alt_text?: string | null;
+  video_info?: { variants?: RawVideoVariant[] };
+}
+
+interface RawBinding {
+  key?: string;
+  value?: { type?: string; string_value?: string; image_value?: { url?: string } };
+}
+interface RawCard {
+  legacy?: { name?: string; binding_values?: RawBinding[] };
+}
+
+interface RawLegacy {
+  id_str?: string;
+  created_at?: string;
+  full_text?: string;
+  entities?: RawEntities;
+  extended_entities?: { media?: RawMedia[] };
+  favorite_count?: number;
+  retweet_count?: number;
+  reply_count?: number;
+  quote_count?: number;
+  bookmark_count?: number;
+  // [start, end) codepoint range of full_text that X actually displays: it
+  // excludes a reply's leading @mentions and (usually) a trailing media/card
+  // t.co. Used to keep the GraphQL path showing what the page shows (#126).
+  display_text_range?: number[];
+}
+
+interface RawTweet {
+  rest_id?: string;
+  core?: { user_results?: { result?: RawUser } };
+  legacy?: RawLegacy;
+  // Long-form (>280) tweets: `text` is the FULL untruncated body and
+  // `entity_set` holds entities whose indices align with that full text.
+  // legacy.full_text/entities are the truncated form — never mix the two.
+  note_tweet?: { note_tweet_results?: { result?: { text?: string; entity_set?: RawEntities } } };
+  quoted_status_result?: { result?: RawResult };
+  card?: RawCard;
+  views?: { count?: string };
+  // X long-form Article. The bookmarks/timeline response carries only title +
+  // preview_text + cover (no full body), so we map a labelled stub here; the
+  // full body needs a separate article-content fetch (ADR 0003 Phase 3).
+  article?: { article_results?: { result?: RawArticle } };
+}
+
+interface RawArticle {
+  rest_id?: string;
+  title?: string;
+  preview_text?: string;
+  cover_media?: { media_info?: { original_img_url?: string } };
+  // TweetDetail carries the full body as a Draft.js content_state; the
+  // bookmarks/timeline response omits it (→ preview stub). media_entities
+  // resolves an atomic block's MEDIA entity to an image URL.
+  content_state?: RawContentState;
+  media_entities?: RawMediaEntity[];
+}
+
+// ─── Draft.js content_state (X Article full body) ───────────────────
+interface RawDraftRange {
+  offset?: number;
+  length?: number;
+}
+interface RawStyleRange extends RawDraftRange {
+  style?: string; // 'Bold' | 'Italic' (others ignored)
+}
+interface RawEntityRange extends RawDraftRange {
+  key?: number | string; // indexes entityMap by stringified key
+}
+interface RawDraftBlock {
+  type?: string; // unstyled | header-one|two | unordered/ordered-list-item | atomic
+  text?: string;
+  inlineStyleRanges?: RawStyleRange[];
+  entityRanges?: RawEntityRange[];
+}
+interface RawEntityValue {
+  type?: string; // 'LINK' | 'MEDIA' | 'DIVIDER' | 'MARKDOWN' | 'TWEET'
+  data?: { url?: string; mediaItems?: { mediaId?: string }[]; markdown?: string; tweetId?: string };
+}
+interface RawContentState {
+  blocks?: RawDraftBlock[];
+  entityMap?: { key?: number | string; value?: RawEntityValue }[];
+}
+interface RawMediaEntity {
+  media_id?: string;
+  media_info?: {
+    original_img_url?: string;
+    preview_image?: { original_img_url?: string };
+    variants?: RawVideoVariant[];
+  };
+}
+
+// A timeline entry's tweet may be wrapped (e.g. TweetWithVisibilityResults).
+interface RawResult extends RawTweet {
+  __typename?: string;
+  tweet?: RawTweet;
+}
+
+// ─── Entry points ───────────────────────────────────────────────────
+
+// Tweets embedded in an X Article body, by tweet id — fetched separately by the
+// caller (see articleEmbeddedTweetIds) because the article payload carries only
+// the ids. Absent ids degrade to a link rather than disappearing (issue #123).
+export type EmbeddedTweets = ReadonlyMap<string, TweetNode>;
+
+// The ids of every post embedded in this tweet's Article body, in document
+// order and deduped. Empty for a non-article, or an article whose body wasn't
+// sent (the bookmarks/timeline stub).
+export function articleEmbeddedTweetIds(raw: unknown): string[] {
+  const cs = unwrap(raw).article?.article_results?.result?.content_state;
+  const entities = new Map<string, RawEntityValue>();
+  for (const e of cs?.entityMap ?? []) if (e.key != null && e.value) entities.set(String(e.key), e.value);
+
+  const ids = new Set<string>();
+  for (const b of cs?.blocks ?? []) {
+    const key = (b.entityRanges ?? [])[0]?.key;
+    if (key == null) continue;
+    const ent = entities.get(String(key));
+    if (ent?.type === 'TWEET' && ent.data?.tweetId) ids.add(ent.data.tweetId);
+  }
+  return [...ids];
+}
+
+export function jsonToAst(raw: unknown, sourceUrl?: string, embeds?: EmbeddedTweets): Document {
+  const t = unwrap(raw);
+  const article = t.article?.article_results?.result;
+  if (article) return articleDocument(t, article, sourceUrl, embeds);
+
+  const tweet = jsonToTweetNode(raw);
+  return {
+    version: 1,
+    metadata: {
+      type: 'tweet',
+      sourceUrl: sourceUrl ?? `https://x.com/${tweet.author.handle}/status/${tweet.tweetId}`,
+      tweetId: tweet.tweetId,
+      author: tweet.author,
+      date: tweet.date,
+      ...(tweet.engagement ? { engagement: tweet.engagement } : {}),
+    },
+    body: tweet,
+  };
+}
+
+// X long-form Article. TweetDetail carries the full body as a Draft.js
+// content_state, which we map to article blocks (the same shape the DOM
+// extractor produces). The bookmarks/timeline response omits the body, so there
+// we fall back to a faithful *stub*: title + cover + preview + a "read on X"
+// link — honest, and far better than mislabeling it a tweet.
+function articleDocument(
+  t: RawTweet,
+  article: RawArticle,
+  sourceUrl?: string,
+  embeds?: EmbeddedTweets
+): Document {
+  const tweetId = t.rest_id ?? t.legacy?.id_str ?? '';
+  const url =
+    t.legacy?.entities?.urls?.[0]?.expanded_url?.replace(/^http:/, 'https:') ??
+    `https://x.com/i/article/${article.rest_id ?? tweetId}`;
+
+  const blocks = article.content_state?.blocks ?? [];
+  const children: Block[] = blocks.length
+    ? draftToBlocks(article.content_state ?? {}, article.media_entities ?? [], embeds)
+    : stubChildren(article, url);
+
+  const body: ArticleNode = { type: 'article', children };
+  const cover = article.cover_media?.media_info?.original_img_url;
+  if (cover) body.banner = { type: 'image', url: normalizeMediaUrl(cover) };
+
+  const eng = engagement(t);
+  return {
+    version: 1,
+    metadata: {
+      type: 'article',
+      sourceUrl: sourceUrl ?? url,
+      tweetId,
+      author: author(t),
+      date: toIso(t.legacy?.created_at),
+      title: (article.title ?? '').trim(),
+      ...(eng ? { engagement: eng } : {}),
+    },
+    body,
+  };
+}
+
+function stubChildren(article: RawArticle, url: string): Block[] {
+  const children: Block[] = [];
+  if (article.preview_text) {
+    children.push({ type: 'paragraph', children: [{ type: 'text', value: article.preview_text }] });
+  }
+  children.push({
+    type: 'paragraph',
+    children: [{ type: 'link', url, children: [{ type: 'text', value: 'Read the full article on X' }] }],
+  });
+  return children;
+}
+
+// ─── Draft.js content_state → article body blocks ───────────────────
+//
+// X stores the Article body as a Draft.js raw content state: a flat list of
+// blocks (paragraph/header/list-item/atomic), an entityMap (LINK + MEDIA), and
+// per-block style ranges. Offsets are UTF-16 code-unit based (Draft.js native),
+// so plain string slicing is correct here. We emit the SAME block shapes the DOM
+// article extractor produces, so the renderers are unchanged.
+
+function draftToBlocks(
+  cs: RawContentState,
+  mediaEntities: RawMediaEntity[],
+  embeds?: EmbeddedTweets
+): Block[] {
+  const entities = new Map<string, RawEntityValue>();
+  for (const e of cs.entityMap ?? []) if (e.key != null && e.value) entities.set(String(e.key), e.value);
+  const mediaById = new Map<string, RawMediaEntity>();
+  for (const m of mediaEntities) if (m.media_id) mediaById.set(m.media_id, m);
+
+  const out: Block[] = [];
+  // Draft.js represents a multi-line list/quote as consecutive same-type blocks;
+  // accumulate them into one node and flush when the run ends.
+  let list: ListNode | null = null;
+  let quote: BlockquoteNode | null = null;
+  const flush = (): void => {
+    if (list) out.push(list);
+    if (quote) out.push(quote);
+    list = null;
+    quote = null;
+  };
+
+  for (const b of cs.blocks ?? []) {
+    const type = b.type ?? 'unstyled';
+
+    if (type === 'unordered-list-item' || type === 'ordered-list-item') {
+      if (quote) flush();
+      const ordered = type === 'ordered-list-item';
+      const inline = draftInline(b, entities);
+      if (inline.length === 0) continue;
+      if (!list || list.ordered !== ordered) {
+        flush();
+        list = { type: 'list', ordered, children: [] };
+      }
+      const item: ListItemNode = { type: 'listItem', children: [{ type: 'paragraph', children: inline }] };
+      list.children.push(item);
+      continue;
+    }
+
+    if (type === 'blockquote') {
+      if (list) flush();
+      const inline = draftInline(b, entities);
+      if (inline.length === 0) continue;
+      if (!quote) quote = { type: 'blockquote', children: [] };
+      quote.children.push({ type: 'paragraph', children: inline });
+      continue;
+    }
+
+    flush();
+
+    if (type === 'atomic') {
+      const block = atomicBlock(b, entities, mediaById, embeds);
+      if (block) out.push(block);
+      continue;
+    }
+
+    if (type === 'header-one' || type === 'header-two' || type === 'header-three') {
+      const inline = unwrapWholeStrong(draftInline(b, entities));
+      if (inline.length === 0) continue;
+      const depth = type === 'header-one' ? 1 : type === 'header-two' ? 2 : 3;
+      out.push({ type: 'heading', depth, children: inline } satisfies HeadingNode);
+      continue;
+    }
+
+    // unstyled (and any unknown block) → paragraph; skip empty spacer blocks.
+    const inline = draftInline(b, entities);
+    if (inline.length) out.push({ type: 'paragraph', children: inline });
+  }
+  flush();
+  return out;
+}
+
+// X's article editor marks every heading's text Bold, so a heading maps to a
+// single strong spanning the whole line — `## **Getting started**`, where the
+// `##` already says it. Drop that wrapper; bold on *part* of a heading is the
+// author's own emphasis and stays. (The DOM extractor takes heading text
+// plain, so this is also what keeps the two paths in step.)
+function unwrapWholeStrong(nodes: InlineNode[]): InlineNode[] {
+  const only = nodes.length === 1 ? nodes[0] : undefined;
+  return only?.type === 'strong' ? only.children : nodes;
+}
+
+// X's GraphQL returns the canonical media URL (…/HMkRVmsaEAA3Dl5.jpg) while
+// the DOM extractor emits the sized variant it finds on the page. Same image;
+// normalize to the DOM's form so both acquisition paths render identical
+// markdown for the same post.
+function normalizeMediaUrl(url: string): string {
+  const m = url.match(/^(https:\/\/pbs\.twimg\.com\/media\/[^./?#]+)\.(jpg|jpeg|png|webp)$/i);
+  return m ? `${m[1]}?format=${m[2].toLowerCase()}&name=large` : url;
+}
+
+// An atomic block carries a single entity: a DIVIDER (→ horizontal rule),
+// MEDIA (→ image/video, resolved via media_entities by mediaId), MARKDOWN
+// (→ code block or table) or TWEET (→ embedded post, see embeddedTweetBlock).
+function atomicBlock(
+  b: RawDraftBlock,
+  entities: Map<string, RawEntityValue>,
+  mediaById: Map<string, RawMediaEntity>,
+  embeds?: EmbeddedTweets
+): Block | undefined {
+  const range = (b.entityRanges ?? [])[0];
+  if (!range || range.key == null) return undefined;
+  const ent = entities.get(String(range.key));
+  if (ent?.type === 'DIVIDER') return { type: 'thematicBreak' };
+  if (ent?.type === 'MARKDOWN') return markdownEntityBlock(ent.data?.markdown);
+  if (ent?.type === 'TWEET') return embeddedTweetBlock(ent.data?.tweetId, embeds);
+  if (ent?.type !== 'MEDIA') return undefined;
+  const mediaId = ent.data?.mediaItems?.[0]?.mediaId;
+  if (!mediaId) return undefined;
+  const info = mediaById.get(mediaId)?.media_info;
+  const posterUrl = info?.preview_image?.original_img_url;
+  const sourceUrl = bestVariant(info?.variants ?? []);
+  if (sourceUrl) {
+    return {
+      type: 'video',
+      sourceUrl,
+      ...(posterUrl ? { posterUrl: normalizeMediaUrl(posterUrl) } : {}),
+    };
+  }
+  const url = info?.original_img_url ?? posterUrl;
+  return url ? { type: 'image', url: normalizeMediaUrl(url) } : undefined;
+}
+
+// An embedded post. Unlike a MEDIA entity, a TWEET entity is only a `tweetId` —
+// the tweet itself appears NOWHERE in the article's TweetDetail payload, so it
+// has to be fetched separately (fast-batch does that and passes the results in
+// `embeds`). With the tweet in hand we emit the same TweetNode the DOM path
+// gets from `[data-testid="simpleTweet"]`; without it (not fetched, or the
+// fetch was rate-limited) we emit a link the reader can follow — a visible
+// pointer beats a silent hole in the article (issue #123).
+function embeddedTweetBlock(tweetId?: string, embeds?: EmbeddedTweets): Block | undefined {
+  if (!tweetId) return undefined;
+  const tweet = embeds?.get(tweetId);
+  if (tweet) return tweet;
+  const url = `https://x.com/i/status/${tweetId}`;
+  return {
+    type: 'blockquote',
+    children: [
+      {
+        type: 'paragraph',
+        children: [{ type: 'link', url, children: [{ type: 'text', value: 'Embedded post on X' }] }],
+      },
+    ],
+  };
+}
+
+// Code blocks and tables are the one part of an article X does NOT hand over
+// as structured Draft.js: the entity holds raw markdown source. Parse the two
+// shapes X emits so this path lands on the same AST as the DOM extractor —
+// otherwise every code block and table in a Fast Batch export is dropped.
+function markdownEntityBlock(markdown?: string): Block | undefined {
+  const src = (markdown ?? '').trim();
+  if (!src) return undefined;
+
+  const fence = src.match(/^```([^\n]*)\n([\s\S]*?)\n?```$/);
+  if (fence) {
+    const lang = fence[1].trim();
+    const value = fence[2].replace(/\s+$/, '');
+    return { type: 'code', value, ...(lang ? { lang } : {}) };
+  }
+
+  if (src.startsWith('|')) return markdownTable(src);
+  return undefined;
+}
+
+function markdownTable(src: string): TableNode | undefined {
+  const rows = src
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map(splitTableRow)
+    .filter((r): r is string[] => r !== undefined);
+  if (rows.length === 0) return undefined;
+
+  const isDelimiter = (cells: string[]): boolean =>
+    cells.length > 0 && cells.every((c) => /^:?-{1,}:?$/.test(c));
+  const toRow = (cells: string[]): TableRowNode => ({
+    type: 'tableRow',
+    children: cells.map((c) => ({ type: 'tableCell', children: parseInlineMarkdown(c) })),
+  });
+
+  // `| a | b |` / `| --- | --- |` / data rows. The delimiter row is what makes
+  // the row above it a header; without one every row is data.
+  const header = isDelimiter(rows[1] ?? []) ? toRow(rows[0]) : undefined;
+  const body = rows.filter((cells, i) => !isDelimiter(cells) && !(header && i === 0));
+  if (!header && body.length === 0) return undefined;
+  return { type: 'table', ...(header ? { header } : {}), children: body.map(toRow) };
+}
+
+function splitTableRow(line: string): string[] | undefined {
+  if (!line.startsWith('|')) return undefined;
+  const cells: string[] = [];
+  let cur = '';
+  for (let i = 1; i < line.length; i++) {
+    if (line[i] === '\\' && line[i + 1] === '|') {
+      cur += '|';
+      i++;
+    } else if (line[i] === '|') {
+      cells.push(cur.trim());
+      cur = '';
+    } else {
+      cur += line[i];
+    }
+  }
+  // Tolerate a row whose closing pipe is missing.
+  if (cur.trim()) cells.push(cur.trim());
+  return cells;
+}
+
+// Just enough inline markdown for what X puts in a table cell: bold, italic,
+// inline code and links. Anything else stays literal text.
+function parseInlineMarkdown(src: string): InlineNode[] {
+  const out: InlineNode[] = [];
+  let text = '';
+  const flush = (): void => {
+    if (text) out.push({ type: 'text', value: text });
+    text = '';
+  };
+  for (let i = 0; i < src.length; ) {
+    const rest = src.slice(i);
+    const code = rest.match(/^`([^`]+)`/);
+    const link = rest.match(/^\[([^\]]*)\]\(([^)\s]+)\)/);
+    const strong = rest.match(/^\*\*([\s\S]+?)\*\*/);
+    const em = rest.match(/^\*([^*]+)\*/);
+    const match = code || link || strong || em;
+    if (!match) {
+      text += src[i];
+      i++;
+      continue;
+    }
+    flush();
+    if (code) out.push({ type: 'inlineCode', value: code[1] });
+    else if (link) out.push({ type: 'link', url: link[2], children: parseInlineMarkdown(link[1]) });
+    else if (strong) out.push({ type: 'strong', children: parseInlineMarkdown(strong[1]) });
+    else out.push({ type: 'emphasis', children: parseInlineMarkdown(em![1]) });
+    i += match[0].length;
+  }
+  flush();
+  return out;
+}
+
+// Build inline nodes for one Draft block: walk character runs that share the
+// same Bold/Italic styling and LINK entity, then wrap each run (emphasis inside
+// strong inside link). Soft newlines within a block become break nodes.
+function draftInline(b: RawDraftBlock, entities: Map<string, RawEntityValue>): InlineNode[] {
+  const text = b.text ?? '';
+  const n = text.length;
+  if (n === 0) return [];
+
+  const bold = new Array<boolean>(n).fill(false);
+  const italic = new Array<boolean>(n).fill(false);
+  const link = new Array<string | null>(n).fill(null);
+
+  for (const s of b.inlineStyleRanges ?? []) {
+    const style = (s.style ?? '').toLowerCase();
+    if (style !== 'bold' && style !== 'italic') continue; // ignore other styles
+    const start = s.offset ?? 0;
+    const stop = Math.min(start + (s.length ?? 0), n);
+    for (let i = start; i < stop; i++) {
+      if (style === 'bold') bold[i] = true;
+      else italic[i] = true;
+    }
+  }
+  for (const r of b.entityRanges ?? []) {
+    if (r.key == null) continue;
+    const ent = entities.get(String(r.key));
+    if (ent?.type !== 'LINK' || !ent.data?.url) continue;
+    const start = r.offset ?? 0;
+    const stop = Math.min(start + (r.length ?? 0), n);
+    for (let i = start; i < stop; i++) link[i] = ent.data.url;
+  }
+
+  const out: InlineNode[] = [];
+  let i = 0;
+  while (i < n) {
+    const b0 = bold[i];
+    const it0 = italic[i];
+    const ln0 = link[i];
+    let j = i + 1;
+    while (j < n && bold[j] === b0 && italic[j] === it0 && link[j] === ln0) j++;
+    out.push(...wrapRun(text.slice(i, j), b0, it0, ln0));
+    i = j;
+  }
+  // Drop edge breaks/whitespace (Draft blocks often carry a leading "\n", e.g.
+  // headings) — matches the DOM article path's trimAroundBreaks/collapseEdges.
+  return trimEdges(out);
+}
+
+function wrapRun(seg: string, bold: boolean, italic: boolean, url: string | null): InlineNode[] {
+  const base: InlineNode[] = [];
+  const parts = seg.split('\n');
+  for (let k = 0; k < parts.length; k++) {
+    if (k > 0) base.push({ type: 'break' });
+    if (parts[k]) base.push({ type: 'text', value: parts[k] });
+  }
+  if (base.length === 0) return [];
+  let nodes = base;
+  if (italic) nodes = [{ type: 'emphasis', children: nodes }];
+  if (bold) nodes = [{ type: 'strong', children: nodes }];
+  if (url) nodes = [{ type: 'link', url, children: nodes }];
+  return nodes;
+}
+
+export function jsonToTweetNode(raw: unknown): TweetNode {
+  const t = unwrap(raw);
+  const legacy = t.legacy ?? {};
+  // Long-form tweets carry the full body + matching entities under note_tweet;
+  // fall back to the truncated legacy pair. The text and the entities used to
+  // splice it MUST come from the same source so indices line up.
+  const note = t.note_tweet?.note_tweet_results?.result;
+  // Resolved before the text so the inline builder can drop the t.co the card
+  // already represents — X hides it in the page, so rendering both duplicates.
+  const card = fromCard(t.card);
+  const cardUrl = card?.kind === 'link' ? card.linkCard.url : undefined;
+  const text =
+    note?.text !== undefined
+      ? buildInline(note.text, note.entity_set ?? {}, { cardUrl })
+      : buildInline(legacy.full_text ?? '', legacy.entities ?? {}, {
+          cardUrl,
+          displayStart: legacy.display_text_range?.[0],
+        });
+
+  const node: TweetNode = {
+    type: 'tweet',
+    author: author(t),
+    date: toIso(legacy.created_at),
+    tweetId: t.rest_id ?? legacy.id_str ?? '',
+    text,
+    media: media(legacy.extended_entities?.media ?? []),
+  };
+
+  const eng = engagement(t);
+  if (eng) node.engagement = eng;
+
+  if (card?.kind === 'poll') node.poll = card.poll;
+  if (card?.kind === 'link') node.linkCard = card.linkCard;
+
+  const quoted = t.quoted_status_result?.result;
+  if (quoted) node.quotedTweet = jsonToTweetNode(quoted);
+
+  return node;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────
+
+function unwrap(raw: unknown): RawResult {
+  const r = (raw ?? {}) as RawResult;
+  // TweetWithVisibilityResults (and similar) nest the real tweet under `tweet`.
+  return r.tweet ? { ...r.tweet } : r;
+}
+
+function author(t: RawTweet): AuthorInfo {
+  const u = t.core?.user_results?.result ?? {};
+  const name = u.core?.name ?? u.legacy?.name ?? '';
+  const handle = u.core?.screen_name ?? u.legacy?.screen_name ?? '';
+  const info: AuthorInfo = { name, handle };
+  const avatar = u.legacy?.profile_image_url_https ?? u.avatar?.image_url;
+  if (avatar) info.avatarUrl = avatar;
+  if (u.is_blue_verified || u.legacy?.verified) info.verified = true;
+  return info;
+}
+
+function toIso(created?: string): string {
+  if (!created) return '';
+  const d = new Date(created);
+  return Number.isNaN(d.getTime()) ? created : d.toISOString();
+}
+
+function engagement(t: RawTweet): EngagementCounts | undefined {
+  const l = t.legacy ?? {};
+  const out: EngagementCounts = {};
+  if (l.reply_count !== undefined) out.replies = l.reply_count;
+  // X's own UI — and so the aria-label the DOM extractor reads — shows reposts
+  // and quote posts as one number, while the payload splits them. Sum them so
+  // both acquisition paths report the count the site displays (#125).
+  if (l.retweet_count !== undefined) out.reposts = l.retweet_count + (l.quote_count ?? 0);
+  if (l.favorite_count !== undefined) out.likes = l.favorite_count;
+  if (l.bookmark_count !== undefined) out.bookmarks = l.bookmark_count;
+  const views = t.views?.count;
+  if (views !== undefined) out.views = Number(views);
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function media(items: RawMedia[]): MediaItem[] {
+  const out: MediaItem[] = [];
+  for (const m of items) {
+    const alt = m.ext_alt_text || undefined;
+    if (m.type === 'photo') {
+      if (m.media_url_https) {
+        out.push({ kind: 'image', url: normalizeMediaUrl(m.media_url_https), ...(alt ? { alt } : {}) });
+      }
+    } else if (m.type === 'video' || m.type === 'animated_gif') {
+      const src = bestVariant(m.video_info?.variants ?? []);
+      if (src) {
+        out.push({
+          kind: m.type === 'animated_gif' ? 'gif' : 'video',
+          url: src,
+          ...(m.media_url_https ? { posterUrl: normalizeMediaUrl(m.media_url_https) } : {}),
+          ...(alt ? { alt } : {}),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// X ships every video as a ladder of progressive MP4s with the frame size in
+// the URL path (…/vid/avc1/1280x720/…). Cap the pick at 720p: the top rung can
+// be 4K, and one 18-minute 4K article video measured 784MB — two orders of
+// magnitude past the images this setting was sized for, and long enough that
+// the download can outlive the service worker and strand the rest of the batch.
+const MAX_VIDEO_HEIGHT = 720;
+
+function variantHeight(url?: string): number {
+  return Number(/\/\d+x(\d+)\//.exec(url ?? '')?.[1] ?? 0);
+}
+
+// Highest-bitrate progressive MP4 within the cap (X also ships HLS .m3u8
+// variants with no bitrate, which a downloader can't save directly — prefer
+// the mp4s).
+function bestVariant(variants: RawVideoVariant[]): string | undefined {
+  const mp4 = variants.filter((v) => v.content_type === 'video/mp4' && v.url);
+  if (mp4.length === 0) return variants.find((v) => v.url)?.url;
+  const bitrate = (v: RawVideoVariant): number => v.bitrate ?? v.bit_rate ?? 0;
+  const withinCap = mp4.filter((v) => {
+    const h = variantHeight(v.url);
+    return h > 0 && h <= MAX_VIDEO_HEIGHT;
+  });
+  // Nothing inside the cap means either an all-oversized ladder or a URL shape
+  // we can't read. Fail small — the smallest file is a poor picture, the
+  // largest is a gigabyte nobody asked for.
+  if (withinCap.length === 0) return mp4.sort((a, b) => bitrate(a) - bitrate(b))[0].url;
+  return withinCap.sort((a, b) => bitrate(b) - bitrate(a))[0].url;
+}
+
+type CardResult =
+  | { kind: 'poll'; poll: PollNode }
+  | { kind: 'link'; linkCard: LinkCardNode }
+  | undefined;
+
+function fromCard(card?: RawCard): CardResult {
+  const name = card?.legacy?.name ?? '';
+  const get = (key: string): string | undefined => {
+    const b = card?.legacy?.binding_values?.find((v) => v.key === key)?.value;
+    return b?.string_value ?? b?.image_value?.url;
+  };
+  if (/poll\d/.test(name)) {
+    const choices: PollNode['choices'] = [];
+    const counts: number[] = [];
+    for (let i = 1; i <= 4; i++) {
+      const label = get(`choice${i}_label`);
+      if (label === undefined) break;
+      choices.push({ label });
+      counts.push(Number(get(`choice${i}_count`) ?? 0));
+    }
+    const total = counts.reduce((a, b) => a + b, 0);
+    if (total > 0) {
+      choices.forEach((c, i) => {
+        c.percent = Math.round((counts[i] / total) * 100);
+      });
+    }
+    return { kind: 'poll', poll: { type: 'poll', choices } };
+  }
+  if (/summary/.test(name)) {
+    const title = get('title');
+    if (!title) return undefined;
+    const link: LinkCardNode = { type: 'linkCard', url: get('card_url') ?? '', title };
+    const description = get('description');
+    if (description) link.description = description;
+    const image = get('thumbnail_image_large') ?? get('thumbnail_image') ?? get('photo_image_full_size_large');
+    // X sizes card thumbnails per layout (name=800x320_1); the DOM path
+    // normalizes to name=large, so do the same here (#126).
+    if (image) link.imageUrl = image.replace(/([?&]name=)\w+/, '$1large');
+    // X sends the bare host here (www.kaggle.com) while the page prints it
+    // without the prefix, which is what the DOM path records (#126).
+    const domain = (get('domain') ?? get('vanity_url'))?.replace(/^www\./, '');
+    if (domain) link.domain = domain;
+    return { kind: 'link', linkCard: link };
+  }
+  return undefined;
+}
+
+// ─── Inline text from full_text + entity indices ────────────────────
+//
+// Twitter entity `indices` are codepoint offsets over the tweet text, so we
+// splice over an Array.from() codepoint array (handles emoji surrogate pairs).
+// Each entity range becomes a node; gaps become text (newlines → break nodes);
+// the trailing media t.co link is dropped (media is carried structurally).
+
+interface Span {
+  start: number;
+  end: number;
+  node: InlineNode | null; // null = drop this range (media link)
+}
+
+interface InlineOptions {
+  // Skip the t.co the link card already renders — X hides it in the page, so
+  // keeping it would show the same destination twice (#126).
+  cardUrl?: string;
+  // display_text_range[0]: everything before it is a reply's leading @mentions,
+  // which X renders as reply context rather than as the tweet's text.
+  displayStart?: number;
+}
+
+function buildInline(text: string, entities: RawEntities, opts: InlineOptions = {}): InlineNode[] {
+  const cp = Array.from(text);
+  const spans: Span[] = [];
+  // card_url is the t.co in some payloads and the destination in others, so
+  // compare against both forms of the entity.
+  const isCardUrl = (u: RawUrlEntity): boolean =>
+    !!opts.cardUrl && (u.url === opts.cardUrl || u.expanded_url === opts.cardUrl);
+
+  for (const u of entities.urls ?? []) {
+    if (!u.indices) continue;
+    const url = u.expanded_url ?? u.url ?? '';
+    spans.push({
+      start: u.indices[0],
+      end: u.indices[1],
+      node: isCardUrl(u)
+        ? null
+        : { type: 'link', url, children: [{ type: 'text', value: u.display_url ?? url }] },
+    });
+  }
+  for (const m of entities.user_mentions ?? []) {
+    if (!m.indices || !m.screen_name) continue;
+    spans.push({
+      start: m.indices[0],
+      end: m.indices[1],
+      node: { type: 'entity', kind: 'mention', value: m.screen_name, url: `https://x.com/${m.screen_name}` },
+    });
+  }
+  for (const h of entities.hashtags ?? []) {
+    if (!h.indices || !h.text) continue;
+    spans.push({
+      start: h.indices[0],
+      end: h.indices[1],
+      node: { type: 'entity', kind: 'hashtag', value: h.text, url: `https://x.com/hashtag/${h.text}` },
+    });
+  }
+  for (const s of entities.symbols ?? []) {
+    if (!s.indices || !s.text) continue;
+    spans.push({
+      start: s.indices[0],
+      end: s.indices[1],
+      node: { type: 'entity', kind: 'cashtag', value: s.text, url: `https://x.com/search?q=%24${s.text}` },
+    });
+  }
+  for (const m of entities.media ?? []) {
+    if (!m.indices) continue;
+    spans.push({ start: m.indices[0], end: m.indices[1], node: null });
+  }
+
+  spans.sort((a, b) => a.start - b.start);
+
+  const out: InlineNode[] = [];
+  let cursor = opts.displayStart ?? 0;
+  const pushText = (from: number, to: number): void => {
+    if (to <= from) return;
+    pushTextValue(out, unescapeHtml(cp.slice(from, to).join('')));
+  };
+  for (const span of spans) {
+    if (span.start < cursor) continue; // overlapping entity, or before displayStart
+    pushText(cursor, span.start);
+    if (span.node) out.push(span.node);
+    cursor = span.end;
+  }
+  pushText(cursor, cp.length);
+
+  return trimEdges(out);
+}
+
+// Push a text run, splitting newlines into break nodes (matching the DOM walker).
+function pushTextValue(out: InlineNode[], value: string): void {
+  const parts = value.split('\n');
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0) out.push({ type: 'break' });
+    if (parts[i]) out.push({ type: 'text', value: parts[i] });
+  }
+}
+
+// Drop leading/trailing break nodes, then strip whitespace at the very start
+// and end (e.g. the space left where a trailing media link was removed) so the
+// rendered text doesn't carry stray edge whitespace — matching the DOM path.
+function trimEdges(nodes: InlineNode[]): InlineNode[] {
+  let start = 0;
+  let end = nodes.length;
+  while (start < end && nodes[start].type === 'break') start++;
+  while (end > start && nodes[end - 1].type === 'break') end--;
+  const out = nodes.slice(start, end);
+  const first = out[0];
+  if (first?.type === 'text') out[0] = { type: 'text', value: first.value.replace(/^\s+/, '') };
+  const last = out[out.length - 1];
+  if (last?.type === 'text') out[out.length - 1] = { type: 'text', value: last.value.replace(/\s+$/, '') };
+  return out.filter((n) => n.type !== 'text' || n.value !== '');
+}
+
+// X HTML-escapes &, <, > in tweet text; the DOM path reads textContent (already
+// decoded), so decode here to match. `&amp;` is decoded LAST so a literal
+// like `&amp;lt;` resolves to `&lt;`, not `<` (avoids double-unescaping).
+function unescapeHtml(s: string): string {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}

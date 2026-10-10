@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xchajian</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <div class="popup-container">
+    <button id="btn-settings" class="btn-settings-icon" type="button"
+      data-i18n-tooltip="nav_settings" data-tooltip="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    </button>
+    <header class="popup-header">
+      <h1 class="workspace-title">Xchajian</h1>
+      <p class="workspace-subtitle">内容采集、稿件分发与账号洞察</p>
+    </header>
+
+    <main class="popup-main" id="view-main">
+      <nav class="feature-nav" aria-label="功能导航">
+        <span aria-current="page">内容导出</span>
+        <button id="btn-dukou" type="button">稿件库 ↗</button>
+        <button id="btn-lens" type="button">粉丝透镜 ↗</button>
+      </nav>
+      <section class="dukou-entry" aria-label="稿件入库">
+        <button id="btn-dukou-capture" type="button">收藏当前 X 内容到稿件库</button>
+        <p id="dukou-entry-status" role="status" aria-live="polite"></p>
+      </section>
+      <div id="review-banner" class="review-banner hidden" role="region" aria-label="Review request">
+        <button id="review-close" class="review-close" type="button" aria-label="Dismiss"
+          data-i18n-aria-label="review_dismiss">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+        <p class="review-text" data-i18n="review_text">Enjoying XClipper? It's free and built with a lot of passion — a quick ★★★★★ review really helps it reach more people.</p>
+        <div class="review-actions">
+          <button id="review-rate" class="review-rate" type="button" data-i18n="review_rate">Rate on Chrome Web Store</button>
+          <button id="review-later" class="review-later" type="button" data-i18n="review_later">Maybe later</button>
+        </div>
+      </div>
+
+      <div class="export-tabs" role="tablist">
+        <button id="tab-mode-single" class="export-tab active" type="button" role="tab"
+          aria-selected="true" data-i18n="group_single">Single export</button>
+        <button id="tab-mode-batch" class="export-tab" type="button" role="tab"
+          aria-selected="false"><span data-i18n="group_batch">Batch export</span></button>
+      </div>
+
+
+      <div class="options">
+        <details id="export-settings" class="option-group" open>
+          <summary class="option-group-summary">
+            <span class="option-group-label" data-i18n="group_export">Export settings</span>
+            <svg class="option-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
+          <div class="batch-field save-local-field" id="save-local-field"
+            data-tooltip="Off: link to media on X. Images: save images next to the markdown file. Media: save videos as .mp4 too — these are much larger."
+            data-i18n-tooltip="opt_save_local_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span data-i18n="opt_save_local">Save locally (only with .md)</span>
+            </span>
+            <div class="segmented" role="radiogroup" aria-label="Save locally">
+              <input type="radio" name="save-local" id="save-local-off" value="off" class="seg-input" />
+              <label for="save-local-off" class="seg-label" data-i18n="opt_save_local_off">Off</label>
+              <input type="radio" name="save-local" id="save-local-images" value="images" class="seg-input" />
+              <label for="save-local-images" class="seg-label" data-i18n="opt_save_local_images">Images</label>
+              <input type="radio" name="save-local" id="save-local-media" value="media" class="seg-input" />
+              <label for="save-local-media" class="seg-label" data-i18n="opt_save_local_media">Media</label>
+            </div>
+          </div>
+          <label class="toggle-label" data-tooltip="Render likes, reposts, replies, bookmarks, and views as a row in the Markdown body" data-i18n-tooltip="opt_inline_stats_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <span data-i18n="opt_inline_stats">Show engagement stats inline</span>
+            </span>
+            <input type="checkbox" id="chk-inline-stats" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-label" data-tooltip="Add likes, reposts, views as YAML frontmatter" data-i18n-tooltip="opt_metadata_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              <span data-i18n="opt_metadata">Include metadata</span>
+            </span>
+            <input type="checkbox" id="chk-include-metadata" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-label" id="zip-toggle"
+            data-tooltip="Pack the export into a single .zip. In Batch, one download instead of thousands; in Single, one archive instead of a Markdown file plus a media folder."
+            data-i18n-tooltip="opt_zip_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="21 8 21 21 3 21 3 8" />
+                <rect x="1" y="3" width="22" height="5" />
+                <line x1="10" y1="12" x2="14" y2="12" />
+              </svg>
+              <span data-i18n="opt_zip">Zip files (one download)</span>
+            </span>
+            <input type="checkbox" id="chk-zip" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <div id="batch-format-controls" class="batch-format-controls hidden">
+          <label class="toggle-label" data-tooltip="When batch-exporting a profile, include reposts too. Off = the profile owner's own posts only." data-i18n-tooltip="opt_include_reposts_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="17 1 21 5 17 9" />
+                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                <polyline points="7 23 3 19 7 15" />
+                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </svg>
+              <span data-i18n="opt_include_reposts">Include reposts (profiles)</span>
+            </span>
+            <input type="checkbox" id="chk-include-reposts" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="batch-field">
+            <span class="batch-field-label" data-i18n="batch_format">Format</span>
+            <select id="batch-format" class="batch-select">
+              <option value="md">Markdown (.md)</option>
+              <option value="txt">Text (.txt)</option>
+              <option value="html">HTML (.html)</option>
+              <option value="json">JSON (.json)</option>
+              <option value="csv">CSV (.csv)</option>
+            </select>
+          </label>
+          <div class="batch-field">
+            <span class="batch-field-label" data-i18n="batch_output">Output</span>
+            <div class="segmented" role="radiogroup" aria-label="Output"
+              data-tooltip="Separate: one file per post. Both: per-post files plus one combined file. Combined: just one file."
+              data-i18n-tooltip="batch_output_hint">
+              <input type="radio" name="batch-output" id="out-separate" value="separate" class="seg-input" />
+              <label for="out-separate" class="seg-label" data-i18n="batch_out_separate">Separate</label>
+              <input type="radio" name="batch-output" id="out-both" value="both" class="seg-input" />
+              <label for="out-both" class="seg-label" data-i18n="batch_out_both">Both</label>
+              <input type="radio" name="batch-output" id="out-combined" value="combined" class="seg-input" />
+              <label for="out-combined" class="seg-label" data-i18n="batch_out_combined">Combined</label>
+            </div>
+          </div>
+        </div>
+        </details>
+      </div>
+
+      <div id="panel-single" class="export-panel">
+        <div class="export-picker">
+          <div class="format-grid" role="radiogroup" aria-label="Export format">
+            <button id="btn-fmt-html" class="btn-fmt" type="button" role="radio" aria-checked="false"
+              data-format="html" data-tooltip="Styled, self-contained HTML file." data-i18n-tooltip="btn_html_hint">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m18 16 4-4-4-4" />
+                <path d="m6 8-4 4 4 4" />
+                <path d="m14.5 4-5 16" />
+              </svg>
+              <span class="btn-label">.html</span>
+            </button>
+            <button id="btn-fmt-md" class="btn-fmt btn-fmt-md" type="button" role="radio" aria-checked="true"
+              data-format="md" data-tooltip="Markdown — the full formatted export." data-i18n-tooltip="btn_md_hint">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <path d="M6 15V9l3 3 3-3v6" />
+                <path d="M17 9v6" />
+                <path d="m14.5 12.5 2.5 2.5 2.5-2.5" />
+              </svg>
+              <span class="btn-label">.md</span>
+            </button>
+            <button id="btn-fmt-json" class="btn-fmt" type="button" role="radio" aria-checked="false"
+              data-format="json" data-tooltip="Raw structured document (AST) as JSON." data-i18n-tooltip="btn_json_hint">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1" />
+                <path d="M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1" />
+              </svg>
+              <span class="btn-label">.json</span>
+            </button>
+            <button id="btn-fmt-txt" class="btn-fmt" type="button" role="radio" aria-checked="false"
+              data-format="txt" data-tooltip="Plain text with markup stripped." data-i18n-tooltip="btn_txt_hint">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="8" y1="13" x2="16" y2="13" />
+                <line x1="8" y1="17" x2="16" y2="17" />
+              </svg>
+              <span class="btn-label">.txt</span>
+            </button>
+            <button id="btn-fmt-csv" class="btn-fmt" type="button" role="radio" aria-checked="false"
+              data-format="csv" data-tooltip="One metadata row using your selected frontmatter fields." data-i18n-tooltip="btn_csv_hint">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+                <line x1="9" y1="4" x2="9" y2="20" />
+                <line x1="15" y1="4" x2="15" y2="20" />
+              </svg>
+              <span class="btn-label">.csv</span>
+            </button>
+          </div>
+
+          <div class="export-actions">
+            <button id="btn-copy" class="btn-secondary btn-action" type="button">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              <span class="btn-label" data-i18n="btn_copy">Copy</span>
+            </button>
+            <button id="btn-download" class="btn-primary btn-action" type="button">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span class="btn-label" data-i18n="btn_download">Download</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button id="btn-pdf" class="btn-pdf btn-action" type="button"
+            data-tooltip="Generate a formatted PDF export with current settings, then choose where to save it."
+            data-i18n-tooltip="btn_pdf_hint">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <text x="7.5" y="18" font-size="6" font-weight="700" fill="currentColor" stroke="none">PDF</text>
+            </svg>
+            <span class="btn-label" data-i18n="btn_pdf">Export .pdf</span>
+          </button>
+
+          <button id="btn-obsidian" class="btn-obsidian btn-action" type="button"
+            data-tooltip="Configure vault, subfolder, and frontmatter fields in Settings. Use the 'Download .md' button for long threads or images."
+            data-i18n-tooltip="btn_obsidian_hint">
+            <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+              <path d="M19.355 18.538a68.967 68.959 0 0 0 1.858-2.954.81.81 0 0 0-.062-.9c-.516-.685-1.504-2.075-2.042-3.362-.553-1.321-.636-3.375-.64-4.377a1.707 1.707 0 0 0-.358-1.05l-3.198-4.064a3.744 3.744 0 0 1-.076.543c-.106.503-.307 1.004-.536 1.5-.134.29-.29.6-.446.914l-.31.626c-.516 1.068-.997 2.227-1.132 3.59-.124 1.26.046 2.73.815 4.481.128.011.257.025.386.044a6.363 6.363 0 0 1 3.326 1.505c.916.79 1.744 1.922 2.415 3.5zM8.199 22.569c.073.012.146.02.22.02.78.024 2.095.092 3.16.29.87.16 2.593.64 4.01 1.055 1.083.316 2.198-.548 2.355-1.664.114-.814.33-1.735.725-2.58l-.01.005c-.67-1.87-1.522-3.078-2.416-3.849a5.295 5.295 0 0 0-2.778-1.257c-1.54-.216-2.952.19-3.84.45.532 2.218.368 4.829-1.425 7.531zM5.533 9.938c-.023.1-.056.197-.098.29L2.82 16.059a1.602 1.602 0 0 0 .313 1.772l4.116 4.24c2.103-3.101 1.796-6.02.836-8.3-.728-1.73-1.832-3.081-2.55-3.831zM9.32 14.01c.615-.183 1.606-.465 2.745-.534-.683-1.725-.848-3.233-.716-4.577.154-1.552.7-2.847 1.235-3.95.113-.235.223-.454.328-.664.149-.297.288-.577.419-.86.217-.47.379-.885.46-1.27.08-.38.08-.72-.014-1.043-.095-.325-.297-.675-.68-1.06a1.6 1.6 0 0 0-1.475.36l-4.95 4.452a1.602 1.602 0 0 0-.513.952l-.427 2.83c.672.59 2.328 2.316 3.335 4.711.09.21.175.43.253.653z" />
+            </svg>
+            <span class="btn-label" data-i18n="btn_obsidian">Add to Obsidian</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="batch-section" class="batch-section export-panel hidden">
+        <div id="batch-tabs" class="batch-tabs" role="tablist">
+          <button id="tab-batch-bookmarks" class="batch-tab" type="button" role="tab"
+            aria-label="Bookmarks" data-i18n-aria-label="batch_tab_bookmarks"
+            data-tooltip="Bookmarks" data-i18n-tooltip="batch_tab_bookmarks">
+            <svg class="batch-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
+          <button id="tab-batch-profile" class="batch-tab" type="button" role="tab"
+            aria-label="Profile" data-i18n-aria-label="batch_tab_profile"
+            data-tooltip="Profile" data-i18n-tooltip="batch_tab_profile">
+            <svg class="batch-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
+          <button id="tab-batch-likes" class="batch-tab" type="button" role="tab"
+            aria-label="Likes" data-i18n-aria-label="batch_tab_likes"
+            data-tooltip="Likes" data-i18n-tooltip="batch_tab_likes">
+            <svg class="batch-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
+          <button id="tab-batch-timeline" class="batch-tab" type="button" role="tab"
+            aria-label="Timeline" data-i18n-aria-label="batch_tab_timeline"
+            data-tooltip="Timeline" data-i18n-tooltip="batch_tab_timeline">
+            <svg class="batch-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </button>
+          <button id="tab-batch-selection" class="batch-tab" type="button" role="tab"
+            aria-label="Selection" data-i18n-aria-label="batch_tab_selection"
+            data-tooltip="Selection" data-i18n-tooltip="batch_tab_selection">
+            <svg class="batch-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </button>
+        </div>
+        <div id="batch-mode-field" class="mode-field hidden">
+          <div id="batch-mode" class="batch-mode" role="group" aria-label="Batch engine"
+            data-i18n-aria-label="batch_mode">
+            <button type="button" id="mode-manual" class="mode-seg-btn active" data-mode="manual" data-i18n="mode_manual">Manual</button>
+            <button type="button" id="mode-auto" class="mode-seg-btn" data-mode="auto">
+              <span data-i18n="mode_auto">Auto</span><span class="beta-badge" data-i18n="beta">Beta</span>
+            </button>
+            <button type="button" id="mode-super" class="mode-seg-btn" data-mode="super">
+              <span data-i18n="mode_super">Super</span><span class="beta-badge" data-i18n="beta">Beta</span>
+            </button>
+          </div>
+          <div class="mode-caption-row">
+            <p id="batch-mode-caption" class="mode-field-caption"></p>
+            <span id="batch-mode-info" class="mode-info hidden" tabindex="0" role="img"
+              aria-label="About Auto & Super" data-i18n-aria-label="batch_mode_info_label"
+              data-tooltip="Auto and Super fetch through your logged-in X session — no API key, no password, nothing leaves your browser. Large runs can hit X's soft rate limit; it stops politely and leaves the rest pending — wait ~15 minutes, then re-run to continue where it left off."
+              data-i18n-tooltip="batch_mode_hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </span>
+          </div>
+        </div>
+        <p id="fast-locked-hint" class="fast-locked-hint hidden" data-i18n="fast_locked">
+          An export is running — cancel or let it finish to switch modes.
+        </p>
+        <p id="flood-hint" class="flood-hint hidden" data-i18n="flood_hint">
+          This can save thousands of separate files at once. Turn on “Zip files” or pick “Combined” output to get a single download instead.
+        </p>
+        <div id="fast-paginate" class="mode-field hidden">
+          <div class="fast-seg" role="group" aria-label="Fetch mode" data-i18n-aria-label="fast_paginate">
+            <button type="button" id="fast-paginate-recent" class="fast-seg-btn active" data-mode="recent" data-i18n="fast_paginate_recent">Recent</button>
+            <button type="button" id="fast-paginate-resume" class="fast-seg-btn" data-mode="resume" data-i18n="fast_paginate_resume">Resume</button>
+            <button type="button" id="fast-paginate-daterange" class="fast-seg-btn" data-mode="dateRange" data-i18n="fast_date_range">Date range</button>
+          </div>
+          <p id="fast-paginate-caption" class="mode-field-caption"></p>
+          <div id="fast-date-range" class="fast-date-range hidden">
+            <input type="date" id="fast-date-from" class="fast-date-input" aria-label="From date" data-i18n-aria-label="fast_date_from" />
+            <span class="fast-date-sep">→</span>
+            <input type="date" id="fast-date-to" class="fast-date-input" aria-label="To date" data-i18n-aria-label="fast_date_to" />
+            <button id="fast-date-clear" class="batch-ctl" type="button" data-i18n="fast_date_clear">Clear</button>
+          </div>
+        </div>
+        <button id="btn-batch" class="btn-batch btn-action" type="button"
+          data-tooltip="Export every bookmark loaded on this page as Markdown files into one folder. Scroll the bookmarks page to load more."
+          data-i18n-tooltip="btn_batch_hint">
+          <svg id="btn-batch-icon-bookmarks" class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+          <svg id="btn-batch-icon-profile" class="btn-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <svg id="btn-batch-icon-selection" class="btn-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 11 12 14 22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+          <svg id="btn-batch-icon-likes" class="btn-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          <svg id="btn-batch-icon-timeline" class="btn-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span class="btn-label" id="btn-batch-label" data-i18n="btn_batch">Export bookmarks</span>
+        </button>
+        <div id="fast-steps" class="fast-steps hidden" role="status">
+          <span class="fast-step" id="fast-step-page"><span class="fast-step-dot"></span><span class="fast-step-label" data-i18n="fast_step_page">Reload x.com</span></span>
+          <span class="fast-step" id="fast-step-tweet"><span class="fast-step-dot"></span><span class="fast-step-label" data-i18n="fast_step_tweet">Open one tweet</span></span>
+          <span class="fast-step" id="fast-step-fetch"><span class="fast-step-dot"></span><span class="fast-step-label" data-i18n="fast_step_fetch">Fetching ...</span></span>
+          <span class="fast-step" id="fast-step-expand"><span class="fast-step-dot"></span><span class="fast-step-label" data-i18n="fast_step_expand">Expanding ...</span></span>
+        </div>
+        <div id="batch-dedup-row" class="batch-dedup-row hidden">
+          <span id="batch-dedup-text"></span>
+          <span class="batch-ctl-group">
+            <button id="btn-batch-reset-queue" class="batch-ctl" type="button"
+              data-tooltip="Empty the gathered posts and restart collecting from where you've scrolled to — so you can begin at a specific post instead of the top."
+              data-i18n-tooltip="batch_reset_queue_hint" data-i18n="batch_reset_queue">Reset queue</button>
+            <button id="btn-batch-reset" class="batch-ctl" type="button"
+              data-tooltip="Forget which posts were already exported in past runs, so the next batch exports everything loaded again."
+              data-i18n-tooltip="batch_reset_hint" data-i18n="batch_reset">Reset history</button>
+          </span>
+        </div>
+        <div id="batch-progress" class="batch-progress hidden">
+          <div class="batch-progress-row">
+            <span class="batch-controls">
+              <button id="btn-batch-pause" class="batch-ctl batch-ctl-icon" type="button"
+                aria-label="Pause" data-i18n-aria-label="batch_pause">
+                <svg class="batch-ico batch-ico-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <rect x="6" y="5" width="4" height="14" rx="1" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" />
+                </svg>
+                <svg class="batch-ico batch-ico-play hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7 4.5v15l13-7.5z" />
+                </svg>
+              </button>
+              <button id="btn-batch-cancel" class="batch-ctl batch-ctl-icon" type="button"
+                aria-label="Stop" data-i18n-aria-label="batch_stop">
+                <svg class="batch-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <rect x="6" y="6" width="12" height="12" rx="1.5" />
+                </svg>
+              </button>
+            </span>
+            <div class="batch-bar">
+              <div id="batch-bar-fill" class="batch-bar-fill"></div>
+            </div>
+          </div>
+          <span id="batch-progress-text" class="batch-progress-text"></span>
+        </div>
+      </div>
+
+      <div id="status" class="status hidden"></div>
+    </main>
+
+    <main class="popup-main hidden" id="view-settings">
+      <div class="settings-topbar">
+        <button id="btn-back" class="nav-link nav-back" type="button">
+          <span class="nav-arrow">←</span>
+          <span data-i18n="nav_back">Back</span>
+        </button>
+        <span class="settings-help-wrap">
+          <button type="button" id="btn-settings-help" class="settings-help-icon"
+            aria-label="Hover over labels for more info" data-i18n-aria-label="settings_help"
+            aria-describedby="settings-help-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </button>
+          <div id="settings-help-hint" class="settings-help-hint" role="tooltip" data-i18n="settings_help">Hover over labels for more info</div>
+        </span>
+      </div>
+
+      <div class="options">
+        <details class="option-group" data-section-id="downloads">
+          <summary class="option-group-summary">
+            <span class="option-group-label" data-i18n="group_downloads">Downloads</span>
+            <svg class="option-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
+          <label class="field-label" data-tooltip="Save Markdown and images under this subfolder inside your Downloads folder. Leave blank to save directly in Downloads." data-i18n-tooltip="opt_download_folder_title">
+            <span class="field-text" data-i18n="opt_download_folder">Subfolder</span>
+            <input type="text" id="txt-download-folder" class="field-input" autocomplete="off" spellcheck="false" placeholder="e.g. xclipper" data-i18n-placeholder="opt_download_folder_placeholder" />
+          </label>
+          <label class="field-label field-label-stacked">
+            <span class="field-text">
+              <span data-i18n="opt_filename_template">Filename template</span>
+              <span class="field-info-wrap">
+                <button type="button" id="btn-filename-info" class="field-info" aria-expanded="false"
+                  aria-controls="filename-template-hint" aria-label="Show filename template placeholders"
+                  data-i18n-aria-label="opt_filename_template_info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                </button>
+                <div id="filename-template-hint" class="field-hint" role="tooltip">
+                  <div class="field-hint-title" data-i18n="opt_filename_template_hint_title">Placeholders</div>
+                  <ul class="field-hint-list">
+                    <li><code>{date}</code><span data-i18n="opt_filename_hint_date">publish date (YYYY-MM-DD)</span></li>
+                    <li><code>{datetime}</code><span data-i18n="opt_filename_hint_datetime">publish date + time</span></li>
+                    <li><code>{handle}</code><span data-i18n="opt_filename_hint_handle">author handle without @</span></li>
+                    <li><code>{author}</code><span data-i18n="opt_filename_hint_author">author display name</span></li>
+                    <li><code>{id}</code><span data-i18n="opt_filename_hint_id">tweet ID</span></li>
+                    <li><code>{slug}</code><span data-i18n="opt_filename_hint_slug">short text preview</span></li>
+                    <li><code>{type}</code><span data-i18n="opt_filename_hint_type">tweet / thread / article</span></li>
+                  </ul>
+                </div>
+              </span>
+            </span>
+            <span class="field-with-popover">
+              <input type="text" id="txt-filename-template" class="field-input" autocomplete="off" spellcheck="false" placeholder="{handle}-{id}.md" data-i18n-placeholder="opt_filename_template_placeholder" />
+              <div id="filename-template-autocomplete" class="placeholder-autocomplete" role="listbox" hidden></div>
+            </span>
+          </label>
+          <div class="field-preview">
+            <span class="field-preview-label" data-i18n="opt_filename_preview">Preview:</span>
+            <code id="filename-preview" class="field-preview-value"></code>
+          </div>
+        </details>
+
+        <details class="option-group" data-section-id="obsidian">
+          <summary class="option-group-summary">
+            <span class="option-group-label" data-i18n="group_obsidian">Obsidian</span>
+            <svg class="option-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
+          <label class="toggle-label toggle-obsidian" data-tooltip="Emit frontmatter optimized for Obsidian: wikilink author, tags, published/created dates" data-i18n-tooltip="opt_obsidian_friendly_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                <path d="M19.355 18.538a68.967 68.959 0 0 0 1.858-2.954.81.81 0 0 0-.062-.9c-.516-.685-1.504-2.075-2.042-3.362-.553-1.321-.636-3.375-.64-4.377a1.707 1.707 0 0 0-.358-1.05l-3.198-4.064a3.744 3.744 0 0 1-.076.543c-.106.503-.307 1.004-.536 1.5-.134.29-.29.6-.446.914l-.31.626c-.516 1.068-.997 2.227-1.132 3.59-.124 1.26.046 2.73.815 4.481.128.011.257.025.386.044a6.363 6.363 0 0 1 3.326 1.505c.916.79 1.744 1.922 2.415 3.5zM8.199 22.569c.073.012.146.02.22.02.78.024 2.095.092 3.16.29.87.16 2.593.64 4.01 1.055 1.083.316 2.198-.548 2.355-1.664.114-.814.33-1.735.725-2.58l-.01.005c-.67-1.87-1.522-3.078-2.416-3.849a5.295 5.295 0 0 0-2.778-1.257c-1.54-.216-2.952.19-3.84.45.532 2.218.368 4.829-1.425 7.531zM5.533 9.938c-.023.1-.056.197-.098.29L2.82 16.059a1.602 1.602 0 0 0 .313 1.772l4.116 4.24c2.103-3.101 1.796-6.02.836-8.3-.728-1.73-1.832-3.081-2.55-3.831zM9.32 14.01c.615-.183 1.606-.465 2.745-.534-.683-1.725-.848-3.233-.716-4.577.154-1.552.7-2.847 1.235-3.95.113-.235.223-.454.328-.664.149-.297.288-.577.419-.86.217-.47.379-.885.46-1.27.08-.38.08-.72-.014-1.043-.095-.325-.297-.675-.68-1.06a1.6 1.6 0 0 0-1.475.36l-4.95 4.452a1.602 1.602 0 0 0-.513.952l-.427 2.83c.672.59 2.328 2.316 3.335 4.711.09.21.175.43.253.653z" />
+              </svg>
+              <span data-i18n="opt_obsidian_friendly">Obsidian-friendly frontmatter</span>
+            </span>
+            <input type="checkbox" id="chk-obsidian-friendly" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="field-label field-label-stacked">
+            <span class="field-text" data-i18n="obsidian_destination_label">Material folder (full path)</span>
+            <input type="text" id="txt-obsidian-folder" class="field-input" autocomplete="off" spellcheck="false" placeholder="E:\x-obsidian\X智库\02_X素材" data-i18n-placeholder="obsidian_destination_placeholder" aria-describedby="obsidian-destination-help" />
+          </label>
+          <p id="obsidian-destination-help" class="obsidian-path-help" data-i18n="obsidian_destination_help">Paste a folder path inside a vault already opened in Obsidian. A relative folder path is also supported with the legacy vault setting below.</p>
+          <label class="toggle-label">
+            <span class="toggle-text" data-i18n="obsidian_group_author">Group notes by author account</span>
+            <input type="checkbox" id="chk-obsidian-group-author" class="toggle-input" checked />
+            <span class="toggle-switch"></span>
+          </label>
+          <div class="field-preview obsidian-path-preview">
+            <span class="field-preview-label" data-i18n="obsidian_path_example">Example destination:</span>
+            <code id="obsidian-path-example" class="field-preview-value"></code>
+          </div>
+          <details id="obsidian-legacy-settings">
+            <summary class="obsidian-path-help" data-i18n="obsidian_legacy_settings">Use a vault name (relative paths)</summary>
+          <label class="field-label" data-tooltip="Used by the 'Add to Obsidian' button. Leave blank to let Obsidian pick the last-used vault." data-i18n-tooltip="opt_obsidian_vault_title">
+            <span class="field-text" data-i18n="opt_obsidian_vault">Vault name</span>
+            <input type="text" id="txt-obsidian-vault" class="field-input" autocomplete="off" spellcheck="false" placeholder="(optional)" data-i18n-placeholder="opt_obsidian_vault_placeholder" />
+          </label>
+          </details>
+          <label class="field-label field-label-stacked" id="obsidian-tags-label">
+            <span class="field-text">
+              <span class="field-text-label" data-tooltip="Comma-separated list of tags emitted in the Obsidian-friendly frontmatter. Type { to insert a placeholder." data-i18n-tooltip="opt_obsidian_tags_title" data-i18n="opt_obsidian_tags">Tags</span>
+              <span class="field-info-wrap">
+                <button type="button" id="btn-obsidian-tags-info" class="field-info" aria-expanded="false"
+                  aria-controls="obsidian-tags-hint" aria-label="Show tag placeholders"
+                  data-i18n-aria-label="opt_obsidian_tags_info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                </button>
+                <div id="obsidian-tags-hint" class="field-hint" role="tooltip">
+                  <div class="field-hint-title" data-i18n="opt_filename_template_hint_title">Placeholders</div>
+                  <ul class="field-hint-list">
+                    <li><code>{date}</code><span data-i18n="opt_filename_hint_date">publish date (YYYY-MM-DD)</span></li>
+                    <li><code>{datetime}</code><span data-i18n="opt_filename_hint_datetime">publish date + time</span></li>
+                    <li><code>{handle}</code><span data-i18n="opt_filename_hint_handle">author handle without @</span></li>
+                    <li><code>{author}</code><span data-i18n="opt_filename_hint_author">author display name</span></li>
+                    <li><code>{id}</code><span data-i18n="opt_filename_hint_id">tweet ID</span></li>
+                    <li><code>{slug}</code><span data-i18n="opt_filename_hint_slug">short text preview</span></li>
+                    <li><code>{type}</code><span data-i18n="opt_filename_hint_type">tweet / thread / article</span></li>
+                  </ul>
+                </div>
+              </span>
+              <button type="button" id="btn-obsidian-tags-reset" class="field-inline-action" data-i18n="opt_obsidian_tags_reset">Reset</button>
+            </span>
+            <span class="field-with-popover">
+              <input type="text" id="txt-obsidian-tags" class="field-input" autocomplete="off" spellcheck="false" placeholder="clippings, x, {type}" data-i18n-placeholder="opt_obsidian_tags_placeholder" />
+              <div id="obsidian-tags-autocomplete" class="placeholder-autocomplete" role="listbox" hidden></div>
+            </span>
+            <div id="obsidian-tags-preview" class="tag-preview" aria-live="polite"></div>
+          </label>
+        </details>
+
+        <details class="option-group fm-picker" data-section-id="frontmatter">
+          <summary class="option-group-summary">
+            <span class="option-group-label" data-i18n="group_frontmatter">Frontmatter fields</span>
+            <span class="option-group-help" data-tooltip="Pick which entries appear in the YAML frontmatter. Selections are saved per mode." data-i18n-tooltip="opt_frontmatter_help" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </span>
+            <svg class="option-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
+          <div class="fm-picker-list" data-mode="default">
+            <div class="fm-picker-mode-header">
+              <span class="fm-picker-mode-label" data-i18n="opt_frontmatter_mode_default">Default mode</span>
+              <button type="button" class="fm-picker-select-all" data-mode="default" data-i18n="opt_frontmatter_select_all">Activate all</button>
+            </div>
+            <div class="fm-picker-fields">
+              <label class="fm-field"><span class="fm-field-name">author</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="author"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">handle</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="handle"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">source</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="source"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">date</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="date"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">type</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="type"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">likes</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="likes"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">reposts</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="reposts"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">replies</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="replies"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">bookmarks</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="bookmarks"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">views</span><input type="checkbox" class="fm-field-input" data-mode="default" data-field="views"><span class="toggle-switch-mini"></span></label>
+            </div>
+          </div>
+          <div class="fm-picker-list" data-mode="obsidian" hidden>
+            <div class="fm-picker-mode-header">
+              <span class="fm-picker-mode-label" data-i18n="opt_frontmatter_mode_obsidian">Obsidian-friendly mode</span>
+              <button type="button" class="fm-picker-select-all" data-mode="obsidian" data-i18n="opt_frontmatter_select_all">Activate all</button>
+            </div>
+            <div class="fm-picker-fields">
+              <label class="fm-field"><span class="fm-field-name">title</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="title"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">source</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="source"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">author</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="author"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">author_name</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="author_name"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">handle</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="handle"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">published</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="published"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">created</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="created"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">type</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="type"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">description</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="description"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">tags</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="tags"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">likes</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="likes"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">reposts</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="reposts"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">replies</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="replies"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">bookmarks</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="bookmarks"><span class="toggle-switch-mini"></span></label>
+              <label class="fm-field"><span class="fm-field-name">views</span><input type="checkbox" class="fm-field-input" data-mode="obsidian" data-field="views"><span class="toggle-switch-mini"></span></label>
+            </div>
+          </div>
+        </details>
+
+        <details class="option-group" data-section-id="inline">
+          <summary class="option-group-summary">
+            <span class="option-group-label" data-i18n="group_inline">Inline button &amp; context menu</span>
+            <svg class="option-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
+          <label class="toggle-label" data-tooltip="Add a download button next to share on each tweet's action bar" data-i18n-tooltip="opt_show_inline_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span data-i18n="opt_show_inline">Show inline button on tweets</span>
+            </span>
+            <input type="checkbox" id="chk-show-inline" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-label" data-tooltip="When enabled, the inline icon on each tweet copies markdown to the clipboard instead of downloading a file" data-i18n-tooltip="opt_inline_copies_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              <span data-i18n="opt_inline_copies">Inline button copies instead</span>
+            </span>
+            <input type="checkbox" id="chk-inline-copies" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+          <label class="toggle-label" data-tooltip="Close the tab automatically after exporting from a tweet's inline button or right-click menu" data-i18n-tooltip="opt_close_tab_title">
+            <span class="toggle-text">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              <span data-i18n="opt_close_tab">Close tab after export</span>
+            </span>
+            <input type="checkbox" id="chk-close-tab" class="toggle-input" />
+            <span class="toggle-switch"></span>
+          </label>
+        </details>
+      </div>
+    </main>
+
+    <footer class="popup-footer" id="popup-footer">
+      <a href="https://github.com/zendegani/xclipper/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="footer-version" id="footer-version" title="Changelog"></a>
+      <a href="https://github.com/zendegani/xclipper/issues" target="_blank" rel="noopener noreferrer" class="footer-github" title="GitHub">
+        <span class="footer-feedback" data-i18n="footer_feedback">Issues or suggestions?</span>
+        <svg class="footer-github-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+      <a href="https://chromewebstore.google.com/detail/xclipper/epmmehilhbpkgcjbcohgkmihlalagkho/reviews" target="_blank" rel="noopener noreferrer" class="footer-review" id="footer-review" title="Rate XClipper">
+        <svg class="footer-review-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.781 1.401 8.169L12 18.896l-7.335 3.864 1.401-8.169L.132 9.21l8.2-1.192z"/>
+        </svg>
+      </a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

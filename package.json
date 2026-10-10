@@ -1,0 +1,44 @@
+{
+  "name": "xclipper",
+  "version": "2.8.4",
+  "description": "XClipper — free, source-available web clipper for X (Twitter). Download threads, posts, and articles as Markdown or PDF for Obsidian, research, and AI/RAG workflows. Works locally — no API, no accounts, no tracking.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:chrome": "node build.mjs --target=chrome",
+    "build:firefox": "node build.mjs --target=firefox",
+    "watch": "node build.mjs --watch",
+    "package": "npm run build && cd dist && zip -r ../xclipper.zip . && echo '📦 xclipper.zip created'",
+    "package:chrome": "npm run build:chrome && cd dist && zip -r ../xclipper.zip . && echo '📦 xclipper.zip created'",
+    "package:firefox": "npm run build:firefox && cd dist-firefox && zip -r ../xclipper-firefox.zip . && echo '📦 xclipper-firefox.zip created'",
+    "clean": "rm -rf dist dist-firefox xclipper.zip xclipper-firefox.zip",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dead-locales": "node scripts/find-dead-locale-keys.mjs",
+    "screenshots": "npm run build && node scripts/popup-screenshots.mjs",
+    "promo-screenshots": "node scripts/promo-screenshots.mjs",
+    "05-html-to-markdown-output": "node scripts/05-html-to-markdown-output.mjs",
+    "01-product-overview": "node scripts/01-product-overview.mjs",
+    "store-screenshot": "node scripts/store-screenshot.mjs",
+    "02-one-click-timeline-export": "node scripts/store-screenshot.mjs store/mockups/02-one-click-timeline-export.html assets/02-one-click-timeline-export.png",
+    "03-context-menu-shortcut": "node scripts/store-screenshot.mjs store/mockups/03-context-menu-shortcut.html assets/03-context-menu-shortcut.png",
+    "07-batch-export": "node scripts/store-screenshot.mjs store/mockups/07-batch-export.html assets/07-batch-export.png"
+  },
+  "devDependencies": {
+    "@puppeteer/browsers": "^3.2.3",
+    "@types/chrome": "^0.3.4",
+    "@types/jsdom": "^30.0.0",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.1.1",
+    "puppeteer-core": "^25.12.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "fsevents": false
+  }
+}

@@ -1,0 +1,593 @@
+{
+  "extensionName": {
+    "message": "X / Twitter Web Clipper: Marcadores e hilos a Markdown, PDF, Obsidian"
+  },
+  "extensionDescription": {
+    "message": "Exporta publicaciones, vídeos y artículos largos de tus Me gusta o un perfil, uno a uno o miles por lote. Sin clave de API de X."
+  },
+  "tagline": {
+    "message": "Guardar hilos y artículos como Markdown o PDF"
+  },
+  "btn_download": {
+    "message": "Descargar"
+  },
+  "btn_copy": {
+    "message": "Copiar"
+  },
+  "btn_pdf": {
+    "message": "Exportar .pdf"
+  },
+  "btn_pdf_hint": {
+    "message": "Genera una exportación PDF con la configuración actual y luego elige dónde guardarla."
+  },
+  "rendering_pdf": {
+    "message": "Generando PDF…"
+  },
+  "btn_obsidian": {
+    "message": "Añadir a Obsidian"
+  },
+  "btn_md_hint": {
+    "message": "Markdown — la exportación completa con formato."
+  },
+  "btn_html_hint": {
+    "message": "Guardar como archivo HTML con estilo y autónomo."
+  },
+  "btn_json_hint": {
+    "message": "Guardar el documento estructurado sin procesar (AST) como JSON."
+  },
+  "btn_txt_hint": {
+    "message": "Guardar como texto plano sin marcado."
+  },
+  "btn_csv_hint": {
+    "message": "Guardar una fila de metadatos usando los campos de frontmatter seleccionados."
+  },
+  "review_text": {
+    "message": "¿Te gusta XClipper? Es gratis y está hecho con mucha pasión; una breve reseña ★★★★★ ayuda mucho a que llegue a más personas."
+  },
+  "review_rate": {
+    "message": "Valorar en Chrome Web Store"
+  },
+  "review_later": {
+    "message": "Quizá más tarde"
+  },
+  "review_dismiss": {
+    "message": "Descartar"
+  },
+  "btn_batch": {
+    "message": "Exportar marcadores"
+  },
+  "btn_batch_hint": {
+    "message": "Exporta todos los marcadores cargados en esta página como archivos Markdown en una carpeta. Desplázate por la página de marcadores para cargar más."
+  },
+  "batch_mode": {
+    "message": "Motor de exportación por lotes"
+  },
+  "batch_mode_hint": {
+    "message": "Auto y Súper obtienen contenido mediante tu sesión iniciada de X — sin clave API, sin contraseña y sin que nada salga de tu navegador; las ejecuciones grandes pueden alcanzar el límite de frecuencia flexible de X, pero se detienen correctamente y dejan el resto pendiente — espera unos 15 minutos y vuelve a ejecutarlas para continuar desde donde se detuvieron."
+  },
+  "batch_mode_info_label": {
+    "message": "Sobre Auto y Súper"
+  },
+  "mode_manual": {
+    "message": "Manual"
+  },
+  "mode_auto": {
+    "message": "Auto"
+  },
+  "mode_super": {
+    "message": "Súper"
+  },
+  "mode_caption_manual": {
+    "message": "Desplázate por la página; se guarda cada publicación que cargas, con hilos y artículos completos."
+  },
+  "mode_caption_auto": {
+    "message": "Obtiene contenido automáticamente mediante tu sesión de X — sin desplazarte, con hilos y artículos completos."
+  },
+  "mode_caption_super": {
+    "message": "Obtiene miles a la vez, pero solo guarda el primer tweet de cada publicación — se omiten los hilos."
+  },
+  "btn_batch_fast_hint": {
+    "message": "Obtén todos tus marcadores mediante tu sesión de X, mucho más rápido. Expande hilos y artículos."
+  },
+  "btn_batch_fast_profile_hint": {
+    "message": "Obtén las publicaciones propias de este perfil mediante tu sesión de X, mucho más rápido. Se omiten los reposts."
+  },
+  "btn_batch_fast_likes_hint": {
+    "message": "Obtén tus publicaciones con like mediante tu sesión de X, mucho más rápido. Expande hilos y artículos."
+  },
+  "btn_batch_fast_no_selection": {
+    "message": "La selección solo está disponible en Manual; cambia a Manual para elegir tweets a mano."
+  },
+  "btn_batch_fast_no_timeline": {
+    "message": "La cronología solo está disponible en Manual; cambia a Manual para exportar tu feed de inicio."
+  },
+  "batch_tab_selection_fast": {
+    "message": "Cambia a Manual para elegir tweets a mano"
+  },
+  "batch_tab_timeline_fast": {
+    "message": "Cambia a Manual para exportar tu feed de inicio"
+  },
+  "fast_locked": {
+    "message": "Hay una exportación en curso; cancélala o deja que termine para cambiar de modo."
+  },
+  "fast_date_range": {
+    "message": "Rango de fechas"
+  },
+  "fast_date_from": {
+    "message": "Fecha inicial"
+  },
+  "fast_date_to": {
+    "message": "Fecha final"
+  },
+  "fast_date_clear": {
+    "message": "Borrar"
+  },
+  "fast_paginate": {
+    "message": "Modo de carga"
+  },
+  "fast_paginate_recent": {
+    "message": "Recientes"
+  },
+  "fast_paginate_resume": {
+    "message": "Reanudar"
+  },
+  "fast_caption_recent": {
+    "message": "Escanea la parte superior del feed — publicaciones añadidas desde la última ejecución."
+  },
+  "fast_caption_resume": {
+    "message": "Continúa la recopilación histórica desde donde se detuvo la última ejecución de «Reanudar»."
+  },
+  "fast_caption_daterange": {
+    "message": "Solo publicaciones tuiteadas en el rango inferior; escanea en profundidad sin mover la posición de «Reanudar»."
+  },
+  "fast_step_page": {
+    "message": "Recargar x.com"
+  },
+  "fast_step_tweet": {
+    "message": "Abrir un tweet"
+  },
+  "fast_step_fetch": {
+    "message": "Obteniendo ..."
+  },
+  "fast_step_expand": {
+    "message": "Expandiendo ..."
+  },
+  "batch_pause": {
+    "message": "Pausar"
+  },
+  "batch_resume": {
+    "message": "Reanudar"
+  },
+  "batch_stop": {
+    "message": "Detener"
+  },
+  "batch_paused": {
+    "message": "Pausado"
+  },
+  "batch_done": {
+    "message": "Listo"
+  },
+  "batch_stopped": {
+    "message": "Detenido"
+  },
+  "batch_exported": {
+    "message": "exportados"
+  },
+  "batch_failed": {
+    "message": "fallidos"
+  },
+  "batch_new": {
+    "message": "nuevos"
+  },
+  "batch_already_exported": {
+    "message": "ya exportados"
+  },
+  "batch_reset": {
+    "message": "Restablecer historial"
+  },
+  "batch_reset_hint": {
+    "message": "Olvida qué publicaciones ya se exportaron en ejecuciones anteriores, para que el siguiente lote vuelva a exportar todo lo cargado."
+  },
+  "batch_reset_queue": {
+    "message": "Restablecer cola"
+  },
+  "batch_reset_queue_hint": {
+    "message": "Vacía las publicaciones reunidas y reinicia la recopilación desde donde te hayas desplazado, para empezar en una publicación concreta en lugar de arriba."
+  },
+  "btn_batch_open_x": {
+    "message": "Abre x.com para exportar en lote marcadores, un perfil o una selección."
+  },
+  "btn_batch_open_bookmarks": {
+    "message": "Abre tu página de Marcadores, desplázate para cargar publicaciones y exporta."
+  },
+  "btn_batch_open_profile": {
+    "message": "Abre una página de perfil en x.com para exportar sus publicaciones. Se omiten los reposts."
+  },
+  "btn_batch_profile": {
+    "message": "Exportar publicaciones"
+  },
+  "btn_batch_profile_hint": {
+    "message": "Exporta las publicaciones propias de este perfil cargadas en la página como archivos Markdown en una carpeta. Se omiten los reposts; desplázate para cargar más."
+  },
+  "btn_batch_likes": {
+    "message": "Exportar likes"
+  },
+  "btn_batch_likes_hint": {
+    "message": "Exporta todas las publicaciones con like cargadas en esta página como archivos Markdown en una carpeta. Desplázate por tu página de Likes para cargar más."
+  },
+  "btn_batch_open_likes": {
+    "message": "Abre tu página de Likes en x.com para exportar las publicaciones que te gustaron."
+  },
+  "btn_batch_timeline": {
+    "message": "Exportar cronología"
+  },
+  "btn_batch_timeline_hint": {
+    "message": "Exporta cada publicación cargada en tu cronología de inicio como archivos Markdown en una carpeta. Desplázate para cargar más."
+  },
+  "btn_batch_open_timeline": {
+    "message": "Abre tu cronología de inicio, desplázate para cargar publicaciones y exporta."
+  },
+  "btn_batch_go_bookmarks": {
+    "message": "Abrir Marcadores"
+  },
+  "btn_batch_go_timeline": {
+    "message": "Abrir Cronología"
+  },
+  "btn_batch_go_likes": {
+    "message": "Abrir Likes"
+  },
+  "group_batch": {
+    "message": "Exportación por lote"
+  },
+  "batch_tab_bookmarks": {
+    "message": "Marcadores"
+  },
+  "batch_tab_profile": {
+    "message": "Perfil"
+  },
+  "batch_tab_selection": {
+    "message": "Selección"
+  },
+  "batch_tab_likes": {
+    "message": "Likes"
+  },
+  "batch_tab_timeline": {
+    "message": "Cronología"
+  },
+  "btn_batch_select": {
+    "message": "Seleccionar tweets…"
+  },
+  "btn_batch_select_hint": {
+    "message": "Elige tweets individuales en la página actual con casillas y luego exporta la selección."
+  },
+  "btn_batch_add": {
+    "message": "Añadir a la cola"
+  },
+  "btn_batch_add_hint": {
+    "message": "Añade las publicaciones recién cargadas a la cola del lote en curso."
+  },
+  "batch_format": {
+    "message": "Formato"
+  },
+  "batch_output": {
+    "message": "Salida"
+  },
+  "batch_output_hint": {
+    "message": "Separado: un archivo por publicación. Ambos: archivos por publicación más un archivo combinado. Combinado: solo un archivo."
+  },
+  "batch_out_separate": {
+    "message": "Separado"
+  },
+  "batch_out_both": {
+    "message": "Ambos"
+  },
+  "batch_out_combined": {
+    "message": "Combinado"
+  },
+  "opt_zip": {
+    "message": "Comprimir en ZIP (una descarga)"
+  },
+  "opt_zip_title": {
+    "message": "Empaqueta la exportación en un solo .zip: en Lote, una descarga en vez de miles; en Individual, un archivo en vez de un archivo Markdown y una carpeta de multimedia."
+  },
+  "opt_zip_title_batch": {
+    "message": "Empaqueta todos los archivos por publicación en un solo .zip — una descarga en vez de miles; no está disponible al guardar multimedia localmente ni con la salida «Combinado»."
+  },
+  "opt_zip_title_single": {
+    "message": "Empaqueta la exportación en un solo .zip — un archivo en vez de un archivo Markdown y una carpeta de multimedia adyacente."
+  },
+  "flood_hint": {
+    "message": "Esto puede guardar miles de archivos separados a la vez. Activa «Comprimir en ZIP» o elige la salida «Combinado» para obtener una sola descarga."
+  },
+  "batch_bar_selected": {
+    "message": "seleccionados"
+  },
+  "batch_bar_hint": {
+    "message": "Toca tweets para seleccionar"
+  },
+  "batch_bar_export": {
+    "message": "Exportar"
+  },
+  "batch_started": {
+    "message": "Lote iniciado"
+  },
+  "batch_start_failed": {
+    "message": "No se pudo iniciar el lote."
+  },
+  "batch_running": {
+    "message": "Ya hay un lote en ejecución."
+  },
+  "btn_obsidian_hint": {
+    "message": "Configura el vault, la subcarpeta y los campos del frontmatter en Configuración.\nPara hilos largos o imágenes usa el botón 'Descargar .md'."
+  },
+  "obsidian_opened": {
+    "message": "Abriendo Obsidian…"
+  },
+  "extracting": {
+    "message": "Extrayendo…"
+  },
+  "group_export": {
+    "message": "Ajustes de exportación"
+  },
+  "beta": {
+    "message": "Beta"
+  },
+  "group_single": {
+    "message": "Exportación individual"
+  },
+  "group_downloads": {
+    "message": "Descargas"
+  },
+  "opt_download_folder": {
+    "message": "Subcarpeta"
+  },
+  "opt_download_folder_title": {
+    "message": "Guarda el Markdown y las imágenes dentro de esta subcarpeta de tu carpeta de Descargas. Déjalo vacío para guardar directamente en Descargas."
+  },
+  "opt_download_folder_placeholder": {
+    "message": "ej. xclipper"
+  },
+  "opt_filename_template": {
+    "message": "Plantilla de nombre de archivo"
+  },
+  "opt_filename_template_placeholder": {
+    "message": "{handle}-{id}.md"
+  },
+  "opt_filename_preview": {
+    "message": "Vista previa:"
+  },
+  "opt_filename_template_info": {
+    "message": "Mostrar marcadores de la plantilla de nombre de archivo"
+  },
+  "opt_filename_template_hint_title": {
+    "message": "Marcadores"
+  },
+  "opt_filename_hint_date": {
+    "message": "fecha de publicación (AAAA-MM-DD)"
+  },
+  "opt_filename_hint_datetime": {
+    "message": "fecha + hora de publicación"
+  },
+  "opt_filename_hint_handle": {
+    "message": "usuario del autor sin @"
+  },
+  "opt_filename_hint_author": {
+    "message": "nombre del autor"
+  },
+  "opt_filename_hint_id": {
+    "message": "ID del tweet"
+  },
+  "opt_filename_hint_slug": {
+    "message": "vista previa breve del texto"
+  },
+  "opt_filename_hint_type": {
+    "message": "tweet / thread / article"
+  },
+  "group_inline": {
+    "message": "Botón integrado y menú contextual"
+  },
+  "group_frontmatter": {
+    "message": "Campos del frontmatter"
+  },
+  "opt_frontmatter_help": {
+    "message": "Elige qué entradas aparecen en el frontmatter YAML. Las selecciones se guardan por modo."
+  },
+  "opt_frontmatter_mode_default": {
+    "message": "Modo predeterminado"
+  },
+  "opt_frontmatter_mode_obsidian": {
+    "message": "Modo optimizado para Obsidian"
+  },
+  "opt_frontmatter_select_all": {
+    "message": "Activar todo"
+  },
+  "nav_settings": {
+    "message": "Configuración"
+  },
+  "nav_back": {
+    "message": "Atrás"
+  },
+  "settings_help": {
+    "message": "Pasa el cursor sobre las etiquetas para ver más información"
+  },
+  "group_obsidian": {
+    "message": "Obsidian"
+  },
+  "opt_obsidian_friendly": {
+    "message": "Frontmatter compatible con Obsidian"
+  },
+  "opt_obsidian_friendly_title": {
+    "message": "Genera frontmatter optimizado para Obsidian: autor con wikilink, etiquetas y fechas de publicación/creación"
+  },
+  "opt_obsidian_vault": {
+    "message": "Nombre del vault"
+  },
+  "opt_obsidian_vault_title": {
+    "message": "Usado por el botón 'Añadir a Obsidian'. Déjalo vacío para que Obsidian use el último vault utilizado."
+  },
+  "opt_obsidian_vault_placeholder": {
+    "message": "(opcional)"
+  },
+  "opt_obsidian_folder": {
+    "message": "Subcarpeta"
+  },
+  "opt_obsidian_folder_title": {
+    "message": "Crea la nota dentro de esta subcarpeta del vault (ej. Tweets o Inbox/Tweets). Déjalo vacío para crearla en la raíz del vault."
+  },
+  "opt_obsidian_folder_placeholder": {
+    "message": "ej. Tweets"
+  },
+  "opt_obsidian_tags": {
+    "message": "Etiquetas"
+  },
+  "opt_obsidian_tags_title": {
+    "message": "Etiquetas separadas por comas para el frontmatter de Obsidian. Escribe { para insertar un marcador. Vacío = predeterminado (clippings, x, {type})."
+  },
+  "opt_obsidian_tags_placeholder": {
+    "message": "clippings, x, {type}"
+  },
+  "opt_obsidian_tags_reset": {
+    "message": "Restablecer"
+  },
+  "opt_obsidian_tags_info": {
+    "message": "Mostrar marcadores de etiquetas"
+  },
+  "opt_save_local_title": {
+    "message": "Desactivado: mantener los archivos multimedia como enlaces a X. Imágenes: descargar las imágenes en una carpeta junto al archivo Markdown. Multimedia: guardar también los vídeos como archivos .mp4; estos ocupan mucho más espacio."
+  },
+  "opt_save_local": {
+    "message": "Guardar localmente (solo con .md)"
+  },
+  "opt_save_local_off": {
+    "message": "Desactivado"
+  },
+  "opt_save_local_images": {
+    "message": "Imágenes"
+  },
+  "opt_save_local_media": {
+    "message": "Multimedia"
+  },
+  "opt_metadata_title": {
+    "message": "Añade me gusta, reposts y vistas como frontmatter YAML"
+  },
+  "opt_metadata": {
+    "message": "Incluir metadatos"
+  },
+  "opt_inline_stats_title": {
+    "message": "Renderizar likes, reposts, respuestas, marcadores y vistas como una fila dentro del Markdown"
+  },
+  "opt_inline_stats": {
+    "message": "Mostrar estadísticas de interacción en línea"
+  },
+  "opt_include_reposts": {
+    "message": "Incluir reposts (perfiles)"
+  },
+  "opt_include_reposts_title": {
+    "message": "Al exportar un perfil en lote, incluye también reposts. Desactivado = solo publicaciones propias del dueño del perfil."
+  },
+  "opt_close_tab_title": {
+    "message": "Cierra automáticamente la pestaña después de exportar desde el botón integrado o el menú contextual de un tweet."
+  },
+  "opt_close_tab": {
+    "message": "Cerrar la nueva pestaña después de exportar"
+  },
+  "ctx_save_tweet": {
+    "message": "Descargar tweet como Markdown"
+  },
+  "ctx_copy_tweet": {
+    "message": "Copiar tweet como Markdown"
+  },
+  "ctx_copy_just_this_tweet": {
+    "message": "Copiar solo este tweet (sin el hilo)"
+  },
+  "ctx_obsidian_tweet": {
+    "message": "Añadir tweet a Obsidian"
+  },
+  "ctx_export_pdf": {
+    "message": "Exportar tweet como PDF"
+  },
+  "ctx_copy_txt": {
+    "message": "Copiar tweet como txt"
+  },
+  "ctx_download_txt": {
+    "message": "Descargar tweet como txt"
+  },
+  "ctx_download_html": {
+    "message": "Descargar tweet como html"
+  },
+  "ctx_download_json": {
+    "message": "Descargar tweet como json"
+  },
+  "ctx_download_csv": {
+    "message": "Descargar tweet como csv"
+  },
+  "opt_show_inline_title": {
+    "message": "Añade un botón de descarga junto al de compartir en la barra de acciones de cada tweet"
+  },
+  "opt_show_inline": {
+    "message": "Mostrar botón integrado en los tweets"
+  },
+  "opt_inline_copies_title": {
+    "message": "Cuando está activado, el icono inline copia el Markdown al portapapeles en lugar de descargar un archivo."
+  },
+  "opt_inline_copies": {
+    "message": "El botón inline copia en su lugar"
+  },
+  "footer_hint": {
+    "message": "Abre un tweet o artículo en X.com para empezar"
+  },
+  "footer_feedback": {
+    "message": "¿Problemas o sugerencias?"
+  },
+  "error_reload": {
+    "message": "Recarga la página y vuelve a intentarlo."
+  },
+  "error_specific_page": {
+    "message": "Abre la página de un tweet o artículo específico (con /status/ en la URL)."
+  },
+  "error_failed": {
+    "message": "Error al extraer el contenido."
+  },
+  "error_unexpected": {
+    "message": "Ocurrió un error inesperado."
+  },
+  "error_no_tab": {
+    "message": "No hay ninguna pestaña activa."
+  },
+  "download_failed": {
+    "message": "Error en la descarga."
+  },
+  "pdf_failed": {
+    "message": "Error al exportar el PDF."
+  },
+  "article_downloaded": {
+    "message": "¡Artículo descargado!"
+  },
+  "thread_downloaded": {
+    "message": "¡Hilo descargado!"
+  },
+  "tweet_downloaded": {
+    "message": "¡Tweet descargado!"
+  },
+  "downloaded": {
+    "message": "¡Descargado!"
+  },
+  "pdf_downloaded": {
+    "message": "¡PDF descargado!"
+  },
+  "article_copied": {
+    "message": "¡Artículo copiado!"
+  },
+  "thread_copied": {
+    "message": "¡Hilo copiado!"
+  },
+  "tweet_copied": {
+    "message": "¡Tweet copiado!"
+  },
+  "copied": {
+    "message": "¡Copiado!"
+  },
+  "video_unresolved": {
+    "message": "El vídeo se mantiene como enlace — recarga la publicación una vez y vuelve a exportarla."
+  }
+}

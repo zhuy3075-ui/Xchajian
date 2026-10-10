@@ -1,0 +1,132 @@
+// Single source of truth for user settings: the persisted shape, its defaults,
+// and the load/save helpers. The popup writes these (from its form controls),
+// while the content script and PDF flow read them back. Keeping one definition
+// here is what stops the inline-button / context-menu paths from silently
+// drifting out of sync with the popup when a new setting is added.
+//
+// Storage key migration (tweet2md → xclipper) is handled separately in the
+// background service worker; by the time anything calls loadSettings() the
+// data already lives under `xclipper_settings`.
+
+import { FRONTMATTER_FIELDS_DEFAULT, FRONTMATTER_FIELDS_OBSIDIAN } from './post-process';
+
+export const SETTINGS_KEY = 'xclipper_settings';
+
+export type FieldMap = Record<string, boolean>;
+
+// Batch file format ('md' plus the alternate single-export formats; PDF can't
+// batch). 'csv' is metadata-only and always lands as one combined file.
+export type BatchFormat = 'md' | 'txt' | 'html' | 'json' | 'csv';
+export type BatchOutput = 'separate' | 'both' | 'combined';
+
+export interface Settings {
+  downloadImages: boolean;
+  // Local video (.mp4) alongside local images. Deliberately a second boolean
+  // rather than widening downloadImages into an enum: loadSettings spreads
+  // DEFAULT_SETTINGS over the saved partial, so a replacement key would be
+  // absent for every existing user and silently turn their local images off.
+  // The popup presents the pair as one Off | Images | Media control.
+  saveVideos: boolean;
+  includeMetadata: boolean;
+  closeTabAfterExport: boolean;
+  inlineButtonCopies: boolean;
+  showInlineButton: boolean;
+  inlineStats: boolean;
+  // Profile batch: include reposts (off = the profile owner's own posts only).
+  includeReposts: boolean;
+  obsidianFriendly: boolean;
+  obsidianVault: string;
+  obsidianFolder: string;
+  obsidianGroupByAuthor: boolean;
+  obsidianTagsTemplate: string;
+  downloadFolder: string;
+  filenameTemplate: string;
+  // Single export: the format the Download/Copy buttons act on. Same set as
+  // the batch format (PDF is a separate button, not part of this selector).
+  singleFormat: BatchFormat;
+  // Batch export: file format for the whole job (PDF isn't batchable).
+  batchFormat: BatchFormat;
+  // Batch export: per-item files, one combined file, or both. CSV is always
+  // treated as 'combined' (one-row-per-item files would be pointless).
+  batchOutput: BatchOutput;
+  // Batch export: pack the per-item files into one .zip (a single download
+  // instead of thousands). Ignored while local images are on — image bytes
+  // can't be fetched into the archive without extra permissions.
+  batchZip: boolean;
+  frontmatterFields: FieldMap;
+  frontmatterFieldsObsidian: FieldMap;
+  // Section ids in most-recently-opened order (max length = SECTION_MAX_OPEN).
+  // Persisted so the user's last layout is restored on the next popup open.
+  settingsSectionsOpen: string[];
+}
+
+export const SECTION_IDS = ['downloads', 'obsidian', 'frontmatter', 'inline'] as const;
+export const SECTION_MAX_OPEN = 2;
+
+export function allEnabled(keys: readonly string[]): FieldMap {
+  return Object.fromEntries(keys.map((k) => [k, true]));
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  downloadImages: false,
+  saveVideos: false, // off — videos are 2–50MB, two orders of magnitude past images
+  includeMetadata: true, // on by default
+  closeTabAfterExport: false,
+  inlineButtonCopies: false, // inline button downloads by default
+  showInlineButton: false, // off by default in v2.0.0 — avoids DOM conflicts with other X/Twitter extensions; v1.9.0 migrants keep their stored value
+  inlineStats: false, // off — changes visible content, opt-in
+  includeReposts: false, // off — profile exports own posts only, matching prior behavior
+  obsidianFriendly: false, // off — changes frontmatter shape, opt-in
+  obsidianVault: '', // empty → let Obsidian pick the last-used vault
+  obsidianFolder: '', // empty → create note at the vault root
+  obsidianGroupByAuthor: true,
+  obsidianTagsTemplate: '', // empty → use DEFAULT_TAGS_TEMPLATE in post-process
+  downloadFolder: '', // empty → save directly in Downloads
+  filenameTemplate: '', // empty → legacy {handle}-{id}.md / {handle}-{slug}.md
+  singleFormat: 'md', // Markdown — the default single-export target
+  batchFormat: 'md', // Markdown — matches the single-export default
+  batchOutput: 'separate', // per-item files only; 'both' adds a combined file
+  batchZip: false, // off — loose per-item files, matching prior behavior
+  frontmatterFields: allEnabled(FRONTMATTER_FIELDS_DEFAULT),
+  frontmatterFieldsObsidian: allEnabled(FRONTMATTER_FIELDS_OBSIDIAN),
+  settingsSectionsOpen: ['downloads', 'obsidian'],
+};
+
+export async function loadSettings(): Promise<Settings> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(SETTINGS_KEY, (result) => {
+      const saved = (result[SETTINGS_KEY] || {}) as Partial<Settings>;
+      // Merge field maps key-by-key: a saved map from an older version is
+      // missing newly-added fields, and a hard spread would leave those keys
+      // undefined → they'd render unchecked. Defaulting missing keys to true
+      // keeps the rule "no saved choice = include the field".
+      const frontmatterFields = {
+        ...DEFAULT_SETTINGS.frontmatterFields,
+        ...(saved.frontmatterFields || {}),
+      };
+      const frontmatterFieldsObsidian = {
+        ...DEFAULT_SETTINGS.frontmatterFieldsObsidian,
+        ...(saved.frontmatterFieldsObsidian || {}),
+      };
+      const rawSections = Array.isArray(saved.settingsSectionsOpen)
+        ? saved.settingsSectionsOpen.filter((id): id is string =>
+            typeof id === 'string' && (SECTION_IDS as readonly string[]).includes(id)
+          )
+        : DEFAULT_SETTINGS.settingsSectionsOpen;
+      // Deduplicate while preserving order, then trim to the cap.
+      const settingsSectionsOpen = Array.from(new Set(rawSections)).slice(0, SECTION_MAX_OPEN);
+
+      resolve({
+        ...DEFAULT_SETTINGS,
+        ...saved,
+        frontmatterFields,
+        frontmatterFieldsObsidian,
+        settingsSectionsOpen,
+      });
+    });
+  });
+}
+
+export function saveSettings(settings: Settings): void {
+  chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+}

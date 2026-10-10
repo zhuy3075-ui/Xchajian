@@ -1,0 +1,640 @@
+{
+  "extensionName": {
+    "message": "X / Twitter Web Clipper: Bookmarks & Threads to Markdown, PDF, Obsidian"
+  },
+  "extensionDescription": {
+    "message": "Export posts, videos & long-form articles from your likes or any profile — one at a time or thousands per batch. No X API key."
+  },
+  "tagline": {
+    "message": "Save threads & articles as Markdown or PDF"
+  },
+  "btn_download": {
+    "message": "Download"
+  },
+  "btn_copy": {
+    "message": "Copy"
+  },
+  "btn_pdf": {
+    "message": "Export .pdf"
+  },
+  "btn_pdf_hint": {
+    "message": "Generate a formatted PDF export with current settings, then choose where to save it."
+  },
+  "rendering_pdf": {
+    "message": "Rendering PDF…"
+  },
+  "btn_obsidian": {
+    "message": "Add to Obsidian"
+  },
+  "btn_md_hint": {
+    "message": "Markdown — the full formatted export."
+  },
+  "btn_html_hint": {
+    "message": "Save as a styled, self-contained HTML file."
+  },
+  "btn_json_hint": {
+    "message": "Save the raw structured document (AST) as JSON."
+  },
+  "btn_txt_hint": {
+    "message": "Save as plain text with markup stripped."
+  },
+  "btn_csv_hint": {
+    "message": "Save one metadata row using your selected frontmatter fields."
+  },
+  "review_text": {
+    "message": "Enjoying XClipper? It's free and built with a lot of passion — a quick ★★★★★ review really helps it reach more people."
+  },
+  "review_rate": {
+    "message": "Rate on Chrome Web Store"
+  },
+  "review_later": {
+    "message": "Maybe later"
+  },
+  "review_dismiss": {
+    "message": "Dismiss"
+  },
+  "btn_batch": {
+    "message": "Export bookmarks"
+  },
+  "btn_batch_hint": {
+    "message": "Export every bookmark loaded on this page as Markdown files into one folder. Scroll the bookmarks page to load more."
+  },
+  "batch_mode": {
+    "message": "Batch engine"
+  },
+  "batch_mode_hint": {
+    "message": "Auto and Super fetch through your logged-in X session — no API key, no password, nothing leaves your browser. Large runs can hit X's soft rate limit; it stops politely and leaves the rest pending — wait ~15 minutes, then re-run to continue where it left off."
+  },
+  "batch_mode_info_label": {
+    "message": "About Auto & Super"
+  },
+  "mode_manual": {
+    "message": "Manual"
+  },
+  "mode_auto": {
+    "message": "Auto"
+  },
+  "mode_super": {
+    "message": "Super"
+  },
+  "mode_caption_manual": {
+    "message": "You scroll the page; every post you load is saved. Full threads & articles."
+  },
+  "mode_caption_auto": {
+    "message": "Fetches through your X session automatically — no scrolling. Full threads & articles."
+  },
+  "mode_caption_super": {
+    "message": "Fetches thousands at once, but saves each post's first tweet only — threads skipped."
+  },
+  "btn_batch_fast_hint": {
+    "message": "Fetch all your bookmarks through your X session — much faster. Expands threads & articles."
+  },
+  "btn_batch_fast_profile_hint": {
+    "message": "Fetch this profile's own posts through your X session — much faster. Reposts are skipped."
+  },
+  "btn_batch_fast_likes_hint": {
+    "message": "Fetch your liked posts through your X session — much faster. Expands threads & articles."
+  },
+  "btn_batch_fast_no_selection": {
+    "message": "Selection is only available in Manual — switch to Manual to pick tweets by hand."
+  },
+  "btn_batch_fast_no_timeline": {
+    "message": "Timeline is only available in Manual — switch to Manual to export your home feed."
+  },
+  "batch_tab_selection_fast": {
+    "message": "Switch to Manual to pick tweets by hand"
+  },
+  "batch_tab_timeline_fast": {
+    "message": "Switch to Manual to export your home feed"
+  },
+  "fast_locked": {
+    "message": "An export is running — cancel or let it finish to switch modes."
+  },
+  "fast_date_range": {
+    "message": "Date range"
+  },
+  "fast_date_from": {
+    "message": "From date"
+  },
+  "fast_date_to": {
+    "message": "To date"
+  },
+  "fast_date_clear": {
+    "message": "Clear"
+  },
+  "fast_paginate": {
+    "message": "Fetch mode"
+  },
+  "fast_paginate_recent": {
+    "message": "Recent"
+  },
+  "fast_paginate_resume": {
+    "message": "Resume"
+  },
+  "fast_caption_recent": {
+    "message": "Scans the top of the feed — newly-added posts since your last run."
+  },
+  "fast_caption_resume": {
+    "message": "Continues a deep backfill from where the last Resume run stopped."
+  },
+  "fast_caption_daterange": {
+    "message": "Only posts tweeted in the window below; scans deep without moving Resume's position."
+  },
+  "fast_step_page": {
+    "message": "Reload x.com"
+  },
+  "fast_step_tweet": {
+    "message": "Open one tweet"
+  },
+  "fast_step_fetch": {
+    "message": "Fetching ..."
+  },
+  "fast_step_expand": {
+    "message": "Expanding ..."
+  },
+  "batch_pause": {
+    "message": "Pause"
+  },
+  "batch_resume": {
+    "message": "Resume"
+  },
+  "batch_stop": {
+    "message": "Stop"
+  },
+  "batch_paused": {
+    "message": "Paused"
+  },
+  "batch_done": {
+    "message": "Done"
+  },
+  "batch_stopped": {
+    "message": "Stopped"
+  },
+  "batch_exported": {
+    "message": "exported"
+  },
+  "batch_failed": {
+    "message": "failed"
+  },
+  "batch_new": {
+    "message": "new"
+  },
+  "batch_already_exported": {
+    "message": "already exported"
+  },
+  "batch_reset": {
+    "message": "Reset history"
+  },
+  "batch_reset_hint": {
+    "message": "Forget which posts were already exported in past runs, so the next batch exports everything loaded again."
+  },
+  "batch_reset_queue": {
+    "message": "Reset queue"
+  },
+  "batch_reset_queue_hint": {
+    "message": "Empty the gathered posts and restart collecting from where you've scrolled to — so you can begin at a specific post instead of the top."
+  },
+  "btn_batch_open_x": {
+    "message": "Open x.com to batch-export bookmarks, a profile, or a selection."
+  },
+  "btn_batch_open_bookmarks": {
+    "message": "Open your Bookmarks page, then scroll to load posts and export."
+  },
+  "btn_batch_open_profile": {
+    "message": "Open a profile page on x.com to export its posts. Reposts are skipped."
+  },
+  "btn_batch_profile": {
+    "message": "Export posts"
+  },
+  "btn_batch_profile_hint": {
+    "message": "Export this profile's own posts loaded on the page as Markdown files into one folder. Reposts are skipped; scroll to load more."
+  },
+  "btn_batch_likes": {
+    "message": "Export likes"
+  },
+  "btn_batch_likes_hint": {
+    "message": "Export every liked post loaded on this page as Markdown files into one folder. Scroll your Likes page to load more."
+  },
+  "btn_batch_open_likes": {
+    "message": "Open your Likes page on x.com to export the posts you have liked."
+  },
+  "btn_batch_timeline": {
+    "message": "Export timeline"
+  },
+  "btn_batch_timeline_hint": {
+    "message": "Export every post loaded in your home timeline as Markdown files into one folder. Scroll to load more."
+  },
+  "btn_batch_open_timeline": {
+    "message": "Open your home timeline, then scroll to load posts and export."
+  },
+  "btn_batch_go_bookmarks": {
+    "message": "Open Bookmarks"
+  },
+  "btn_batch_go_timeline": {
+    "message": "Open Timeline"
+  },
+  "btn_batch_go_likes": {
+    "message": "Open Likes"
+  },
+  "group_batch": {
+    "message": "Batch export"
+  },
+  "batch_tab_bookmarks": {
+    "message": "Bookmarks"
+  },
+  "batch_tab_profile": {
+    "message": "Profile"
+  },
+  "batch_tab_selection": {
+    "message": "Selection"
+  },
+  "batch_tab_likes": {
+    "message": "Likes"
+  },
+  "batch_tab_timeline": {
+    "message": "Timeline"
+  },
+  "btn_batch_select": {
+    "message": "Select tweets…"
+  },
+  "btn_batch_select_hint": {
+    "message": "Pick individual tweets on the current page with checkboxes, then export the selection."
+  },
+  "btn_batch_add": {
+    "message": "Add to queue"
+  },
+  "btn_batch_add_hint": {
+    "message": "Add the newly-loaded posts to the running batch queue."
+  },
+  "batch_format": {
+    "message": "Format"
+  },
+  "batch_output": {
+    "message": "Output"
+  },
+  "batch_output_hint": {
+    "message": "Separate: one file per post. Both: per-post files plus one combined file. Combined: just one file."
+  },
+  "batch_out_separate": {
+    "message": "Separate"
+  },
+  "batch_out_both": {
+    "message": "Both"
+  },
+  "batch_out_combined": {
+    "message": "Combined"
+  },
+  "opt_zip": {
+    "message": "Zip files (one download)"
+  },
+  "opt_zip_title": {
+    "message": "Pack the export into a single .zip. In Batch, one download instead of thousands; in Single, one archive instead of a Markdown file plus a media folder."
+  },
+  "opt_zip_title_batch": {
+    "message": "Pack all per-post files into a single .zip — one download instead of thousands. Not available while local media saving is on, or with Combined output."
+  },
+  "opt_zip_title_single": {
+    "message": "Pack the export into a single .zip — one archive instead of a Markdown file plus a sibling media folder."
+  },
+  "flood_hint": {
+    "message": "This can save thousands of separate files at once. Turn on “Zip files” or pick “Combined” output to get a single download instead."
+  },
+  "batch_bar_selected": {
+    "message": "selected"
+  },
+  "batch_bar_hint": {
+    "message": "Tap tweets to select"
+  },
+  "batch_bar_export": {
+    "message": "Export"
+  },
+  "batch_started": {
+    "message": "Batch started"
+  },
+  "batch_start_failed": {
+    "message": "Could not start the batch."
+  },
+  "batch_running": {
+    "message": "A batch job is already running."
+  },
+  "btn_obsidian_hint": {
+    "message": "Set a material folder in Settings; notes can be grouped by author account. Check the destination and continue to save. Long notes replace your clipboard. Use 'Download .md' to save images locally."
+  },
+  "obsidian_destination_label": {
+    "message": "Material folder (full path)"
+  },
+  "obsidian_destination_placeholder": {
+    "message": "E:\\x-obsidian\\X智库\\02_X素材"
+  },
+  "obsidian_destination_help": {
+    "message": "Paste a folder path inside a vault already opened in Obsidian. Existing author folders are reused; new folders are created by Obsidian. Relative folders also work with the vault-name setting below."
+  },
+  "obsidian_group_author": {
+    "message": "Group notes by author account"
+  },
+  "obsidian_path_example": {
+    "message": "Example destination:"
+  },
+  "obsidian_legacy_settings": {
+    "message": "Use a vault name (relative paths)"
+  },
+  "obsidian_current_vault": {
+    "message": "Current vault"
+  },
+  "obsidian_note_ready": {
+    "message": "Check the destination below, then continue to Obsidian."
+  },
+  "obsidian_invalid_path": {
+    "message": "Invalid path or filename: $VALUE$. Use a full folder path and remove reserved names, forbidden characters and . or .. segments.",
+    "placeholders": { "value": { "content": "$1" } }
+  },
+  "obsidian_invalid_author": {
+    "message": "Could not identify the author account: $VALUE$. Reload the original post and retry, or turn off author grouping.",
+    "placeholders": { "value": { "content": "$1" } }
+  },
+  "obsidian_clipboard_ready": {
+    "message": "Long note ready. Continue to copy the full text to your clipboard and open Obsidian. This replaces your clipboard."
+  },
+  "obsidian_continue": {
+    "message": "Continue to Obsidian"
+  },
+  "obsidian_clipboard_failed": {
+    "message": "Could not copy the note. Keep this popup focused and retry, or download .md and import it into your vault."
+  },
+  "obsidian_handoff_sent": {
+    "message": "Open Obsidian when prompted, then check your vault. If nothing opens, retry. For long notes, keep the copied text until the note appears."
+  },
+  "obsidian_path_too_long": {
+    "message": "The vault, folder or filename is too long. Shorten it or download .md and import it into your vault."
+  },
+  "obsidian_opened": {
+    "message": "Opening Obsidian…"
+  },
+  "extracting": {
+    "message": "Extracting…"
+  },
+  "group_export": {
+    "message": "Export settings"
+  },
+  "beta": {
+    "message": "Beta"
+  },
+  "group_single": {
+    "message": "Single export"
+  },
+  "group_downloads": {
+    "message": "Downloads"
+  },
+  "opt_download_folder": {
+    "message": "Subfolder"
+  },
+  "opt_download_folder_title": {
+    "message": "Save Markdown and images under this subfolder inside your Downloads folder. Leave blank to save directly in Downloads."
+  },
+  "opt_download_folder_placeholder": {
+    "message": "e.g. xclipper"
+  },
+  "opt_filename_template": {
+    "message": "Filename template"
+  },
+  "opt_filename_template_placeholder": {
+    "message": "{handle}-{id}.md"
+  },
+  "opt_filename_preview": {
+    "message": "Preview:"
+  },
+  "opt_filename_template_info": {
+    "message": "Show filename template placeholders"
+  },
+  "opt_filename_template_hint_title": {
+    "message": "Placeholders"
+  },
+  "opt_filename_hint_date": {
+    "message": "publish date (YYYY-MM-DD)"
+  },
+  "opt_filename_hint_datetime": {
+    "message": "publish date + time"
+  },
+  "opt_filename_hint_handle": {
+    "message": "author handle without @"
+  },
+  "opt_filename_hint_author": {
+    "message": "author display name"
+  },
+  "opt_filename_hint_id": {
+    "message": "tweet ID"
+  },
+  "opt_filename_hint_slug": {
+    "message": "short text preview"
+  },
+  "opt_filename_hint_type": {
+    "message": "tweet / thread / article"
+  },
+  "group_inline": {
+    "message": "Inline button & context menu"
+  },
+  "group_frontmatter": {
+    "message": "Frontmatter fields"
+  },
+  "opt_frontmatter_help": {
+    "message": "Pick which entries appear in the YAML frontmatter. Selections are saved per mode."
+  },
+  "opt_frontmatter_mode_default": {
+    "message": "Default mode"
+  },
+  "opt_frontmatter_mode_obsidian": {
+    "message": "Obsidian-friendly mode"
+  },
+  "opt_frontmatter_select_all": {
+    "message": "Activate all"
+  },
+  "nav_settings": {
+    "message": "Settings"
+  },
+  "nav_back": {
+    "message": "Back"
+  },
+  "settings_help": {
+    "message": "Hover over labels for more info"
+  },
+  "group_obsidian": {
+    "message": "Obsidian"
+  },
+  "opt_obsidian_friendly": {
+    "message": "Obsidian-friendly frontmatter"
+  },
+  "opt_obsidian_friendly_title": {
+    "message": "Emit frontmatter optimized for Obsidian: wikilink author, tags, published/created dates"
+  },
+  "opt_obsidian_vault": {
+    "message": "Vault name"
+  },
+  "opt_obsidian_vault_title": {
+    "message": "Used by the 'Add to Obsidian' button. Leave blank to let Obsidian pick the last-used vault."
+  },
+  "opt_obsidian_vault_placeholder": {
+    "message": "(optional)"
+  },
+  "opt_obsidian_folder": {
+    "message": "Subfolder"
+  },
+  "opt_obsidian_folder_title": {
+    "message": "Create the note inside this subfolder of the vault (e.g. Tweets or Inbox/Tweets). Leave blank to create at the vault root."
+  },
+  "opt_obsidian_folder_placeholder": {
+    "message": "e.g. Tweets"
+  },
+  "opt_obsidian_tags": {
+    "message": "Tags"
+  },
+  "opt_obsidian_tags_title": {
+    "message": "Comma-separated tags emitted in the Obsidian-friendly frontmatter. Type { to insert a placeholder. Leave empty for the default (clippings, x, {type})."
+  },
+  "opt_obsidian_tags_placeholder": {
+    "message": "clippings, x, {type}"
+  },
+  "opt_obsidian_tags_reset": {
+    "message": "Reset"
+  },
+  "opt_obsidian_tags_info": {
+    "message": "Show tag placeholders"
+  },
+  "opt_save_local_title": {
+    "message": "Off: keep media as links to X. Images: download images to a folder next to the Markdown file. Media: save videos as .mp4 too — these are far larger."
+  },
+  "opt_save_local": {
+    "message": "Save locally (only with .md)"
+  },
+  "opt_save_local_off": {
+    "message": "Off"
+  },
+  "opt_save_local_images": {
+    "message": "Images"
+  },
+  "opt_save_local_media": {
+    "message": "Media"
+  },
+  "opt_metadata_title": {
+    "message": "Add likes, reposts, views as YAML frontmatter"
+  },
+  "opt_metadata": {
+    "message": "Include metadata"
+  },
+  "opt_inline_stats_title": {
+    "message": "Render likes, reposts, replies, bookmarks, and views as a row in the Markdown body"
+  },
+  "opt_inline_stats": {
+    "message": "Show engagement stats inline"
+  },
+  "opt_include_reposts": {
+    "message": "Include reposts (profiles)"
+  },
+  "opt_include_reposts_title": {
+    "message": "When batch-exporting a profile, include reposts too. Off = the profile owner's own posts only."
+  },
+  "opt_close_tab_title": {
+    "message": "Close the tab automatically after exporting from a tweet's inline button or right-click menu"
+  },
+  "opt_close_tab": {
+    "message": "Close the new tab after export"
+  },
+  "ctx_save_tweet": {
+    "message": "Download tweet as Markdown"
+  },
+  "ctx_copy_tweet": {
+    "message": "Copy tweet as Markdown"
+  },
+  "ctx_copy_just_this_tweet": {
+    "message": "Copy just this tweet (no thread)"
+  },
+  "ctx_obsidian_tweet": {
+    "message": "Add tweet to Obsidian"
+  },
+  "ctx_export_pdf": {
+    "message": "Export tweet as PDF"
+  },
+  "ctx_copy_txt": {
+    "message": "Copy tweet as txt"
+  },
+  "ctx_download_txt": {
+    "message": "Download tweet as txt"
+  },
+  "ctx_download_html": {
+    "message": "Download tweet as html"
+  },
+  "ctx_download_json": {
+    "message": "Download tweet as json"
+  },
+  "ctx_download_csv": {
+    "message": "Download tweet as csv"
+  },
+  "opt_show_inline_title": {
+    "message": "Add a download button next to share on each tweet's action bar"
+  },
+  "opt_show_inline": {
+    "message": "Show inline button on tweets"
+  },
+  "opt_inline_copies_title": {
+    "message": "When enabled, the inline icon on each tweet copies markdown to the clipboard instead of downloading a file"
+  },
+  "opt_inline_copies": {
+    "message": "Inline button copies instead"
+  },
+  "footer_hint": {
+    "message": "Open a tweet or article on X.com to get started"
+  },
+  "footer_feedback": {
+    "message": "Issues or suggestions?"
+  },
+  "error_reload": {
+    "message": "Reload the page and try again."
+  },
+  "error_specific_page": {
+    "message": "Open a specific tweet or article page (with /status/ in the URL)."
+  },
+  "error_failed": {
+    "message": "Failed to extract content."
+  },
+  "error_unexpected": {
+    "message": "An unexpected error occurred."
+  },
+  "error_no_tab": {
+    "message": "No active tab."
+  },
+  "download_failed": {
+    "message": "Download failed."
+  },
+  "pdf_failed": {
+    "message": "PDF export failed."
+  },
+  "article_downloaded": {
+    "message": "Article downloaded!"
+  },
+  "thread_downloaded": {
+    "message": "Thread downloaded!"
+  },
+  "tweet_downloaded": {
+    "message": "Tweet downloaded!"
+  },
+  "downloaded": {
+    "message": "Downloaded!"
+  },
+  "pdf_downloaded": {
+    "message": "PDF downloaded!"
+  },
+  "article_copied": {
+    "message": "Article copied!"
+  },
+  "thread_copied": {
+    "message": "Thread copied!"
+  },
+  "tweet_copied": {
+    "message": "Tweet copied!"
+  },
+  "copied": {
+    "message": "Copied!"
+  },
+  "video_unresolved": {
+    "message": "Video kept as a link — reload the post once, then export again."
+  }
+}

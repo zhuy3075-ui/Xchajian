@@ -1,0 +1,593 @@
+{
+  "extensionName": {
+    "message": "X / Twitter ウェブクリッパー: ブックマークとスレッドをMarkdown、PDF、Obsidianへ"
+  },
+  "extensionDescription": {
+    "message": "自分の「いいね」や任意のプロフィールから投稿・動画・長文記事を、1件ずつ、または数千件を一括でエクスポート。ローカル処理、X API キー不要。"
+  },
+  "tagline": {
+    "message": "スレッドや記事をMarkdownやPDFで保存"
+  },
+  "btn_download": {
+    "message": "ダウンロード"
+  },
+  "btn_copy": {
+    "message": "コピー"
+  },
+  "btn_pdf": {
+    "message": ".pdf にエクスポート"
+  },
+  "btn_pdf_hint": {
+    "message": "現在の設定で整形済みのPDF書き出しを作成し、保存先を選びます。"
+  },
+  "rendering_pdf": {
+    "message": "PDFを作成中…"
+  },
+  "btn_obsidian": {
+    "message": "Obsidianに追加"
+  },
+  "btn_md_hint": {
+    "message": "Markdown — 完全に整形されたエクスポートです。"
+  },
+  "btn_html_hint": {
+    "message": "スタイル付きの自己完結HTMLファイルとして保存します。"
+  },
+  "btn_json_hint": {
+    "message": "生の構造化ドキュメント（AST）をJSONとして保存します。"
+  },
+  "btn_txt_hint": {
+    "message": "マークアップを取り除いたプレーンテキストとして保存します。"
+  },
+  "btn_csv_hint": {
+    "message": "選択したfrontmatterフィールドを使ってメタデータ1行を保存します。"
+  },
+  "review_text": {
+    "message": "XClipperを気に入っていますか？無料で情熱を込めて作っています。短い★★★★★レビューが、より多くの人に届く大きな助けになります。"
+  },
+  "review_rate": {
+    "message": "Chrome Web Storeで評価"
+  },
+  "review_later": {
+    "message": "後で"
+  },
+  "review_dismiss": {
+    "message": "閉じる"
+  },
+  "btn_batch": {
+    "message": "ブックマークをエクスポート"
+  },
+  "btn_batch_hint": {
+    "message": "このページに読み込まれたすべてのブックマークをMarkdownファイルとして1つのフォルダにエクスポートします。さらに読み込むにはブックマークページをスクロールしてください。"
+  },
+  "batch_mode": {
+    "message": "一括処理方式"
+  },
+  "batch_mode_hint": {
+    "message": "AutoとSuperはログイン済みのXセッション経由で取得します—APIキーもパスワードも不要で、データはブラウザの外へ出ません。大量実行ではXのソフトレート制限に達することがありますが、穏やかに停止して残りを保留します—約15分待ってから再実行すれば、中断地点から続行できます。"
+  },
+  "batch_mode_info_label": {
+    "message": "AutoとSuperについて"
+  },
+  "mode_manual": {
+    "message": "Manual"
+  },
+  "mode_auto": {
+    "message": "Auto"
+  },
+  "mode_super": {
+    "message": "Super"
+  },
+  "mode_caption_manual": {
+    "message": "ページをスクロールすると、読み込んだ全投稿が保存され、スレッドと記事も完全に取得されます。"
+  },
+  "mode_caption_auto": {
+    "message": "Xセッション経由で自動取得します—スクロール不要で、スレッドと記事も完全に取得します。"
+  },
+  "mode_caption_super": {
+    "message": "一度に数千件を取得しますが、各投稿の最初のツイートだけを保存し、スレッドはスキップします。"
+  },
+  "btn_batch_fast_hint": {
+    "message": "Xセッション経由ですべてのブックマークを取得します。大幅に高速で、スレッドと記事を展開します。"
+  },
+  "btn_batch_fast_profile_hint": {
+    "message": "Xセッション経由でこのプロフィール自身の投稿を取得します。大幅に高速です。リポストはスキップされます。"
+  },
+  "btn_batch_fast_likes_hint": {
+    "message": "Xセッション経由でいいねした投稿を取得します。大幅に高速で、スレッドと記事を展開します。"
+  },
+  "btn_batch_fast_no_selection": {
+    "message": "選択はManualモードでのみ利用できます。ツイートを手動で選ぶにはManualに切り替えてください。"
+  },
+  "btn_batch_fast_no_timeline": {
+    "message": "タイムラインはManualモードでのみ利用できます。ホームフィードをエクスポートするにはManualに切り替えてください。"
+  },
+  "batch_tab_selection_fast": {
+    "message": "手動でツイートを選ぶにはManualに切り替える"
+  },
+  "batch_tab_timeline_fast": {
+    "message": "ホームフィードをエクスポートするにはManualに切り替える"
+  },
+  "fast_locked": {
+    "message": "エクスポートが実行中です。モードを切り替えるにはキャンセルするか完了を待ってください。"
+  },
+  "fast_date_range": {
+    "message": "日付範囲"
+  },
+  "fast_date_from": {
+    "message": "開始日"
+  },
+  "fast_date_to": {
+    "message": "終了日"
+  },
+  "fast_date_clear": {
+    "message": "クリア"
+  },
+  "fast_paginate": {
+    "message": "取得モード"
+  },
+  "fast_paginate_recent": {
+    "message": "最新"
+  },
+  "fast_paginate_resume": {
+    "message": "再開"
+  },
+  "fast_caption_recent": {
+    "message": "フィード上部をスキャンし、前回の実行後に追加された新しい投稿を取得します。"
+  },
+  "fast_caption_resume": {
+    "message": "前回の「再開」が停止した位置から、過去分をさらにさかのぼって取得します。"
+  },
+  "fast_caption_daterange": {
+    "message": "下の期間内に投稿されたものだけを対象に、「再開」の位置を動かさず深くスキャンします。"
+  },
+  "fast_step_page": {
+    "message": "x.comを再読み込み"
+  },
+  "fast_step_tweet": {
+    "message": "ツイートを1件開く"
+  },
+  "fast_step_fetch": {
+    "message": "取得中 ..."
+  },
+  "fast_step_expand": {
+    "message": "展開中 ..."
+  },
+  "batch_pause": {
+    "message": "一時停止"
+  },
+  "batch_resume": {
+    "message": "再開"
+  },
+  "batch_stop": {
+    "message": "停止"
+  },
+  "batch_paused": {
+    "message": "一時停止中"
+  },
+  "batch_done": {
+    "message": "完了"
+  },
+  "batch_stopped": {
+    "message": "停止済み"
+  },
+  "batch_exported": {
+    "message": "エクスポート済み"
+  },
+  "batch_failed": {
+    "message": "失敗"
+  },
+  "batch_new": {
+    "message": "新規"
+  },
+  "batch_already_exported": {
+    "message": "エクスポート済み"
+  },
+  "batch_reset": {
+    "message": "履歴をリセット"
+  },
+  "batch_reset_hint": {
+    "message": "過去の実行でエクスポート済みだった投稿を忘れ、次の一括処理で読み込まれたものをすべて再エクスポートします。"
+  },
+  "batch_reset_queue": {
+    "message": "キューをリセット"
+  },
+  "batch_reset_queue_hint": {
+    "message": "収集済みの投稿を空にし、スクロールした位置から収集をやり直します。先頭ではなく特定の投稿から始められます。"
+  },
+  "btn_batch_open_x": {
+    "message": "x.comを開いて、ブックマーク、プロフィール、選択項目を一括エクスポートします。"
+  },
+  "btn_batch_open_bookmarks": {
+    "message": "ブックマークページを開き、スクロールして投稿を読み込んでからエクスポートします。"
+  },
+  "btn_batch_open_profile": {
+    "message": "x.comのプロフィールページを開いて投稿をエクスポートします。リポストはスキップされます。"
+  },
+  "btn_batch_profile": {
+    "message": "投稿をエクスポート"
+  },
+  "btn_batch_profile_hint": {
+    "message": "このプロフィール自身の読み込み済み投稿をMarkdownファイルとして1つのフォルダにエクスポートします。リポストはスキップされます。さらに読み込むにはスクロールしてください。"
+  },
+  "btn_batch_likes": {
+    "message": "いいねをエクスポート"
+  },
+  "btn_batch_likes_hint": {
+    "message": "このページに読み込まれたいいね済み投稿をすべてMarkdownファイルとして1つのフォルダにエクスポートします。さらに読み込むには「いいね」ページをスクロールしてください。"
+  },
+  "btn_batch_open_likes": {
+    "message": "x.comの「いいね」ページを開いて、いいねした投稿をエクスポートします。"
+  },
+  "btn_batch_timeline": {
+    "message": "タイムラインをエクスポート"
+  },
+  "btn_batch_timeline_hint": {
+    "message": "ホームタイムラインに読み込まれた各投稿をMarkdownファイルとして1つのフォルダにエクスポートします。さらに読み込むにはスクロールしてください。"
+  },
+  "btn_batch_open_timeline": {
+    "message": "ホームタイムラインを開き、スクロールして投稿を読み込んでからエクスポートします。"
+  },
+  "btn_batch_go_bookmarks": {
+    "message": "ブックマークを開く"
+  },
+  "btn_batch_go_timeline": {
+    "message": "タイムラインを開く"
+  },
+  "btn_batch_go_likes": {
+    "message": "「いいね」を開く"
+  },
+  "group_batch": {
+    "message": "一括エクスポート"
+  },
+  "batch_tab_bookmarks": {
+    "message": "ブックマーク"
+  },
+  "batch_tab_profile": {
+    "message": "プロフィール"
+  },
+  "batch_tab_selection": {
+    "message": "選択"
+  },
+  "batch_tab_likes": {
+    "message": "いいね"
+  },
+  "batch_tab_timeline": {
+    "message": "タイムライン"
+  },
+  "btn_batch_select": {
+    "message": "ツイートを選択…"
+  },
+  "btn_batch_select_hint": {
+    "message": "現在のページでチェックボックスを使って個別のツイートを選び、選択項目をエクスポートします。"
+  },
+  "btn_batch_add": {
+    "message": "キューに追加"
+  },
+  "btn_batch_add_hint": {
+    "message": "新しく読み込まれた投稿を実行中の一括キューに追加します。"
+  },
+  "batch_format": {
+    "message": "形式"
+  },
+  "batch_output": {
+    "message": "出力"
+  },
+  "batch_output_hint": {
+    "message": "個別: 投稿ごとに1ファイル。両方: 投稿ごとのファイルと結合ファイル。結合: 1ファイルのみ。"
+  },
+  "batch_out_separate": {
+    "message": "個別"
+  },
+  "batch_out_both": {
+    "message": "両方"
+  },
+  "batch_out_combined": {
+    "message": "結合"
+  },
+  "opt_zip": {
+    "message": "ZIPにまとめる（1回のダウンロード）"
+  },
+  "opt_zip_title": {
+    "message": "エクスポートを1つの.zipにまとめます。一括処理では数千回の代わりに1回のダウンロード、単体ではMarkdownファイルとメディアフォルダの代わりに1つのアーカイブになります。"
+  },
+  "opt_zip_title_batch": {
+    "message": "投稿ごとの全ファイルを1つの.zipにまとめ、数千回の代わりに1回のダウンロードで済みます—ローカルへのメディア保存がオンの場合や、出力が「結合」の場合は使えません。"
+  },
+  "opt_zip_title_single": {
+    "message": "エクスポートを1つの.zipにまとめます—Markdownファイルと同階層のメディアフォルダの代わりに、1つのアーカイブになります。"
+  },
+  "flood_hint": {
+    "message": "数千件のファイルが一度に保存される可能性があります。「ZIPにまとめる」をオンにするか、出力を「結合」にすると1回のダウンロードで済みます。"
+  },
+  "batch_bar_selected": {
+    "message": "選択済み"
+  },
+  "batch_bar_hint": {
+    "message": "ツイートをタップして選択"
+  },
+  "batch_bar_export": {
+    "message": "エクスポート"
+  },
+  "batch_started": {
+    "message": "一括処理を開始しました"
+  },
+  "batch_start_failed": {
+    "message": "一括処理を開始できませんでした。"
+  },
+  "batch_running": {
+    "message": "一括ジョブはすでに実行中です。"
+  },
+  "btn_obsidian_hint": {
+    "message": "Vault・サブフォルダ・frontmatter のフィールドは「設定」で構成できます。\n長いスレッドや画像は「.mdをダウンロード」ボタンをお使いください。"
+  },
+  "obsidian_opened": {
+    "message": "Obsidianを開いています…"
+  },
+  "extracting": {
+    "message": "抽出中…"
+  },
+  "group_export": {
+    "message": "エクスポート設定"
+  },
+  "beta": {
+    "message": "ベータ"
+  },
+  "group_single": {
+    "message": "単体エクスポート"
+  },
+  "group_downloads": {
+    "message": "ダウンロード"
+  },
+  "opt_download_folder": {
+    "message": "サブフォルダ"
+  },
+  "opt_download_folder_title": {
+    "message": "Markdownファイルと画像をダウンロードフォルダ内のこのサブフォルダに保存します。空欄にすると、ダウンロードフォルダ直下に保存されます。"
+  },
+  "opt_download_folder_placeholder": {
+    "message": "例: xclipper"
+  },
+  "opt_filename_template": {
+    "message": "ファイル名テンプレート"
+  },
+  "opt_filename_template_placeholder": {
+    "message": "{handle}-{id}.md"
+  },
+  "opt_filename_preview": {
+    "message": "プレビュー:"
+  },
+  "opt_filename_template_info": {
+    "message": "ファイル名テンプレートのプレースホルダーを表示"
+  },
+  "opt_filename_template_hint_title": {
+    "message": "プレースホルダー"
+  },
+  "opt_filename_hint_date": {
+    "message": "公開日 (YYYY-MM-DD)"
+  },
+  "opt_filename_hint_datetime": {
+    "message": "公開日 + 時刻"
+  },
+  "opt_filename_hint_handle": {
+    "message": "@なしの著者ハンドル"
+  },
+  "opt_filename_hint_author": {
+    "message": "著者の表示名"
+  },
+  "opt_filename_hint_id": {
+    "message": "ツイートID"
+  },
+  "opt_filename_hint_slug": {
+    "message": "短いテキストプレビュー"
+  },
+  "opt_filename_hint_type": {
+    "message": "tweet / thread / article"
+  },
+  "group_inline": {
+    "message": "インラインボタン & 右クリックメニュー"
+  },
+  "group_frontmatter": {
+    "message": "frontmatter のフィールド"
+  },
+  "opt_frontmatter_help": {
+    "message": "YAML frontmatter に含めるエントリを選択します。選択はモードごとに保存されます。"
+  },
+  "opt_frontmatter_mode_default": {
+    "message": "デフォルトモード"
+  },
+  "opt_frontmatter_mode_obsidian": {
+    "message": "Obsidian 向けモード"
+  },
+  "opt_frontmatter_select_all": {
+    "message": "すべて有効化"
+  },
+  "nav_settings": {
+    "message": "設定"
+  },
+  "nav_back": {
+    "message": "戻る"
+  },
+  "settings_help": {
+    "message": "ラベルにマウスを合わせると詳細が表示されます"
+  },
+  "group_obsidian": {
+    "message": "Obsidian"
+  },
+  "opt_obsidian_friendly": {
+    "message": "Obsidian向けフロントマター"
+  },
+  "opt_obsidian_friendly_title": {
+    "message": "Obsidian向けに最適化されたフロントマターを生成します：wikilink著者、タグ、公開日/作成日"
+  },
+  "opt_obsidian_vault": {
+    "message": "Vault名"
+  },
+  "opt_obsidian_vault_title": {
+    "message": "「Obsidianに追加」ボタンで使用されます。空欄にすると、Obsidianが最後に使用したVaultを選択します。"
+  },
+  "opt_obsidian_vault_placeholder": {
+    "message": "（任意）"
+  },
+  "opt_obsidian_folder": {
+    "message": "サブフォルダ"
+  },
+  "opt_obsidian_folder_title": {
+    "message": "Vault内のこのサブフォルダにノートを作成します（例: Tweets または Inbox/Tweets）。空欄にするとVaultのルートに作成されます。"
+  },
+  "opt_obsidian_folder_placeholder": {
+    "message": "例: Tweets"
+  },
+  "opt_obsidian_tags": {
+    "message": "タグ"
+  },
+  "opt_obsidian_tags_title": {
+    "message": "Obsidian-friendly フロントマターに出力されるタグ（カンマ区切り）。{ を入力するとプレースホルダーを挿入できます。空欄でデフォルト (clippings, x, {type}) になります。"
+  },
+  "opt_obsidian_tags_placeholder": {
+    "message": "clippings, x, {type}"
+  },
+  "opt_obsidian_tags_reset": {
+    "message": "リセット"
+  },
+  "opt_obsidian_tags_info": {
+    "message": "タグのプレースホルダーを表示"
+  },
+  "opt_save_local_title": {
+    "message": "オフ：メディアは X へのリンクのままにします。画像：Markdown ファイルと同じ階層のフォルダに画像をダウンロードします。メディア：動画も .mp4 形式で保存します（ファイルサイズは大幅に大きくなります）。"
+  },
+  "opt_save_local": {
+    "message": "ローカル保存（.md の場合のみ）"
+  },
+  "opt_save_local_off": {
+    "message": "オフ"
+  },
+  "opt_save_local_images": {
+    "message": "画像"
+  },
+  "opt_save_local_media": {
+    "message": "メディア"
+  },
+  "opt_metadata_title": {
+    "message": "いいね、リポスト、閲覧数をYAMLフロントマターとして追加"
+  },
+  "opt_metadata": {
+    "message": "メタデータを含める"
+  },
+  "opt_inline_stats_title": {
+    "message": "いいね、リポスト、返信、ブックマーク、表示回数を Markdown 本文に1行で表示します"
+  },
+  "opt_inline_stats": {
+    "message": "エンゲージメント数を本文に表示"
+  },
+  "opt_include_reposts": {
+    "message": "リポストを含める（プロフィール）"
+  },
+  "opt_include_reposts_title": {
+    "message": "プロフィールを一括エクスポートするとき、リポストも含めます。オフ = プロフィール所有者自身の投稿のみ。"
+  },
+  "opt_close_tab_title": {
+    "message": "ツイートのインラインボタンまたは右クリックメニューからエクスポートした後、タブを自動的に閉じます。"
+  },
+  "opt_close_tab": {
+    "message": "エクスポート後に新しいタブを閉じる"
+  },
+  "ctx_save_tweet": {
+    "message": "ツイートをMarkdownでダウンロード"
+  },
+  "ctx_copy_tweet": {
+    "message": "ツイートをMarkdownとしてコピー"
+  },
+  "ctx_copy_just_this_tweet": {
+    "message": "このツイートだけをコピー（スレッドなし）"
+  },
+  "ctx_obsidian_tweet": {
+    "message": "ツイートをObsidianに追加"
+  },
+  "ctx_export_pdf": {
+    "message": "ツイートをPDFでエクスポート"
+  },
+  "ctx_copy_txt": {
+    "message": "ツイートをtxtでコピー"
+  },
+  "ctx_download_txt": {
+    "message": "ツイートをtxtでダウンロード"
+  },
+  "ctx_download_html": {
+    "message": "ツイートをhtmlでダウンロード"
+  },
+  "ctx_download_json": {
+    "message": "ツイートをjsonでダウンロード"
+  },
+  "ctx_download_csv": {
+    "message": "ツイートをcsvでダウンロード"
+  },
+  "opt_show_inline_title": {
+    "message": "各ツイートのアクションバーの共有ボタンの横にダウンロードボタンを追加します"
+  },
+  "opt_show_inline": {
+    "message": "ツイートにインラインボタンを表示"
+  },
+  "opt_inline_copies_title": {
+    "message": "有効にすると、インラインのダウンロードアイコンはファイルをダウンロードする代わりにMarkdownをクリップボードへコピーします。"
+  },
+  "opt_inline_copies": {
+    "message": "インラインボタンでコピーする"
+  },
+  "footer_hint": {
+    "message": "X.comでツイートまたは記事を開いて開始してください"
+  },
+  "footer_feedback": {
+    "message": "問題や提案はありますか？"
+  },
+  "error_reload": {
+    "message": "ページを再読み込みして、やり直してください。"
+  },
+  "error_specific_page": {
+    "message": "特定のツイートまたは記事のページ（URL に /status/ を含む）を開いてください。"
+  },
+  "error_failed": {
+    "message": "コンテンツの抽出に失敗しました。"
+  },
+  "error_unexpected": {
+    "message": "予期しないエラーが発生しました。"
+  },
+  "error_no_tab": {
+    "message": "アクティブなタブがありません。"
+  },
+  "download_failed": {
+    "message": "ダウンロードに失敗しました。"
+  },
+  "pdf_failed": {
+    "message": "PDFのエクスポートに失敗しました。"
+  },
+  "article_downloaded": {
+    "message": "記事をダウンロードしました！"
+  },
+  "thread_downloaded": {
+    "message": "スレッドをダウンロードしました！"
+  },
+  "tweet_downloaded": {
+    "message": "ツイートをダウンロードしました！"
+  },
+  "downloaded": {
+    "message": "ダウンロード完了！"
+  },
+  "pdf_downloaded": {
+    "message": "PDFをダウンロードしました！"
+  },
+  "article_copied": {
+    "message": "記事をコピーしました！"
+  },
+  "thread_copied": {
+    "message": "スレッドをコピーしました！"
+  },
+  "tweet_copied": {
+    "message": "ツイートをコピーしました！"
+  },
+  "copied": {
+    "message": "コピー完了！"
+  },
+  "video_unresolved": {
+    "message": "動画はリンクのままです—投稿を一度再読み込みしてから、もう一度エクスポートしてください。"
+  }
+}

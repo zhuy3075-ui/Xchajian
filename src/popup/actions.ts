@@ -1,0 +1,467 @@
+// The four export flows (Download / Copy / PDF / Add to Obsidian) plus the
+// shared extraction call and the status/loading UI they drive. Reads the user's
+// current selections from the DOM refs and the settings-form field maps; it
+// does not own any settings state.
+
+import type {
+  ExtractResponse,
+  DownloadRequest,
+  ExtractedContent,
+  ResolveVideoUrlsResponse,
+} from '../types/messages';
+import { postProcess, markdownOptions, buildFilename, type PostProcessResult } from '../shared/post-process';
+import { buildFormatExport, type ExportFormat } from '../shared/export-formats';
+import { recordExport } from '../shared/review-prompt';
+import { buildObsidianTargetUrl, resolveObsidianTarget } from '../shared/obsidian';
+import { hostMatches } from '../shared/media';
+import { renderMarkdown } from '../ast/render-markdown';
+import { resolveLocalVideo, type VideoAttachment } from '../shared/local-video';
+import { currentFrontmatterFields, readSingleFormat, applySingleFormat, persistAll, readSettingsForm, saveLocalMediaEnabled } from './settings-form';
+import type { BatchFormat } from '../shared/settings';
+import {
+  btnDownload,
+  btnCopy,
+  chkZip,
+  btnPdf,
+  btnObsidian,
+  fmtButtons,
+  statusEl,
+  chkMetadata,
+  chkInlineStats,
+  chkObsidianFriendly,
+  txtFilenameTemplate,
+  txtObsidianTags,
+} from './dom';
+
+// Every button the export flows disable while one of them is running, so a
+// second click can't race an in-flight extraction (the format selectors too,
+// so the target format can't change mid-flight).
+const allExportButtons = [btnDownload, btnCopy, btnPdf, btnObsidian, ...fmtButtons];
+let statusHideTimeout: ReturnType<typeof setTimeout> | undefined;
+
+function showStatus(
+  message: string,
+  type: 'success' | 'error' | 'info'
+): void {
+  // A previous export's success timer must not dismiss a newer message or
+  // the long-note continuation button while the user is reading it.
+  if (statusHideTimeout !== undefined) {
+    clearTimeout(statusHideTimeout);
+    statusHideTimeout = undefined;
+  }
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+
+  // Auto-hide success messages after 3 seconds
+  if (type === 'success') {
+    statusHideTimeout = setTimeout(() => {
+      statusEl.className = 'status hidden';
+      statusHideTimeout = undefined;
+    }, 3000);
+  }
+}
+
+function setLoading(loading: boolean, target?: 'download' | 'copy' | 'obsidian' | 'pdf'): void {
+  for (const btn of allExportButtons) btn.disabled = loading;
+
+  // Only animate the button that was actually clicked
+  if (target === 'download' || !target) {
+    btnDownload.classList.toggle('loading', loading);
+    const dlLabel = btnDownload.querySelector('.btn-label');
+    if (dlLabel) dlLabel.textContent = loading ? (chrome.i18n.getMessage('extracting') || 'Extracting…') : (chrome.i18n.getMessage('btn_download') || 'Download');
+  }
+  if (target === 'copy' || !target) {
+    btnCopy.classList.toggle('loading', loading);
+    const cpLabel = btnCopy.querySelector('.btn-label');
+    if (cpLabel) cpLabel.textContent = loading ? (chrome.i18n.getMessage('extracting') || 'Extracting…') : (chrome.i18n.getMessage('btn_copy') || 'Copy');
+  }
+  if (target === 'obsidian' || !target) {
+    btnObsidian.classList.toggle('loading', loading);
+    const obLabel = btnObsidian.querySelector('.btn-label');
+    if (obLabel) obLabel.textContent = loading ? (chrome.i18n.getMessage('extracting') || 'Extracting…') : (chrome.i18n.getMessage('btn_obsidian') || 'Add to Obsidian');
+  }
+  if (target === 'pdf' || !target) {
+    btnPdf.classList.toggle('loading', loading);
+    const pdfLabel = btnPdf.querySelector('.btn-label');
+    if (pdfLabel) pdfLabel.textContent = loading ? (chrome.i18n.getMessage('rendering_pdf') || 'Rendering PDF…') : (chrome.i18n.getMessage('btn_pdf') || 'Export .pdf');
+  }
+
+  // When stopping, always reset all four to default state
+  if (!loading) {
+    btnDownload.classList.remove('loading');
+    btnCopy.classList.remove('loading');
+    btnObsidian.classList.remove('loading');
+    btnPdf.classList.remove('loading');
+    const dlLabel = btnDownload.querySelector('.btn-label');
+    const cpLabel = btnCopy.querySelector('.btn-label');
+    const obLabel = btnObsidian.querySelector('.btn-label');
+    const pdfLabel = btnPdf.querySelector('.btn-label');
+    if (dlLabel) dlLabel.textContent = chrome.i18n.getMessage('btn_download') || 'Download';
+    if (cpLabel) cpLabel.textContent = chrome.i18n.getMessage('btn_copy') || 'Copy';
+    if (obLabel) obLabel.textContent = chrome.i18n.getMessage('btn_obsidian') || 'Add to Obsidian';
+    if (pdfLabel) pdfLabel.textContent = chrome.i18n.getMessage('btn_pdf') || 'Export .pdf';
+  }
+}
+
+// Shared up-front guard + extraction: resolve the active tab, confirm it's a
+// specific X.com status page, and run EXTRACT. Both the Markdown flows and the
+// alternate-format exports build on the ExtractedContent it returns.
+async function extractContent(includeMetadata: boolean): Promise<ExtractedContent> {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+
+  if (!tab?.id) {
+    throw new Error('Unable to access the current tab.');
+  }
+
+  const url = tab.url || '';
+  if (!hostMatches(url, 'x.com', 'www.x.com')) {
+    throw new Error(chrome.i18n.getMessage('footer_hint') || 'Navigate to a tweet or article on X.com first.');
+  }
+
+  if (!url.includes('/status/')) {
+    throw new Error(
+      chrome.i18n.getMessage('error_specific_page') || 'Open a specific tweet or article page (with /status/ in the URL).'
+    );
+  }
+
+  const response: ExtractResponse | undefined = await chrome.tabs.sendMessage(tab.id, {
+    action: 'EXTRACT',
+    includeMetadata,
+  });
+
+  // After an extension reload the content script already in the tab is
+  // orphaned: its async EXTRACT handler can't answer, so tabs.sendMessage
+  // resolves `undefined` (instead of rejecting with "Receiving end does not
+  // exist"). Surface the same "reload the page" hint rather than letting a
+  // raw `undefined.success` TypeError leak through.
+  if (!response) {
+    throw new Error(chrome.i18n.getMessage('error_reload') || 'Reload the page and try again.');
+  }
+  if (!response.success || !response.data) {
+    throw new Error(response.error || chrome.i18n.getMessage('error_failed') || 'Failed to extract content.');
+  }
+
+  return response.data;
+}
+
+async function extractMarkdown(
+  forAction: 'download' | 'copy' | 'obsidian' = 'download',
+): Promise<PostProcessResult & Pick<ExtractedContent, 'author'>> {
+  const opts = markdownOptions(readSettingsForm(), forAction);
+
+  // Need engagement data if either renderer wants it.
+  const data = await extractContent(opts.includeMetadata || opts.inlineStats === true);
+
+  return { ...postProcess(data, {
+    ...opts,
+    videoAttachments: opts.downloadImages ? await localVideoAttachments(data) : undefined,
+  }), author: data.author };
+}
+
+// Turn this post's videos into local files, when the user asked for Media.
+//
+// The Markdown is re-rendered from the filled-in AST so its [▶ Video] link
+// points at the file we're about to save. Re-rendering is safe because the
+// content script renders with no options — includeVideoLinks is the only
+// difference between the two passes.
+//
+// A post that HAS video and still didn't resolve says so, because silently
+// shipping the thumbnail is the one outcome the user can't tell apart from
+// success until they open the folder.
+async function localVideoAttachments(data: ExtractedContent): Promise<VideoAttachment[] | undefined> {
+  if (!saveLocalMediaEnabled() || !data.body) return undefined;
+
+  const result = await resolveLocalVideo(data.body, data.tweetId, async (tweetId) => {
+    const response: ResolveVideoUrlsResponse | undefined = await chrome.runtime.sendMessage({
+      action: 'RESOLVE_VIDEO_URLS',
+      tweetId,
+    });
+    return response?.urls ?? [];
+  });
+  if (result.status === 'none') return undefined;
+  if (result.status === 'unresolved') {
+    showStatus(
+      chrome.i18n.getMessage('video_unresolved') ||
+        'Video kept as a link — reload the post once, then export again.',
+      'info'
+    );
+    return undefined;
+  }
+
+  data.markdown = renderMarkdown(data.body, { includeVideoLinks: true });
+  return result.attachments;
+}
+
+function handleExtractionError(err: unknown): void {
+  const message =
+    err instanceof Error ? err.message : (chrome.i18n.getMessage('error_unexpected') || 'An unexpected error occurred.');
+
+  if (message.includes('Receiving end does not exist')) {
+    showStatus(chrome.i18n.getMessage('error_reload') || 'Reload the page and try again.', 'error');
+  } else {
+    showStatus(message, 'error');
+  }
+  setLoading(false);
+}
+
+// Wires the four export buttons. Call once on popup open.
+export function initActions(): void {
+  // ─── Download / Copy: dispatch on the selected format ───
+  // '.md' runs the full Markdown pipeline (frontmatter, local images, filename
+  // template); the other four go through buildFormatExport.
+  btnDownload.addEventListener('click', () => {
+    const fmt = readSingleFormat();
+    if (fmt === 'md') void runMarkdownDownload();
+    else void runFormatExport(fmt, 'download');
+  });
+  btnCopy.addEventListener('click', () => {
+    const fmt = readSingleFormat();
+    if (fmt === 'md') void runMarkdownCopy();
+    else void runFormatExport(fmt, 'copy');
+  });
+
+  // ─── Format selector: activate + persist the clicked format ───
+  for (const btn of fmtButtons) {
+    btn.addEventListener('click', () => {
+      applySingleFormat(btn.dataset.format as BatchFormat);
+      persistAll();
+    });
+  }
+
+  // ─── PDF Export Flow ───
+  btnPdf.addEventListener('click', async () => {
+    setLoading(true, 'pdf');
+    statusEl.className = 'status hidden';
+    try {
+      const [tab] = await new Promise<chrome.tabs.Tab[]>((resolve) =>
+        chrome.tabs.query({ active: true, currentWindow: true }, resolve)
+      );
+      if (!tab?.id) {
+        showStatus(chrome.i18n.getMessage('error_no_tab') || 'No active tab.', 'error');
+        setLoading(false);
+        return;
+      }
+      // Same up-front host check as the markdown/copy/obsidian flow — without
+      // it, sendMessage falls through to "Receiving end does not exist" and the
+      // user gets the misleading "Reload the page and try again" hint.
+      const url = tab.url || '';
+      if (!hostMatches(url, 'x.com', 'www.x.com')) {
+        showStatus(
+          chrome.i18n.getMessage('footer_hint') || 'Navigate to a tweet or article on X.com first.',
+          'error',
+        );
+        setLoading(false);
+        return;
+      }
+      if (!url.includes('/status/')) {
+        showStatus(
+          chrome.i18n.getMessage('error_specific_page') ||
+            'Open a specific tweet or article page (with /status/ in the URL).',
+          'error',
+        );
+        setLoading(false);
+        return;
+      }
+      chrome.tabs.sendMessage(tab.id, { action: 'EXPORT_PDF' }, (resp) => {
+        if (chrome.runtime.lastError) {
+          const msg = chrome.runtime.lastError.message || '';
+          // Same friendly hint as the markdown flow: content script isn't on
+          // this page (non-/status/ URL or just-reloaded extension).
+          if (msg.includes('Receiving end does not exist')) {
+            showStatus(chrome.i18n.getMessage('error_reload') || 'Reload the page and try again.', 'error');
+          } else {
+            showStatus(msg || 'PDF export failed.', 'error');
+          }
+        } else if (!resp?.success) {
+          showStatus(resp?.error || chrome.i18n.getMessage('pdf_failed') || 'PDF export failed.', 'error');
+        } else {
+          showStatus(`✓ ${chrome.i18n.getMessage('pdf_downloaded') || 'PDF downloaded!'}`, 'success');
+          void recordExport();
+        }
+        setLoading(false);
+      });
+    } catch (err) {
+      handleExtractionError(err);
+    }
+  });
+
+  // ─── Add to Obsidian Flow ───
+  btnObsidian.addEventListener('click', async () => {
+    setLoading(true, 'obsidian');
+    statusEl.className = 'status hidden';
+
+    try {
+      const result = await extractMarkdown('obsidian');
+      const target = resolveObsidianTarget(result.filename, readSettingsForm(), result.author.handle);
+      const url = buildObsidianTargetUrl(result.markdown, target);
+
+      // Conservative handoff budget, not a browser URL limit. OS protocol
+      // launchers can reject a URI long before the browser's own limit.
+      const useClipboard = url.length > 1800;
+      {
+        const handoffUrl = useClipboard ? buildObsidianTargetUrl(null, target) : url;
+        if (handoffUrl.length > 1800) {
+          throw new Error(chrome.i18n.getMessage('obsidian_path_too_long') ||
+            'The vault, folder or filename is too long. Shorten it or download .md.');
+        }
+        showStatus(useClipboard
+          ? (chrome.i18n.getMessage('obsidian_clipboard_ready') || 'Long note ready. Continue to copy the full text to your clipboard and open Obsidian. This replaces your clipboard.')
+          : (chrome.i18n.getMessage('obsidian_note_ready') || 'Check the destination below, then continue to Obsidian.'), 'info');
+        const destination = document.createElement('code');
+        destination.className = 'obsidian-save-target';
+        destination.textContent = target.absolute ? target.path : `${target.vault || chrome.i18n.getMessage('obsidian_current_vault') || 'Current vault'} / ${target.path}`;
+        statusEl.append(destination);
+        const proceed = document.createElement('button');
+        proceed.type = 'button';
+        proceed.className = 'field-inline-action';
+        proceed.textContent = chrome.i18n.getMessage('obsidian_continue') || 'Continue to Obsidian';
+        statusEl.append(document.createTextNode(' '), proceed);
+        // A fresh click provides the user gesture for clipboard access and
+        // external-app launch, without adding clipboard permissions.
+        proceed.addEventListener('click', async () => {
+          proceed.disabled = true;
+          setLoading(true, 'obsidian');
+          try {
+            if (useClipboard) await navigator.clipboard.writeText(result.markdown);
+          } catch {
+            showStatus(chrome.i18n.getMessage('obsidian_clipboard_failed') ||
+              'Could not copy the note. Keep this popup focused and retry, or download .md and import it into your vault.', 'error');
+            setLoading(false);
+            return;
+          }
+          try {
+            // Keep a browser surface alive for the external-app confirmation.
+            // noopener may return null even on success; it is not an ack.
+            window.open(handoffUrl, '_blank', 'noopener');
+            showStatus(chrome.i18n.getMessage('obsidian_handoff_sent') ||
+              'Open Obsidian when prompted, then check your vault. If nothing opens, retry. Keep the copied text until the note appears.', 'info');
+            void recordExport();
+          } catch (err) {
+            handleExtractionError(err);
+          } finally {
+            setLoading(false);
+          }
+        });
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      handleExtractionError(err);
+    }
+  });
+
+}
+
+// ─── Markdown Download (.md) ───
+async function runMarkdownDownload(): Promise<void> {
+  setLoading(true, 'download');
+  statusEl.className = 'status hidden';
+
+  try {
+    const result = await extractMarkdown();
+
+    // Zip only earns its keep when there is media to keep together with the
+    // Markdown — a lone .md in an archive is just an extra step for the user.
+    const downloadMsg: DownloadRequest = {
+      action: 'DOWNLOAD_MD',
+      content: result.markdown,
+      filename: result.filename,
+      images: result.images.length > 0 ? result.images : undefined,
+      zip: chkZip.checked && result.images.length > 0,
+    };
+
+    chrome.runtime.sendMessage(downloadMsg, (downloadResponse) => {
+      if (chrome.runtime.lastError || !downloadResponse?.success) {
+        showStatus(downloadResponse?.error || chrome.i18n.getMessage('download_failed') || 'Download failed.', 'error');
+      } else {
+        const typeLabels: Record<string, string> = {
+          article: chrome.i18n.getMessage('article_downloaded') || 'Article downloaded!',
+          thread: chrome.i18n.getMessage('thread_downloaded') || 'Thread downloaded!',
+          tweet: chrome.i18n.getMessage('tweet_downloaded') || 'Tweet downloaded!',
+        };
+        const label = typeLabels[result.type] || chrome.i18n.getMessage('downloaded') || 'Downloaded!';
+        showStatus(`✓ ${label}`, 'success');
+        void recordExport();
+      }
+      setLoading(false);
+    });
+  } catch (err) {
+    handleExtractionError(err);
+  }
+}
+
+// ─── Markdown Copy (.md) ───
+async function runMarkdownCopy(): Promise<void> {
+  setLoading(true, 'copy');
+  statusEl.className = 'status hidden';
+
+  try {
+    const result = await extractMarkdown('copy');
+
+    await navigator.clipboard.writeText(result.markdown);
+
+    const typeLabels: Record<string, string> = {
+      article: chrome.i18n.getMessage('article_copied') || 'Article copied!',
+      thread: chrome.i18n.getMessage('thread_copied') || 'Thread copied!',
+      tweet: chrome.i18n.getMessage('tweet_copied') || 'Tweet copied!',
+    };
+    const label = typeLabels[result.type] || chrome.i18n.getMessage('copied') || 'Copied!';
+    showStatus(`✓ ${label}`, 'success');
+    setLoading(false);
+  } catch (err) {
+    handleExtractionError(err);
+  }
+}
+
+// Build one of the alternate formats (HTML / JSON / TXT / CSV) from the current
+// page and either download it or copy it to the clipboard. Metadata is always
+// requested so CSV/JSON/HTML have engagement counts available regardless of the
+// popup toggles.
+async function runFormatExport(format: ExportFormat, action: 'download' | 'copy'): Promise<void> {
+  setLoading(true, action);
+  statusEl.className = 'status hidden';
+
+  try {
+    const data = await extractContent(true);
+    const obsidianFriendly = chkObsidianFriendly.checked;
+    const exported = buildFormatExport(format, data, {
+      includeEngagement: chkInlineStats.checked,
+      obsidianFriendly,
+      frontmatterFields: currentFrontmatterFields(obsidianFriendly),
+      obsidianTagsTemplate: txtObsidianTags.value.trim(),
+      includeMetadata: chkMetadata.checked,
+    });
+
+    if (action === 'copy') {
+      await navigator.clipboard.writeText(exported.content);
+      showStatus(`✓ .${exported.ext} ${chrome.i18n.getMessage('copied') || 'Copied!'}`, 'success');
+      void recordExport();
+      setLoading(false);
+      return;
+    }
+
+    const filename = buildFilename(data, txtFilenameTemplate.value.trim()).replace(/\.md$/i, `.${exported.ext}`);
+
+    const downloadMsg: DownloadRequest = {
+      action: 'DOWNLOAD_MD',
+      content: exported.content,
+      filename,
+      mime: exported.mime,
+    };
+
+    chrome.runtime.sendMessage(downloadMsg, (downloadResponse) => {
+      if (chrome.runtime.lastError || !downloadResponse?.success) {
+        showStatus(downloadResponse?.error || chrome.i18n.getMessage('download_failed') || 'Download failed.', 'error');
+      } else {
+        showStatus(`✓ .${exported.ext} ${chrome.i18n.getMessage('downloaded') || 'Downloaded!'}`, 'success');
+        void recordExport();
+      }
+      setLoading(false);
+    });
+  } catch (err) {
+    handleExtractionError(err);
+  }
+}

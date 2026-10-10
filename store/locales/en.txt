@@ -1,0 +1,40 @@
+XClipper is a high-fidelity, source-available web clipper for X (Twitter) — a Chrome extension that saves tweets, threads, and long-form articles (text, images, and video) as clean Markdown, ready-to-print PDF, or Obsidian notes. Export one post at a time, or in batch from your bookmarks, likes, a profile, or your home timeline. Everything runs in your browser: no X API key, no server, no tracking — and it's free for noncommercial use.
+
+Why XClipper:
+
+Most clipping tools run a post through a generic HTML-to-Markdown converter and stop there. XClipper is built differently:
+
+- Output you won't have to clean up. The page is parsed into a typed Content AST before anything renders, so structure survives: nested threads, quote tweets, polls, link cards, and full long-form Articles (headings, lists, code blocks). t.co links resolve to real URLs, emoji and @mentions stay intact, truncated posts expand, and engagement bars, follow prompts, and trackers are stripped.
+- Real PDFs, not screenshots. Export goes through Chrome's native print engine — selectable text, clickable links, embedded images, and full Unicode, not a flattened image.
+- Media saved as files, not links. Images are downloaded next to the Markdown, and each post's video or GIF is saved as a real .mp4 — quoted posts included — with a link in the Markdown pointing at the file, so your notes survive link rot and deleted posts. Saving video needs Markdown with separate files, and Chrome asks once for an optional permission so XClipper can use your existing X session.
+- Batch, not one at a time. Export your whole Bookmarks, Likes, a Profile, your Timeline, or a hand-picked Selection in one background job with a progress bar, pause / resume / stop, and a dedup ledger — plus an optional Fast mode that pulls items straight from your logged-in X session for a roughly 10x speed-up.
+- 100% local, zero setup. No API keys, no accounts, nothing leaves your browser. Install and clip.
+
+Also included:
+
+- More formats when you need them — save a styled, self-contained HTML page, the structured document as JSON, plain text, or a one-row CSV of metadata. Batch writes separate files, one combined file, or both.
+- Obsidian integration — obsidian:// handoff with optional vault and subfolder, plus a tailored frontmatter schema: [[@handle]] wikilinks, Dataview-friendly metadata, synthesized title and description, and a custom tags list.
+- Rich YAML frontmatter — author, handle, dates, source URL, content type, and engagement stats, each toggleable per field, and usable as tokens in custom filename templates.
+- Three ways to trigger — an inline button on every tweet, the toolbar popup, and the right-click menu.
+- Export a single tweet, a whole thread, or a full long-form Article.
+
+Plus: copy to clipboard or download, an optional inline engagement-stats row, and an optional downloads subfolder.
+
+Great for:
+
+- PKM and Markdown-based note-taking workflows
+- Research and reference archiving
+- AI prompts and RAG pipelines
+- Building a searchable second brain
+- Preserving long-form X content offline
+
+Current limitations:
+
+- Video is saved at up to 720p. For the small number of posts where X provides no downloadable video file, the thumbnail is saved instead, exactly as before
+- Fast Batch calls X's internal API directly, so large runs can hit X's rate limit (soft-blocking); it's opt-in, paces itself, and you can resume or re-run later
+- If you install or update the extension while an x.com tab is already open, reload the tab before exporting — this is intentional, to avoid silent failures on an uninitialized page
+
+Changelog:
+https://github.com/zendegani/xclipper/blob/main/CHANGELOG.md
+
+XClipper is an independent, source-available project and is not affiliated with X or Twitter.

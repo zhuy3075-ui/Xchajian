@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>粉丝透镜 · Xchajian</title><link rel="stylesheet" href="../workbench.css"><link rel="stylesheet" href="content.css"></head>
+<body class="workbench lens-page">
+<header class="workspace-header"><div><p class="eyebrow">Xchajian · 浏览与创作工具</p><h1>粉丝透镜</h1><p>在浏览 X 时，快速了解账号与关注关系。</p></div><a class="button" href="https://x.com/home" target="_blank" rel="noreferrer">打开 X ↗</a></header>
+<nav class="workspace-nav" aria-label="功能导航"><a href="../popup.html">内容导出</a><a href="../dukou/popup.html">稿件库</a><a href="popup.html" aria-current="page">粉丝透镜</a></nav>
+<div class="lens-grid">
+<main>
+<section class="panel"><div class="section-heading"><div><h2>浏览增强</h2><p>显示粉丝徽标、关系标签和账号详情。</p></div><label class="switch"><input type="checkbox" data-key="enabled" aria-label="启用粉丝透镜"><span></span></label></div><p id="enabled-state" class="quiet"></p></section>
+<fieldset id="lens-controls"><legend class="sr-only">粉丝透镜设置</legend>
+<section class="panel"><h2>显示方式</h2>
+<label class="setting-row"><span>粉丝量分级配色<small>用颜色区分粉丝量级</small></span><input type="checkbox" data-key="tierColors"></label>
+<label class="setting-row"><span>显示粉丝 / 关注比<small>关注数为 0 或缺失时不显示比例</small></span><input type="checkbox" data-key="showRatio"></label>
+<label class="setting-row"><span>账号详情卡<small>悬停或用 Tab 聚焦徽标时查看</small></span><input type="checkbox" data-key="hoverCard"></label>
+<label class="setting-row"><span>徽标布局</span><select data-key="layout"><option value="auto">自动适应空间</option><option value="inline">与名字同行</option><option value="below">独立一行</option></select></label>
+<label class="setting-row"><span>最多显示的标签数</span><select data-key="maxTags"><option value="0">不显示标签</option><option value="1">1 个</option><option value="2">2 个</option><option value="3">3 个</option></select></label>
+</section>
+<section class="panel"><h2>关系与规则标签</h2><p>优先显示关注关系，其次是比例、账号年龄与样本互动。</p>
+<div class="tag-options"><label><input type="checkbox" data-tag="relation"> 互关 / 关注了你</label><label><input type="checkbox" data-tag="bigV"> 高粉丝比</label><label><input type="checkbox" data-tag="farm"> 粉关接近</label><label><input type="checkbox" data-tag="newAcct"> 新号</label><label><input type="checkbox" data-tag="oldAcct"> 老号</label><label><input type="checkbox" data-tag="engaged"> 样本高互动</label><label><input type="checkbox" data-tag="lowActive"> 样本低互动</label></div>
+<label class="setting-row"><span>淡化符合规则的列表账号<small>针对“粉关接近 / 样本低互动”，悬停或聚焦时恢复</small></span><input type="checkbox" data-key="dimLowQuality"></label>
+<details class="rules"><summary>这些标签如何计算？</summary><p>高粉丝比：粉丝 ≥ 1 万，粉丝 / 关注 ≥ 10。粉关接近：关注 ≥ 1000、粉丝 &lt; 5000、比例在 0.8–1.25 之间。新号：注册不足 90 天；老号：超过 8 年。</p><p>样本互动率 = 已加载推文的赞、转发、回复与引用合计 / 浏览量合计；浏览量至少 2000 才判断，≥ 3% 为高互动，&lt; 0.1% 且粉丝 ≥ 5000 为低互动。规则标签不代表账号真实性或整体质量。</p></details>
+</section>
+<section class="panel"><h2>本地粉丝历史</h2><label class="setting-row"><span>记录浏览过账号的粉丝数<small>只记录账号名、采样时间和粉丝数，不上传</small></span><input type="checkbox" data-key="trackHistory"></label><p>同一账号每 6 小时最多记录一次，最多保留 40 个点、3000 个账号。基准记录满 20 小时后，详情卡才显示变化。</p></section>
+<details class="panel"><summary>高级选项</summary><label class="setting-row"><span>显示页面调试计数<small>数据包、缓存账号与已显示徽标数量</small></span><input type="checkbox" data-key="debug"></label></details>
+</fieldset>
+<section class="panel history-actions"><span id="history-count">正在读取记录…</span><button id="clear-history" type="button" class="danger">清空历史记录</button></section>
+<p id="save-status" role="status" aria-live="polite">正在加载设置…</p>
+</main>
+<aside><section class="panel preview-panel"><p class="eyebrow">效果预览 · 示例数据</p><h2>在信息流中更容易辨认</h2><div class="sample-post"><div class="sample-name"><strong>示例作者</strong> <span>@example</span></div><div id="badge-preview"></div><p>整理阅读清单，也认识每一段内容背后的作者。</p><div class="sample-stats">回复 24　转发 18　喜欢 132</div></div><p id="preview-caption">修改设置，预览会同步变化。</p></section>
+<section class="panel guide"><h2>开始使用</h2><ol><li>保持“浏览增强”开启。</li><li>打开或刷新 x.com，正常浏览内容。</li><li>在账号旁查看徽标，悬停查看详情。</li></ol><p>仅处理网页已加载的公开统计，不主动批量抓取粉丝。无数据时不显示徽标。旧 twitter.com 地址请改用 x.com。</p></section></aside>
+</div><footer class="workspace-footer">本地处理 · 设置自动保存 · <span id="version"></span><br>粉丝透镜源自 <a href="https://github.com/yaohongan/x-follower-lens" target="_blank" rel="noreferrer">x-follower-lens</a>（MIT），已保留许可与署名。</footer>
+<script src="popup.js"></script></body></html>

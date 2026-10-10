@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>XClipper — capabilities</title>
+<style>
+  :root{
+    --bg: #eef2f6;
+    --ink: #0b1220;
+    --ink-2: #475569;
+    --ink-3: #94a3b8;
+    --card: #ffffff;
+    --line: #e2e8f0;
+    --line-2: #cbd5e1;
+    --brand: #1d9bf0;
+    --brand-blue: #1d9bf0;
+    --brand-red: #dc2626;
+    --brand-deep: #0e7ec9;
+    --obsidian: #6f3df5;
+    --obsidian-soft: #efe7ff;
+    --term-bg: #0c1322;
+    --shadow-card: 0 1px 0 rgba(15,23,42,.04), 0 14px 36px -14px rgba(15,23,42,.20);
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin: 0; padding: 0; background: #d9dee5; }
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  .canvas{
+    width: 1280px;
+    height: 800px;
+    background: var(--bg);
+    background-image:
+      radial-gradient(1200px 600px at 50% -120px, #ffffff 0%, rgba(255,255,255,0) 60%),
+      radial-gradient(800px 500px at 110% 110%, #e2ebf5 0%, rgba(226,235,245,0) 60%);
+    padding: 48px;
+    overflow: hidden;
+  }
+
+  .grid{
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-card);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .card .demo{
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    position: relative;
+  }
+
+  .card .meta{
+    position: absolute;
+    top: 20px; right: 22px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px; letter-spacing: .08em;
+    color: var(--ink-3);
+    z-index: 2;
+  }
+
+  .card h3{
+    margin: 14px 0 6px;
+    font-size: 22px; letter-spacing: -.02em; line-height: 1.15;
+    color: var(--ink); font-weight: 800;
+  }
+  .card p{
+    margin: 0;
+    font-size: 14.5px; line-height: 1.45;
+    color: var(--ink-2);
+  }
+  .card p code{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; color: var(--obsidian);
+    background: var(--obsidian-soft); padding: 1px 5px; border-radius: 4px;
+  }
+
+  /* ───────── Card 1 — Inline ↓ button ───────── */
+  .demo-inline{
+    width: 100%; max-width: 320px;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 0 rgba(15,23,42,.04);
+  }
+  .demo-inline .head{
+    display: flex; align-items: center; gap: 10px;
+  }
+  .demo-inline .av{
+    width: 28px; height: 28px; border-radius: 50%; background: #cbd5e1;
+  }
+  .demo-inline .user-info { display: flex; flex-direction: column; gap: 1px; }
+  .demo-inline .name{ font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.15; }
+  .demo-inline .handle{ font-size: 10px; color: var(--ink-3); }
+  .demo-inline .body{
+    margin: 10px 0 12px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .demo-inline .line {
+    height: 6px;
+    background: #94a3b8;
+    opacity: 0.5;
+    border-radius: 3px;
+  }
+  .demo-inline .line.short { width: 70%; }
+  .demo-inline .row{
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-3);
+  }
+  .demo-inline .row .act{ display: flex; align-items: center; gap: 4px; font-size: 11.5px; }
+  .demo-inline .row .act svg{ width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .demo-inline .row .dl{
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2px solid var(--brand);
+    background: rgba(29,155,240,.08);
+    display: grid; place-items: center;
+    position: relative;
+  }
+  .demo-inline .row .dl svg{ stroke: var(--brand); width: 16px; height: 16px; }
+  .demo-inline .row .dl::after{
+    content: '';
+    position: absolute; inset: -8px;
+    border: 1.5px dashed var(--brand);
+    border-radius: 50%;
+    opacity: .55;
+  }
+
+  /* ───────── Card 2 — Right-click menu ───────── */
+  .demo-ctx{
+    width: 240px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px -10px rgba(15,23,42,.22);
+    overflow: hidden;
+  }
+  .demo-ctx .lbl{
+    background: #f3f6fa;
+    color: var(--ink-3);
+    font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-bottom: 1px solid #eef2f7;
+  }
+  .demo-ctx .item{
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    color: var(--ink); font-weight: 600;
+    background: linear-gradient(90deg, rgba(29,155,240,.08), rgba(29,155,240,.02));
+    border-bottom: 1px solid #eef2f7;
+  }
+  .demo-ctx .item:last-child{ border-bottom: 0; }
+  .demo-ctx .item img{ width: 16px; height: 16px; border-radius: 50%; }
+  .demo-ctx .item .chev{ margin-left: auto; color: var(--ink-3); font-size: 14px; }
+  .demo-ctx .item .pdf-word{ color: #dc2626; }
+  .demo-ctx .item .obsidian-word{ color: var(--obsidian); }
+  .demo-ctx .item .md-word{ color: var(--brand); }
+
+  /* ───────── Card 3 — Batch export & settings (Marquee popup) ───────── */
+  .demo-mqp{ transform: scale(0.62); transform-origin: center center; }
+  .mqp{
+    position: relative;
+    width: 348px;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 30px 60px -16px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.2);
+    padding: 18px;
+    color: #0b1220;
+    display: flex; flex-direction: column; gap: 13px;
+  }
+  .mqp-head{ position: relative; display: flex; align-items: center; justify-content: center; }
+  .mqp-head .brand{ display: flex; align-items: center; gap: 9px; }
+  .mqp-head .brand img{ width: 24px; height: 24px; display: block; }
+  .mqp-head .brand .wm{ font-size: 18px; font-weight: 800; letter-spacing: -.02em; color: #0b1220; }
+  .mqp-head .brand .wm span{ color: var(--brand-blue); }
+  .mqp-head .gear{ position: absolute; right: 0; color: #94a3b8; }
+
+  .mqp-seg{ display: flex; background: #f1f5f9; border-radius: 11px; padding: 4px; gap: 4px; }
+  .mqp-seg .opt{ flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: #94a3b8; padding: 8px 0; border-radius: 8px; }
+  .mqp-seg .opt.active{ background: #fff; color: #0b1220; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+
+  .mqp-tabs{ display: flex; gap: 8px; }
+  .mqp-tab{
+    flex: 1; height: 44px; border: 1px solid var(--line); border-radius: 11px;
+    display: flex; align-items: center; justify-content: center; color: #94a3b8;
+  }
+  .mqp-tab svg{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .mqp-tab.active{ background: var(--brand-blue); border-color: var(--brand-blue); color: #fff; box-shadow: 0 8px 18px -4px rgba(29,155,240,.45); }
+
+  .mqp-mode-field{ display: flex; flex-direction: column; gap: 7px; }
+  .mqp-mode-label{ font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: .06em; text-transform: uppercase; }
+  .mqp-mode{ display: flex; align-items: center; background: #f1f5f9; border-radius: 11px; padding: 4px; gap: 4px; }
+  .mqp-mode .opt{ flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; font-weight: 700; color: #94a3b8; padding: 8px 0; border-radius: 8px; }
+  .mqp-mode .opt.active{ background: #ffffff; color: #0b1220; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+  .mqp-mode .beta{ font-size: 9px; font-weight: 800; color: #b91c1c; background: #fee2e2; border-radius: 999px; padding: 2px 5px; letter-spacing: .04em; text-transform: uppercase; }
+
+  .mqp-prog{ display: flex; flex-direction: column; gap: 9px; }
+  .mqp-prow{ display: flex; align-items: center; gap: 10px; }
+  .mqp-ctl{ width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: #475569; flex-shrink: 0; }
+  .mqp-ctl svg{ width: 13px; height: 13px; fill: currentColor; }
+  /* One row, like the popup's .fast-steps (space-between, no wrap). */
+  .mqp-steps{ display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .mqp-step{ display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; color: #94a3b8; white-space: nowrap; }
+  .mqp-step::before{ content: ''; width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
+  .mqp-step.done{ color: #475569; }
+  .mqp-step.done::before{ background: #10b981; }
+  .mqp-step.live{ color: var(--brand-blue); }
+  .mqp-step.live::before{ background: var(--brand-blue); box-shadow: 0 0 0 2.5px rgba(29,155,240,.18); }
+  .mqp-plabel{ font-size: 13px; color: #475569; font-weight: 600; }
+  .mqp-plabel b{ color: #0b1220; }
+
+  .mqp-badge{
+    position: absolute; top: -18px; right: -22px;
+    background: var(--brand-red); color: #fff;
+    font-size: 14px; font-weight: 800; letter-spacing: -.01em;
+    padding: 8px 14px; border-radius: 999px;
+    box-shadow: 0 12px 26px -6px rgba(220,38,38,.6);
+    display: flex; align-items: center; gap: 6px;
+    transform: rotate(4deg);
+    z-index: 4;
+  }
+  .mqp-badge svg{ width: 14px; height: 14px; fill: #fff; }
+
+  /* ───────── Card 6 — YAML + local media ─────────
+     A light "what you get on disk" card: the frontmatter above the rule, the
+     files it writes below it. Light on purpose — a dark slab was the only
+     dark object in the deck and pulled the eye out of reading order. */
+  .demo-files{
+    width: 252px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 10px 26px -12px rgba(15,23,42,.22);
+    overflow: hidden;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  /* `.card p` sets 14.5px and beats an inherited size, so the code type
+     has to be declared on the p itself, not on the container. */
+  .demo-files p{ margin: 0; white-space: nowrap; font-size: 11.5px; line-height: 1.45; }
+  .demo-files .fm{ padding: 10px 14px; }
+  .demo-files .yr{ color: var(--line-2); }
+  .demo-files .k{ color: #64748b; }
+  .demo-files .s{ color: #b45309; }
+  .demo-files .n{ color: #be185d; }
+  .demo-files .t{ color: #047857; }
+
+  .demo-files .tree{
+    padding: 8px 14px 10px;
+    border-top: 1px solid var(--line);
+    background: #f8fafc;
+    color: var(--ink-2);
+  }
+  .demo-files .tree p{ display: flex; align-items: center; gap: 6px; }
+  .demo-files .tree svg{
+    width: 12px; height: 12px; flex-shrink: 0; fill: none;
+    stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .demo-files .tree .kid{ padding-left: 14px; color: var(--ink-3); }
+  .demo-files .tree .br{ color: var(--line-2); }
+  .demo-files .ext{ color: var(--brand-blue); font-weight: 700; }
+
+  /* ───────── Card 5 — Obsidian & PDF Export ───────── */
+  .docs{
+    flex-shrink: 0;
+    display: flex; align-items: center;
+  }
+  .doc{
+    width: 99px; height: 125px;
+    position: relative;
+    filter: drop-shadow(0 12px 20px rgba(0,0,0,.15));
+  }
+  .doc + .doc{ margin-left: -18px; }
+  /* Diagonal staircase: each step descends right */
+  .doc:nth-child(1){ transform: translateY(-17px); }
+  .doc:nth-child(3){ transform: translateY(17px); }
+  .doc svg{ display: block; width: 100%; height: 100%; }
+
+  /* ───────── Card 4 — Tweets, threads & Articles ───────── */
+  /* Different heights, vertically centred → the trio fans open into a "<" shape */
+  .demo-types{
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 14px; width: 100%;
+  }
+  .type-card{
+    width: 96px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    padding: 11px 10px;
+    display: flex; flex-direction: column; gap: 7px;
+    position: relative;
+    box-shadow: 0 8px 20px -8px rgba(15,23,42,.18);
+  }
+  .type-card .top-row{ display: flex; align-items: center; gap: 6px; }
+  .type-card .av{ width: 18px; height: 18px; border-radius: 50%; background: #cbd5e1; }
+  .type-card .who{ display: flex; flex-direction: column; gap: 2px; }
+  .type-card .nm{ width: 38px; height: 5px; background: #475569; border-radius: 2px; }
+  .type-card .hd{ width: 24px; height: 4px; background: #cbd5e1; border-radius: 2px; }
+  .type-card .line{ height: 5px; background: #e2e8f0; border-radius: 2px; }
+  .type-card .line.short{ width: 58%; }
+  .type-card .badge{
+    position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: white;
+    font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px; font-weight: 800;
+    white-space: nowrap; box-shadow: 0 4px 10px rgba(15,23,42,.22);
+  }
+
+  /* thread — stacked self-thread, every avatar same size and left-aligned */
+  .type-card.thread{ gap: 6px; }
+  .type-card.thread .reply{ display: flex; align-items: flex-start; gap: 6px; }
+  .type-card.thread .reply .av{ width: 18px; height: 18px; flex-shrink: 0; }
+  .type-card.thread .reply .lines{ flex: 1; display: flex; flex-direction: column; gap: 4px; padding-top: 3px; }
+  .type-card.thread .reply .lines .line{ height: 4px; }
+
+  /* article — author row, banner, thicker title, 3 paragraphs (3-2-3) */
+  .type-card.article{ gap: 7px; height: 149px; }
+  .type-card.article .article-img{ height: 34px; background: #cbd5e1; border-radius: 5px; }
+  .type-card.article .article-title{ width: 82%; height: 8px; background: var(--ink); border-radius: 2px; }
+  .type-card.article .abody{ flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding-top: 2px; }
+  .type-card.article .para{ display: flex; flex-direction: column; gap: 5px; }
+
+</style>
+</head>
+<body>
+  <div class="canvas" id="cap">
+    <div class="grid">
+
+      <!-- ───────── Card 3 — Batch export & settings (Marquee popup) ───────── -->
+      <div class="card">
+        <div class="meta">01</div>
+        <div class="demo">
+          <div class="demo-mqp">
+            <div class="mqp">
+              <div class="mqp-badge">
+                <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                up to 10× faster
+              </div>
+
+              <div class="mqp-head">
+                <div class="brand">
+                  <img src="../../assets/xclipper-mark.svg" alt="">
+                  <span class="wm">X<span>Clipper</span></span>
+                </div>
+                <svg class="gear" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </div>
+
+              <div class="mqp-seg">
+                <div class="opt">Single export</div>
+                <div class="opt active">Batch export</div>
+              </div>
+
+              <div class="mqp-tabs">
+                <div class="mqp-tab active" title="Bookmarks"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+                <div class="mqp-tab" title="Profile"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div class="mqp-tab" title="Likes"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+                <div class="mqp-tab" title="Timeline"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+                <div class="mqp-tab" title="Selection"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+              </div>
+
+              <div class="mqp-mode-field">
+                <div class="mqp-mode-label">Batch engine</div>
+                <div class="mqp-mode">
+                  <div class="opt">Manual</div>
+                  <div class="opt">Auto<span class="beta">Beta</span></div>
+                  <div class="opt active">Super<span class="beta">Beta</span></div>
+                </div>
+              </div>
+
+              <!-- Super running: Stop but no Pause, and no determinate bar -
+                   collection is open-ended, so the step lights and live count carry it. -->
+              <div class="mqp-prog">
+                <div class="mqp-steps">
+                  <span class="mqp-step done">Reload x.com</span>
+                  <span class="mqp-step done">Open one tweet</span>
+                  <span class="mqp-step live">Fetching &hellip;</span>
+                  <span class="mqp-step">Expanding &hellip;</span>
+                </div>
+                <div class="mqp-prow">
+                  <div class="mqp-ctl"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></div>
+                  <div class="mqp-plabel">Bookmarks · Fetching&hellip; <b>1,300</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3>Batch export &amp; settings</h3>
+        <p>Batch from bookmarks, a profile, or a selection — with the Auto &amp; Super engines up to 10× faster.</p>
+      </div>
+
+      <!-- ───────── Card 2 — Right-click menu ───────── -->
+      <div class="card">
+        <div class="meta">02</div>
+        <div class="demo">
+          <div class="demo-ctx">
+            <div class="lbl">Right-click menu</div>
+            <div class="item">Export tweet as <span class="pdf-word">PDF</span></div>
+            <div class="item">Add tweet to <span class="obsidian-word">Obsidian</span></div>
+            <div class="item">Download tweet as <span class="md-word">Markdown</span></div>
+            <div class="item">Download tweet as CSV</div>
+          </div>
+        </div>
+        <h3>Right-click menu</h3>
+        <p>All six formats plus Obsidian — copy or download, anywhere a tweet renders.</p>
+      </div>
+
+      <!-- ───────── Card 1 — Inline ↓ button ───────── -->
+      <div class="card">
+        <div class="meta">03</div>
+        <div class="demo">
+          <div class="demo-inline">
+            <div class="head">
+              <div class="av"></div>
+              <div class="user-info">
+                <div class="name">Author</div>
+                <div class="handle">@author</div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="line"></div>
+              <div class="line short"></div>
+            </div>
+            <div class="row">
+              <div class="act"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>917</div>
+              <div class="act"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>4K</div>
+              <div class="act"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>27K</div>
+              <div class="dl">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3>Inline ↓ button</h3>
+        <p>One click on any tweet — no popup, no menu hunting.</p>
+      </div>
+
+
+      <!-- ───────── Card 5 — Obsidian & PDF Export ───────── -->
+      <div class="card">
+        <div class="meta">04</div>
+        <div class="demo">
+          <div class="docs">
+            <div class="doc">
+              <svg viewBox="0 0 168 210">
+                <path d="M0 6 Q0 0 6 0 L128 0 L168 40 L168 204 Q168 210 162 210 L6 210 Q0 210 0 204 Z" fill="#F8FAFC"/>
+                <path d="M128 0 L168 40 L132 40 Q128 40 128 36 Z" fill="#cbd5e1"/>
+                <rect x="22" y="70"  width="124" height="7" rx="3" fill="#e2e8f0"/>
+                <rect x="22" y="86"  width="100" height="7" rx="3" fill="#e2e8f0"/>
+                <rect x="22" y="102" width="114" height="7" rx="3" fill="#e2e8f0"/>
+                <text x="84" y="178" text-anchor="middle"
+                      font-family="-apple-system, system-ui, sans-serif"
+                      font-size="32" font-weight="900" fill="#1d9bf0" letter-spacing="-0.02em">.md</text>
+              </svg>
+            </div>
+            <div class="doc">
+              <svg viewBox="0 0 168 210">
+                <path d="M0 6 Q0 0 6 0 L128 0 L168 40 L168 204 Q168 210 162 210 L6 210 Q0 210 0 204 Z" fill="#F8FAFC"/>
+                <path d="M128 0 L168 40 L132 40 Q128 40 128 36 Z" fill="#cbd5e1"/>
+                <rect x="22" y="70"  width="124" height="7" rx="3" fill="#e2e8f0"/>
+                <rect x="22" y="86"  width="100" height="7" rx="3" fill="#e2e8f0"/>
+                <rect x="22" y="102" width="114" height="7" rx="3" fill="#e2e8f0"/>
+                <!-- Obsidian gem as the doc label -->
+                <svg x="60" y="135" width="48" height="48" viewBox="0 0 24 24" fill="#7C3AED">
+                  <path d="M19.355 18.538a68.967 68.959 0 0 0 1.858-2.954.81.81 0 0 0-.062-.9c-.516-.685-1.504-2.075-2.042-3.362-.553-1.321-.636-3.375-.64-4.377a1.707 1.707 0 0 0-.358-1.05l-3.198-4.064a3.744 3.744 0 0 1-.076.543c-.106.503-.307 1.004-.536 1.5-.134.29-.29.6-.446.914l-.31.626c-.516 1.068-.997 2.227-1.132 3.59-.124 1.26.046 2.73.815 4.481.128.011.257.025.386.044a6.363 6.363 0 0 1 3.326 1.505c.916.79 1.744 1.922 2.415 3.5zM8.199 22.569c.073.012.146.02.22.02.78.024 2.095.092 3.16.29.87.16 2.593.64 4.01 1.055 1.083.316 2.198-.548 2.355-1.664.114-.814.33-1.735.725-2.58l-.01.005c-.67-1.87-1.522-3.078-2.416-3.849a5.295 5.295 0 0 0-2.778-1.257c-1.54-.216-2.952.19-3.84.45.532 2.218.368 4.829-1.425 7.531zM5.533 9.938c-.023.1-.056.197-.098.29L2.82 16.059a1.602 1.602 0 0 0 .313 1.772l4.116 4.24c2.103-3.101 1.796-6.02.836-8.3-.728-1.73-1.832-3.081-2.55-3.831zM9.32 14.01c.615-.183 1.606-.465 2.745-.534-.683-1.725-.848-3.233-.716-4.577.154-1.552.7-2.847 1.235-3.95.113-.235.223-.454.328-.664.149-.297.288-.577.419-.86.217-.47.379-.885.46-1.27.08-.38.08-.72-.014-1.043-.095-.325-.297-.675-.68-1.06a1.6 1.6 0 0 0-1.475.36l-4.95 4.452a1.602 1.602 0 0 0-.513.952l-.427 2.83c.672.59 2.328 2.316 3.335 4.711.09.21.175.43.253.653z"/>
+                </svg>
+              </svg>
+            </div>
+            <div class="doc">
+              <svg viewBox="0 0 168 210">
+                <path d="M0 6 Q0 0 6 0 L128 0 L168 40 L168 204 Q168 210 162 210 L6 210 Q0 210 0 204 Z" fill="#F8FAFC"/>
+                <path d="M128 0 L168 40 L132 40 Q128 40 128 36 Z" fill="#cbd5e1"/>
+                <rect x="22" y="70"  width="124" height="7" rx="3" fill="#e2e8f0"/>
+                <rect x="22" y="86"  width="100" height="7" rx="3" fill="#e2e8f0"/>
+                <rect x="22" y="102" width="114" height="7" rx="3" fill="#e2e8f0"/>
+                <text x="84" y="178" text-anchor="middle"
+                      font-family="-apple-system, system-ui, sans-serif"
+                      font-size="30" font-weight="900" fill="#dc2626" letter-spacing="0.01em">PDF</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <h3>Markdown, Obsidian & PDF</h3>
+        <p>Send to Obsidian or save as Markdown or PDF — plus HTML, JSON, TXT &amp; CSV, with metadata.</p>
+      </div>
+
+      <!-- ───────── Card 4 — YAML + images ───────── -->
+      <div class="card">
+        <div class="meta">05</div>
+        <div class="demo">
+          <div class="demo-files">
+            <div class="fm">
+              <p><span class="yr">---</span></p>
+              <p><span class="k">author:</span> <span class="s">"Author"</span></p>
+              <p><span class="k">date:</span> <span class="n">2026-06-26</span></p>
+              <p><span class="k">likes:</span> <span class="n">682K</span> &nbsp;<span class="k">views:</span> <span class="n">37.3M</span></p>
+              <p><span class="k">tags:</span> <span class="t">[clippings, x]</span></p>
+              <p><span class="yr">---</span></p>
+            </div>
+            <div class="tree">
+              <p>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                author-1234567890<span class="ext">.md</span>
+              </p>
+              <p>
+                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                author-1234567890/
+              </p>
+              <p class="kid"><span class="br">├</span> GkX9pQvXsAA<span class="ext">.jpg</span></p>
+              <p class="kid"><span class="br">└</span> Ht2mNc4pLbQ<span class="ext">.mp4</span></p>
+            </div>
+          </div>
+        </div>
+        <h3>YAML + local media</h3>
+        <p>Rich frontmatter, plus images (.jpg, .png) and videos (.mp4) saved alongside — no link rot.</p>
+      </div>
+
+      <!-- ───────── Card 6 — Tweets, threads & Articles ───────── -->
+      <div class="card">
+        <div class="meta">06</div>
+        <div class="demo">
+          <div class="demo-types">
+            <!-- ARTICLE -->
+            <div class="type-card article">
+              <div class="top-row"><div class="av"></div><div class="who"><div class="nm"></div><div class="hd"></div></div></div>
+              <div class="article-img"></div>
+              <div class="article-title"></div>
+              <div class="abody">
+                <div class="para"><div class="line"></div><div class="line"></div><div class="line short"></div></div>
+                <div class="para"><div class="line"></div><div class="line short"></div></div>
+              </div>
+              <div class="badge">Article</div>
+            </div>
+            <!-- THREAD -->
+            <div class="type-card thread">
+              <div class="top-row"><div class="av"></div><div class="who"><div class="nm"></div><div class="hd"></div></div></div>
+              <div class="line"></div>
+              <div class="reply"><div class="av"></div><div class="lines"><div class="line"></div><div class="line short"></div></div></div>
+              <div class="reply"><div class="av"></div><div class="lines"><div class="line"></div></div></div>
+              <div class="badge">Thread</div>
+            </div>
+            <!-- TWEET -->
+            <div class="type-card tweet">
+              <div class="top-row"><div class="av"></div><div class="who"><div class="nm"></div><div class="hd"></div></div></div>
+              <div class="line"></div><div class="line"></div><div class="line short"></div>
+              <div class="badge">Tweet</div>
+            </div>
+          </div>
+        </div>
+        <h3>Tweets, threads &amp; Articles</h3>
+        <p>Single posts, nested replies, and long-form X Articles — all extracted cleanly.</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

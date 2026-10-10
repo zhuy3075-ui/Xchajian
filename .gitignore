@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-firefox/
+
+# Packaged extension
+*.zip
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Test HTML fixtures (large, regenerated locally; not worth versioning)
+tests/fixtures/*.html
+# This article's AST snapshot is an order of magnitude larger than the rest;
+# its .md snapshot already covers the same extraction. Regenerated locally.
+tests/fixtures/DeRonin_-2076690611399176506.ast.json
+
+# Local scratch (notes, link dumps — never versioned)
+_local/
+
+# Private real-data test captures (may contain account/bookmark data)
+tests/_local/
+
+# Logs and temp files
+*.log
+*.bak
+*.tmp
+*.swp
+*~
+
+# Puppeteer screenshot artifacts
+.tmp-puppeteer-profiles/
+.puppeteer-cache/
+screenshots/
+
+# High-DPI mockup renders are kept local only; the 1× PNGs are the committed assets.
+*@2x.png
+
+
+.mcp.json
+.codegraph/*
+
+# Local agent memory and browser evidence (curated public docs live in docs/images/)
+docs/codex/
+modules/
+.env.*
+*.pem
+*.key

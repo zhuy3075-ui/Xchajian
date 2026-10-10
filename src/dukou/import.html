@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>本地导入 · Xchajian</title>
+<style>
+  :root{
+    --paper:#FAF9F6;--card:#FFFFFF;--ink:#1F1D1A;--ink2:#6E695F;--ink3:#A39E93;
+    --hair:#E6E2D8;--hair2:#EFECE4;--seal:#BF3B1F;--seal-dk:#A5300F;
+    --serif:'Songti SC','STSong','Noto Serif SC',serif;
+    --sys:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--paper);font-family:var(--sys);color:var(--ink);-webkit-font-smoothing:antialiased;padding:0 0 48px;}
+  .wrap{max-width:680px;margin:0 auto;padding:0 24px;}
+
+  .brand{display:flex;align-items:center;gap:12px;padding:24px 0 18px;}
+  .brand .mark{width:34px;height:34px;border-radius:7px;background:var(--seal);line-height:0;flex:none;}
+  .brand .name{font-family:var(--serif);font-weight:700;font-size:19px;letter-spacing:5px;}
+  .brand .slogan{font-size:11.5px;color:var(--ink3);margin-top:2px;}
+
+  .lead{font-size:13px;line-height:1.7;color:var(--ink2);border-top:1px solid var(--hair2);padding-top:16px;}
+  .lead b{color:var(--ink);font-weight:600;}
+
+  #dropzone{margin-top:18px;border:1.5px dashed var(--hair);border-radius:10px;background:var(--card);
+    padding:34px 24px;text-align:center;transition:border-color .15s,background .15s;}
+  #dropzone.over{border-color:var(--seal);background:#FCF6F4;}
+  #dropzone .big{font-size:14px;color:var(--ink);font-weight:500;}
+  #dropzone .sub{font-size:12px;color:var(--ink3);margin-top:6px;line-height:1.6;}
+  .btns{display:flex;gap:10px;justify-content:center;margin-top:18px;}
+  .btns button{border:1px solid var(--seal);border-radius:5px;background:var(--card);color:var(--seal);
+    padding:9px 18px;font-size:13px;cursor:pointer;font-family:var(--sys);transition:background .12s,color .12s;}
+  .btns button:hover{background:var(--seal);color:#fff;}
+  input[type=file]{display:none;}
+
+  #log{margin-top:20px;font-size:12px;line-height:1.75;color:var(--ink2);font-family:ui-monospace,'SF Mono',Menlo,monospace;
+    background:var(--card);border:1px solid var(--hair2);border-radius:8px;padding:14px 16px;max-height:300px;overflow-y:auto;display:none;}
+  #log:not(:empty){display:block;}
+  #log .line{white-space:pre-wrap;word-break:break-all;}
+  #log .ok{color:#2F7D32;font-weight:600;}
+  #log .warn{color:#B26A00;}
+  #log .err{color:var(--seal-dk);font-weight:600;}
+
+  /* 多 md 勾选 */
+  #md-picker{display:none;margin-top:18px;background:var(--card);border:1px solid var(--hair);border-radius:8px;padding:16px 18px;}
+  #md-picker .pk-head{font-size:12.5px;color:var(--ink2);line-height:1.6;margin-bottom:12px;}
+  #md-picker .pk-head b{color:var(--seal);}
+  #md-picker .pk-list{display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto;}
+  #md-picker .md-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:5px;cursor:pointer;}
+  #md-picker .md-row:hover{background:var(--paper);}
+  #md-picker .md-row input{width:15px;height:15px;accent-color:var(--seal);cursor:pointer;flex:none;}
+  #md-picker .md-row .p{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #md-picker .md-row .s{flex:none;font-size:11px;color:var(--ink3);}
+  #md-picker .pk-actions{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;}
+  #md-picker .pk-actions button{border-radius:5px;padding:8px 16px;font-size:12.5px;cursor:pointer;font-family:var(--sys);}
+  #md-picker .ghost{border:1px solid var(--hair);background:var(--card);color:var(--ink2);}
+  #md-picker .ghost:hover{border-color:var(--ink3);}
+  #md-picker .primary{border:1px solid var(--seal);background:var(--seal);color:#fff;}
+  #md-picker .primary:hover{background:var(--seal-dk);border-color:var(--seal-dk);}
+
+  #result{display:none;margin-top:16px;font-size:13px;line-height:1.7;color:var(--ink);
+    background:#FCF6F4;border:1px solid #F0D9D2;border-radius:8px;padding:14px 16px;}
+
+  .note{margin-top:22px;font-size:11.5px;line-height:1.8;color:var(--ink3);border-top:1px solid var(--hair2);padding-top:14px;}
+</style>
+<link rel="stylesheet" href="../workbench.css">
+</head>
+<body class="workbench">
+<p><a href="popup.html">← 返回稿件库</a></p>
+<div class="wrap">
+  <div class="brand">
+    
+    <div>
+      <h1 class="name">本地导入</h1>
+      <div class="slogan">本地 md → 文库，图床图自动抓取、本地图随文件一起读</div>
+    </div>
+  </div>
+
+  <div class="lead">
+    把本地 <b>.md</b> 文章导入稿件库，之后就能分发到 X / B站 / 公众号排版器。<br>
+    图片会自动处理：<b>图床链接</b>（http）联网抓取嵌入；<b>本地图片</b>（如 <code>素材/x.png</code>）需要随 md
+    <b>一起选中</b>或选所在<b>文件夹</b>，浏览器才读得到（沙箱限制，单选一个 md 拿不到旁边的图）。
+  </div>
+
+<details class="remote-images"><summary>远程图片需要授权时展开</summary><label for="image-host">远程图片域名（例如 https://example.com）</label>
+<input id="image-host" type="url" placeholder="https://图片所在域名"> <button id="grant-images" type="button">授权此图片域名</button>
+<p>本地图请和 Markdown 一起选中。图床需要访问权限时，先授权域名再导入。</p></details>
+
+  <div id="dropzone">
+    <div class="big">把 md 文件（连同图片）拖到这里</div>
+    <div class="sub">或者用下面的按钮选择 · 本地图请一并选上</div>
+    <div class="btns">
+      <button id="pick-files">选 md + 图片</button>
+      <button id="pick-dir">选整个文章文件夹</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" multiple accept=".md,.markdown,image/*">
+  <input type="file" id="dir-input" webkitdirectory directory>
+
+  <div id="md-picker"></div>
+  <div id="result"></div>
+  <div id="log"></div>
+
+  <div class="note">
+    导入后回到稿件库，每篇都有「渡到 X / B站 / 排版器」按钮。<br>
+    抓取图床图需要「读取网站数据」权限；本地图片只在你显式选中时被读取，插件不会扫描你的硬盘。
+  </div>
+</div>
+<script src="import.js"></script>
+</body>
+</html>

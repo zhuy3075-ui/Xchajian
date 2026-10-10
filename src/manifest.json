@@ -1,0 +1,74 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extensionName__",
+  "short_name": "XClipper",
+  "version": "2.8.4",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
+  "permissions": [
+    "activeTab",
+    "alarms",
+    "contextMenus",
+    "downloads",
+    "storage"
+  ],
+  "optional_permissions": [
+    "webRequest",
+    "scripting",
+    "unlimitedStorage"
+  ],
+  "optional_host_permissions": [
+    "*://x.com/*",
+    "https://*/*",
+    "http://127.0.0.1/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://x.com/*/status/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://x.com/*"
+      ],
+      "js": [
+        "injector.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "lens/inject.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "lens/content.js"
+      ],
+      "css": [
+        "lens/content.css"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

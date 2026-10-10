@@ -1,0 +1,593 @@
+{
+  "extensionName": {
+    "message": "X / Twitter Web-Clipper: Lesezeichen & Threads zu Markdown, PDF, Obsidian"
+  },
+  "extensionDescription": {
+    "message": "Posts, Videos und Langform-Artikel aus Likes oder Profilen exportieren: einzeln oder Tausende pro Batch. Lokal und ohne X-API-Key."
+  },
+  "tagline": {
+    "message": "Threads und Artikel als Markdown oder PDF speichern"
+  },
+  "btn_download": {
+    "message": "Herunterladen"
+  },
+  "btn_copy": {
+    "message": "Kopieren"
+  },
+  "btn_pdf": {
+    "message": ".pdf exportieren"
+  },
+  "btn_pdf_hint": {
+    "message": "Erstellt einen formatierten PDF-Export mit den aktuellen Einstellungen; anschließend wählst du den Speicherort."
+  },
+  "rendering_pdf": {
+    "message": "PDF wird erstellt…"
+  },
+  "btn_obsidian": {
+    "message": "Zu Obsidian hinzufügen"
+  },
+  "btn_md_hint": {
+    "message": "Markdown - der vollständige formatierte Export."
+  },
+  "btn_html_hint": {
+    "message": "Als gestaltete, eigenständige HTML-Datei speichern."
+  },
+  "btn_json_hint": {
+    "message": "Das rohe strukturierte Dokument (AST) als JSON speichern."
+  },
+  "btn_txt_hint": {
+    "message": "Als Klartext ohne Markup speichern."
+  },
+  "btn_csv_hint": {
+    "message": "Eine Metadatenzeile mit deinen ausgewählten frontmatter-Feldern speichern."
+  },
+  "review_text": {
+    "message": "Gefällt dir XClipper? Es ist kostenlos und mit viel Leidenschaft gebaut - eine kurze ★★★★★ Bewertung hilft sehr, mehr Menschen zu erreichen."
+  },
+  "review_rate": {
+    "message": "Im Chrome Web Store bewerten"
+  },
+  "review_later": {
+    "message": "Vielleicht später"
+  },
+  "review_dismiss": {
+    "message": "Ausblenden"
+  },
+  "btn_batch": {
+    "message": "Lesezeichen exportieren"
+  },
+  "btn_batch_hint": {
+    "message": "Exportiert alle auf dieser Seite geladenen Lesezeichen als Markdown-Dateien in einen Ordner. Scrolle auf der Lesezeichen-Seite, um mehr zu laden."
+  },
+  "batch_mode": {
+    "message": "Batch-Engine"
+  },
+  "batch_mode_hint": {
+    "message": "Auto und Super rufen über deine angemeldete X-Sitzung ab - kein API-Key, kein Passwort, nichts verlässt deinen Browser. Große Läufe können Xs Soft-Rate-Limit erreichen; der Export stoppt sauber und lässt den Rest ausstehend - warte etwa 15 Minuten und starte ihn erneut, um fortzufahren."
+  },
+  "batch_mode_info_label": {
+    "message": "Zu Auto & Super"
+  },
+  "mode_manual": {
+    "message": "Manuell"
+  },
+  "mode_auto": {
+    "message": "Auto"
+  },
+  "mode_super": {
+    "message": "Super"
+  },
+  "mode_caption_manual": {
+    "message": "Du scrollst; jeder geladene Post wird gespeichert, samt vollständigen Threads & Artikeln."
+  },
+  "mode_caption_auto": {
+    "message": "Ruft automatisch über deine X-Sitzung ab - ohne Scrollen, mit vollständigen Threads & Artikeln."
+  },
+  "mode_caption_super": {
+    "message": "Ruft Tausende auf einmal ab, speichert aber nur den ersten Tweet jedes Posts - Threads werden übersprungen."
+  },
+  "btn_batch_fast_hint": {
+    "message": "Ruft alle deine Lesezeichen über deine X-Sitzung ab - viel schneller. Erweitert Threads & Artikel."
+  },
+  "btn_batch_fast_profile_hint": {
+    "message": "Ruft die eigenen Posts dieses Profils über deine X-Sitzung ab - viel schneller. Reposts werden übersprungen."
+  },
+  "btn_batch_fast_likes_hint": {
+    "message": "Ruft deine gelikten Posts über deine X-Sitzung ab - viel schneller. Erweitert Threads & Artikel."
+  },
+  "btn_batch_fast_no_selection": {
+    "message": "Auswahl ist nur im Modus „Manuell“ verfügbar - wechsle zu „Manuell“, um Tweets von Hand auszuwählen."
+  },
+  "btn_batch_fast_no_timeline": {
+    "message": "Timeline ist nur im Modus „Manuell“ verfügbar - wechsle zu „Manuell“, um deinen Home-Feed zu exportieren."
+  },
+  "batch_tab_selection_fast": {
+    "message": "Zu „Manuell“ wechseln, um Tweets von Hand auszuwählen"
+  },
+  "batch_tab_timeline_fast": {
+    "message": "Zu „Manuell“ wechseln, um deinen Home-Feed zu exportieren"
+  },
+  "fast_locked": {
+    "message": "Ein Export läuft - brich ihn ab oder warte auf das Ende, um den Modus zu wechseln."
+  },
+  "fast_date_range": {
+    "message": "Datumsbereich"
+  },
+  "fast_date_from": {
+    "message": "Startdatum"
+  },
+  "fast_date_to": {
+    "message": "Enddatum"
+  },
+  "fast_date_clear": {
+    "message": "Leeren"
+  },
+  "fast_paginate": {
+    "message": "Abrufmodus"
+  },
+  "fast_paginate_recent": {
+    "message": "Neu"
+  },
+  "fast_paginate_resume": {
+    "message": "Weiter"
+  },
+  "fast_caption_recent": {
+    "message": "Durchsucht den Anfang des Feeds nach neuen Posts seit deinem letzten Lauf."
+  },
+  "fast_caption_resume": {
+    "message": "Setzt den Abruf älterer Posts dort fort, wo der letzte „Weiter“-Lauf gestoppt hat."
+  },
+  "fast_caption_daterange": {
+    "message": "Nur Posts aus dem Zeitraum unten; durchsucht ältere Posts, ohne die Weiter-Position zu ändern."
+  },
+  "fast_step_page": {
+    "message": "x.com neu laden"
+  },
+  "fast_step_tweet": {
+    "message": "Einen Tweet öffnen"
+  },
+  "fast_step_fetch": {
+    "message": "Wird abgerufen ..."
+  },
+  "fast_step_expand": {
+    "message": "Wird erweitert ..."
+  },
+  "batch_pause": {
+    "message": "Pause"
+  },
+  "batch_resume": {
+    "message": "Fortsetzen"
+  },
+  "batch_stop": {
+    "message": "Stopp"
+  },
+  "batch_paused": {
+    "message": "Pausiert"
+  },
+  "batch_done": {
+    "message": "Fertig"
+  },
+  "batch_stopped": {
+    "message": "Gestoppt"
+  },
+  "batch_exported": {
+    "message": "exportiert"
+  },
+  "batch_failed": {
+    "message": "fehlgeschlagen"
+  },
+  "batch_new": {
+    "message": "neu"
+  },
+  "batch_already_exported": {
+    "message": "bereits exportiert"
+  },
+  "batch_reset": {
+    "message": "Verlauf zurücksetzen"
+  },
+  "batch_reset_hint": {
+    "message": "Vergisst, welche Posts in früheren Läufen bereits exportiert wurden, damit der nächste Batch alles Geladene erneut exportiert."
+  },
+  "batch_reset_queue": {
+    "message": "Queue zurücksetzen"
+  },
+  "batch_reset_queue_hint": {
+    "message": "Leert die gesammelten Posts und beginnt das Sammeln dort neu, wohin du gescrollt hast - so kannst du bei einem bestimmten Post statt ganz oben starten."
+  },
+  "btn_batch_open_x": {
+    "message": "Öffne x.com, um Lesezeichen, ein Profil oder eine Auswahl im Batch zu exportieren."
+  },
+  "btn_batch_open_bookmarks": {
+    "message": "Öffne deine Lesezeichen-Seite, scrolle zum Laden von Posts und exportiere dann."
+  },
+  "btn_batch_open_profile": {
+    "message": "Öffne eine Profilseite auf x.com, um dessen Posts zu exportieren. Reposts werden übersprungen."
+  },
+  "btn_batch_profile": {
+    "message": "Posts exportieren"
+  },
+  "btn_batch_profile_hint": {
+    "message": "Exportiert die eigenen auf der Seite geladenen Posts dieses Profils als Markdown-Dateien in einen Ordner. Reposts werden übersprungen; scrolle, um mehr zu laden."
+  },
+  "btn_batch_likes": {
+    "message": "Likes exportieren"
+  },
+  "btn_batch_likes_hint": {
+    "message": "Exportiert alle auf dieser Seite geladenen gelikten Posts als Markdown-Dateien in einen Ordner. Scrolle auf deiner Likes-Seite, um mehr zu laden."
+  },
+  "btn_batch_open_likes": {
+    "message": "Öffne deine Likes-Seite auf x.com, um die von dir gelikten Posts zu exportieren."
+  },
+  "btn_batch_timeline": {
+    "message": "Timeline exportieren"
+  },
+  "btn_batch_timeline_hint": {
+    "message": "Exportiert jeden in deiner Home-Timeline geladenen Post als Markdown-Datei in einen Ordner. Scrolle, um mehr zu laden."
+  },
+  "btn_batch_open_timeline": {
+    "message": "Öffne deine Home-Timeline, scrolle zum Laden von Posts und exportiere dann."
+  },
+  "btn_batch_go_bookmarks": {
+    "message": "Lesezeichen öffnen"
+  },
+  "btn_batch_go_timeline": {
+    "message": "Timeline öffnen"
+  },
+  "btn_batch_go_likes": {
+    "message": "Zu Likes"
+  },
+  "group_batch": {
+    "message": "Batch-Export"
+  },
+  "batch_tab_bookmarks": {
+    "message": "Lesezeichen"
+  },
+  "batch_tab_profile": {
+    "message": "Profil"
+  },
+  "batch_tab_selection": {
+    "message": "Auswahl"
+  },
+  "batch_tab_likes": {
+    "message": "Likes"
+  },
+  "batch_tab_timeline": {
+    "message": "Timeline"
+  },
+  "btn_batch_select": {
+    "message": "Tweets auswählen…"
+  },
+  "btn_batch_select_hint": {
+    "message": "Wähle einzelne Tweets auf der aktuellen Seite per Checkbox aus und exportiere dann die Auswahl."
+  },
+  "btn_batch_add": {
+    "message": "Zur Queue hinzufügen"
+  },
+  "btn_batch_add_hint": {
+    "message": "Fügt die neu geladenen Posts zur laufenden Batch-Queue hinzu."
+  },
+  "batch_format": {
+    "message": "Format"
+  },
+  "batch_output": {
+    "message": "Ausgabe"
+  },
+  "batch_output_hint": {
+    "message": "Separat: eine Datei pro Post. Beides: Dateien pro Post plus eine kombinierte Datei. Kombiniert: nur eine Datei."
+  },
+  "batch_out_separate": {
+    "message": "Separat"
+  },
+  "batch_out_both": {
+    "message": "Beides"
+  },
+  "batch_out_combined": {
+    "message": "Kombiniert"
+  },
+  "opt_zip": {
+    "message": "Dateien zippen (ein Download)"
+  },
+  "opt_zip_title": {
+    "message": "Packt den Export in eine einzige .zip. Im Batch erhältst du einen statt Tausender Downloads; beim Einzelexport ein Archiv statt einer Markdown-Datei plus Medienordner."
+  },
+  "opt_zip_title_batch": {
+    "message": "Packt alle Dateien pro Post in eine einzige .zip - ein Download statt Tausender. Nicht verfügbar, wenn Medien lokal gespeichert werden oder die Ausgabe „Kombiniert“ gewählt ist."
+  },
+  "opt_zip_title_single": {
+    "message": "Packt den Export in eine einzige .zip - ein Archiv statt einer Markdown-Datei plus danebenliegendem Medienordner."
+  },
+  "flood_hint": {
+    "message": "Das kann Tausende einzelne Dateien auf einmal speichern. Aktiviere „Dateien zippen“ oder wähle die Ausgabe „Kombiniert“, um stattdessen einen einzigen Download zu erhalten."
+  },
+  "batch_bar_selected": {
+    "message": "ausgewählt"
+  },
+  "batch_bar_hint": {
+    "message": "Tippe Tweets zum Auswählen an"
+  },
+  "batch_bar_export": {
+    "message": "Exportieren"
+  },
+  "batch_started": {
+    "message": "Batch gestartet"
+  },
+  "batch_start_failed": {
+    "message": "Batch konnte nicht gestartet werden."
+  },
+  "batch_running": {
+    "message": "Ein Batch-Job läuft bereits."
+  },
+  "btn_obsidian_hint": {
+    "message": "Vault, Unterordner und Frontmatter-Felder lassen sich in den Einstellungen konfigurieren.\nFür lange Threads oder Bilder nutze den Button „.md herunterladen“."
+  },
+  "obsidian_opened": {
+    "message": "Obsidian wird geöffnet…"
+  },
+  "extracting": {
+    "message": "Wird extrahiert…"
+  },
+  "group_export": {
+    "message": "Exporteinstellungen"
+  },
+  "beta": {
+    "message": "Beta"
+  },
+  "group_single": {
+    "message": "Einzelexport"
+  },
+  "group_downloads": {
+    "message": "Downloads"
+  },
+  "opt_download_folder": {
+    "message": "Unterordner"
+  },
+  "opt_download_folder_title": {
+    "message": "Speichert Markdown-Dateien und Bilder in diesem Unterordner innerhalb deines Downloads-Ordners. Leer lassen, um direkt in Downloads zu speichern."
+  },
+  "opt_download_folder_placeholder": {
+    "message": "z. B. xclipper"
+  },
+  "opt_filename_template": {
+    "message": "Dateinamen-Vorlage"
+  },
+  "opt_filename_template_placeholder": {
+    "message": "{handle}-{id}.md"
+  },
+  "opt_filename_preview": {
+    "message": "Vorschau:"
+  },
+  "opt_filename_template_info": {
+    "message": "Platzhalter der Dateinamen-Vorlage anzeigen"
+  },
+  "opt_filename_template_hint_title": {
+    "message": "Platzhalter"
+  },
+  "opt_filename_hint_date": {
+    "message": "Veröffentlichungsdatum (JJJJ-MM-TT)"
+  },
+  "opt_filename_hint_datetime": {
+    "message": "Veröffentlichungsdatum + Uhrzeit"
+  },
+  "opt_filename_hint_handle": {
+    "message": "Autor-Handle ohne @"
+  },
+  "opt_filename_hint_author": {
+    "message": "Anzeigename des Autors"
+  },
+  "opt_filename_hint_id": {
+    "message": "Tweet-ID"
+  },
+  "opt_filename_hint_slug": {
+    "message": "kurze Textvorschau"
+  },
+  "opt_filename_hint_type": {
+    "message": "tweet / thread / article"
+  },
+  "group_inline": {
+    "message": "Inline-Button & Rechtsklick-Menü"
+  },
+  "group_frontmatter": {
+    "message": "Frontmatter-Felder"
+  },
+  "opt_frontmatter_help": {
+    "message": "Wähle, welche Einträge im YAML-Frontmatter erscheinen. Die Auswahl wird pro Modus gespeichert."
+  },
+  "opt_frontmatter_mode_default": {
+    "message": "Standardmodus"
+  },
+  "opt_frontmatter_mode_obsidian": {
+    "message": "Obsidian-freundlicher Modus"
+  },
+  "opt_frontmatter_select_all": {
+    "message": "Alle aktivieren"
+  },
+  "nav_settings": {
+    "message": "Einstellungen"
+  },
+  "nav_back": {
+    "message": "Zurück"
+  },
+  "settings_help": {
+    "message": "Mit der Maus über Bezeichnungen fahren für mehr Infos"
+  },
+  "group_obsidian": {
+    "message": "Obsidian"
+  },
+  "opt_obsidian_friendly": {
+    "message": "Obsidian-optimiertes Frontmatter"
+  },
+  "opt_obsidian_friendly_title": {
+    "message": "Erzeugt für Obsidian optimiertes Frontmatter: Wikilink-Autor, Tags sowie Veröffentlichungs-/Erstellungsdaten"
+  },
+  "opt_obsidian_vault": {
+    "message": "Vault-Name"
+  },
+  "opt_obsidian_vault_title": {
+    "message": "Wird vom Button 'Zu Obsidian hinzufügen' verwendet. Leer lassen, damit Obsidian den zuletzt verwendeten Vault auswählt."
+  },
+  "opt_obsidian_vault_placeholder": {
+    "message": "(optional)"
+  },
+  "opt_obsidian_folder": {
+    "message": "Unterordner"
+  },
+  "opt_obsidian_folder_title": {
+    "message": "Erstellt die Notiz in diesem Unterordner des Vaults (z. B. Tweets oder Inbox/Tweets). Leer lassen, um sie im Vault-Stammverzeichnis zu erstellen."
+  },
+  "opt_obsidian_folder_placeholder": {
+    "message": "z. B. Tweets"
+  },
+  "opt_obsidian_tags": {
+    "message": "Tags"
+  },
+  "opt_obsidian_tags_title": {
+    "message": "Kommagetrennte Tags im Obsidian-freundlichen Frontmatter. Tippe { für einen Platzhalter. Leer = Standard (clippings, x, {type})."
+  },
+  "opt_obsidian_tags_placeholder": {
+    "message": "clippings, x, {type}"
+  },
+  "opt_obsidian_tags_reset": {
+    "message": "Zurücksetzen"
+  },
+  "opt_obsidian_tags_info": {
+    "message": "Tag-Platzhalter anzeigen"
+  },
+  "opt_save_local_title": {
+    "message": "Aus: Medien als Links zu X behalten. Bilder: Bilder in einem Ordner neben der Markdown-Datei speichern. Medien: zusätzlich Videos als .mp4 speichern — diese sind deutlich größer."
+  },
+  "opt_save_local": {
+    "message": "Lokal speichern (nur mit .md)"
+  },
+  "opt_save_local_off": {
+    "message": "Aus"
+  },
+  "opt_save_local_images": {
+    "message": "Bilder"
+  },
+  "opt_save_local_media": {
+    "message": "Medien"
+  },
+  "opt_metadata_title": {
+    "message": "Likes, Reposts, Aufrufe als YAML-Frontmatter hinzufügen"
+  },
+  "opt_metadata": {
+    "message": "Metadaten einschließen"
+  },
+  "opt_inline_stats_title": {
+    "message": "Likes, Reposts, Antworten, Lesezeichen und Aufrufe als Zeile im Markdown-Text einfügen"
+  },
+  "opt_inline_stats": {
+    "message": "Engagement-Statistiken inline anzeigen"
+  },
+  "opt_include_reposts": {
+    "message": "Reposts einschließen (Profile)"
+  },
+  "opt_include_reposts_title": {
+    "message": "Beim Batch-Export eines Profils auch Reposts einschließen. Aus = nur eigene Posts des Profilinhabers."
+  },
+  "opt_close_tab_title": {
+    "message": "Tab nach dem Export über Inline-Button oder Kontextmenü automatisch schließen"
+  },
+  "opt_close_tab": {
+    "message": "Neuen Tab nach dem Export schließen"
+  },
+  "ctx_save_tweet": {
+    "message": "Tweet als Markdown herunterladen"
+  },
+  "ctx_copy_tweet": {
+    "message": "Tweet als Markdown kopieren"
+  },
+  "ctx_copy_just_this_tweet": {
+    "message": "Nur diesen Tweet kopieren (ohne Thread)"
+  },
+  "ctx_obsidian_tweet": {
+    "message": "Tweet zu Obsidian hinzufügen"
+  },
+  "ctx_export_pdf": {
+    "message": "Tweet als PDF exportieren"
+  },
+  "ctx_copy_txt": {
+    "message": "Tweet als txt kopieren"
+  },
+  "ctx_download_txt": {
+    "message": "Tweet als txt herunterladen"
+  },
+  "ctx_download_html": {
+    "message": "Tweet als html herunterladen"
+  },
+  "ctx_download_json": {
+    "message": "Tweet als json herunterladen"
+  },
+  "ctx_download_csv": {
+    "message": "Tweet als csv herunterladen"
+  },
+  "opt_show_inline_title": {
+    "message": "Fügt einen Download-Button neben dem Teilen-Button in der Aktionsleiste jedes Tweets hinzu"
+  },
+  "opt_show_inline": {
+    "message": "Inline-Button auf Tweets anzeigen"
+  },
+  "opt_inline_copies_title": {
+    "message": "Wenn aktiviert, kopiert das Inline-Downloadsymbol das Markdown in die Zwischenablage, anstatt eine Datei herunterzuladen."
+  },
+  "opt_inline_copies": {
+    "message": "Inline-Schaltfläche kopiert stattdessen"
+  },
+  "footer_hint": {
+    "message": "Öffne einen Tweet oder Artikel auf X.com, um zu beginnen"
+  },
+  "footer_feedback": {
+    "message": "Probleme oder Vorschläge?"
+  },
+  "error_reload": {
+    "message": "Lade die Seite neu und versuche es erneut."
+  },
+  "error_specific_page": {
+    "message": "Öffne die Seite eines bestimmten Tweets oder Artikels (mit /status/ in der URL)."
+  },
+  "error_failed": {
+    "message": "Inhalt konnte nicht extrahiert werden."
+  },
+  "error_unexpected": {
+    "message": "Ein unerwarteter Fehler ist aufgetreten."
+  },
+  "error_no_tab": {
+    "message": "Kein aktiver Tab."
+  },
+  "download_failed": {
+    "message": "Fehler beim Herunterladen."
+  },
+  "pdf_failed": {
+    "message": "PDF-Export fehlgeschlagen."
+  },
+  "article_downloaded": {
+    "message": "Artikel heruntergeladen!"
+  },
+  "thread_downloaded": {
+    "message": "Thread heruntergeladen!"
+  },
+  "tweet_downloaded": {
+    "message": "Tweet heruntergeladen!"
+  },
+  "downloaded": {
+    "message": "Heruntergeladen!"
+  },
+  "pdf_downloaded": {
+    "message": "PDF heruntergeladen!"
+  },
+  "article_copied": {
+    "message": "Artikel kopiert!"
+  },
+  "thread_copied": {
+    "message": "Thread kopiert!"
+  },
+  "tweet_copied": {
+    "message": "Tweet kopiert!"
+  },
+  "copied": {
+    "message": "Kopiert!"
+  },
+  "video_unresolved": {
+    "message": "Video bleibt als Link erhalten - lade den Post einmal neu und exportiere erneut."
+  }
+}
