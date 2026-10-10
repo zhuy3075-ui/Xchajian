@@ -6,6 +6,7 @@ import { getStatusUrl, normalizeStatusUrl } from './status-url';
 import { decorateSelection, enterSelection, exitSelection } from './selection';
 import { pageSourceOfPath, type XPage } from '../shared/x-routes';
 import { initInlineObsidian } from './obsidian-inline';
+import { copyComment } from './comment-copy';
 
 initInlineObsidian();
 
@@ -27,9 +28,10 @@ function removeControls(scope: ParentNode): void {
   });
 }
 
-function hasControls(scope: Element): boolean {
+function hasControls(scope: Element, withCopy = false): boolean {
   return !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="添加到 Obsidian"]`) &&
-    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="Save as Markdown"]`);
+    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="Save as Markdown"]`) &&
+    (!withCopy || !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="复制正文"]`));
 }
 
 // True until the extension is disabled/reloaded. After that, chrome.* calls
@@ -221,7 +223,7 @@ function decorateArticleActionBar(article: Element): void {
   if (!actionBar) return;
   // X replaces action bars without replacing their article. Inspect the live
   // controls rather than remembering that the article used to have buttons.
-  if (hasControls(actionBar)) return;
+  if (hasControls(actionBar, true)) return;
 
   const url = getStatusUrl(article);
   if (!url) return;
@@ -242,10 +244,16 @@ function decorateArticleActionBar(article: Element): void {
   const obsidianBtn = makeObsidianButton(() => getStatusUrl(article) || url, article);
   obsidianBtn.title = '保存此条内容到 Obsidian（不采集整串评论）';
   container.appendChild(obsidianBtn);
+  const copyBtn = makeButton(() => { void copyComment(article, copyBtn); });
+  copyBtn.setAttribute('aria-label', '复制正文');
+  copyBtn.title = '复制此条评论/推文的正文（不含引用内容）';
+  copyBtn.querySelector('path')!.setAttribute('d', 'M8 2h12a2 2 0 0 1 2 2v12h-2V4H8V2zM4 6h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v12h12V8H4z');
+  container.appendChild(copyBtn);
   actionBar.appendChild(container);
 
   matchSiblingIcon(actionBar, btn, btn.querySelector('svg'));
   matchSiblingIcon(actionBar, obsidianBtn, obsidianBtn.querySelector('svg'));
+  matchSiblingIcon(actionBar, copyBtn, copyBtn.querySelector('svg'));
 
 }
 

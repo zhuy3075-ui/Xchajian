@@ -26,9 +26,14 @@ export function obsidianCardUrl(article: Element): string | null {
 // Expand only the selected card. Recheck its identity because X can replace
 // or recycle articles while expansion is loading.
 export function captureExpandedObsidianCard(article: Element, isCurrent: () => boolean) {
+  const expanded = expandObsidianCard(article, isCurrent);
+  return expanded instanceof Promise ? expanded.then(captureObsidianCard) : captureObsidianCard(expanded);
+}
+
+export function expandObsidianCard(article: Element, isCurrent: () => boolean): Element | Promise<Element> {
   const more = Array.from(article.querySelectorAll<HTMLElement>('[data-testid="tweet-text-show-more-link"]'))
     .find(el => belongsToCard(el, article));
-  if (!more) return captureObsidianCard(article);
+  if (!more) return article;
   const sourceUrl = cardTimestamp(article)?.closest('a')?.href;
   if (!sourceUrl) throw new Error('找不到这条评论自身的链接，请刷新后重试');
   if (more.closest('a[href]')) throw new Error('这条内容需要进入详情页才能展开，请打开后再采集。');
@@ -36,27 +41,26 @@ export function captureExpandedObsidianCard(article: Element, isCurrent: () => b
   const originalText = Array.from(article.querySelectorAll('[data-testid="tweetText"]'))
     .find(el => belongsToCard(el, article))?.textContent;
   more.click();
-  return new Promise<ReturnType<typeof captureObsidianCard>>((resolve, reject) => {
+  return new Promise<Element>((resolve, reject) => {
     const started = Date.now();
     let lastText = originalText;
     let stableSince = started;
     const timer = window.setInterval(() => {
       try {
-        if (!isCurrent() || window.location.href !== pageUrl) throw new Error('采集已取消或页面已切换，请重新点击保存');
+        if (!isCurrent() || window.location.href !== pageUrl) throw new Error('操作已取消或页面已切换，请重试');
         if (!article.isConnected) {
           const replacement = Array.from(document.querySelectorAll('article')).find(el => cardTimestamp(el)?.closest('a')?.href === sourceUrl);
           if (replacement) article = replacement;
         }
-        if (article.isConnected && cardTimestamp(article)?.closest('a')?.href !== sourceUrl) throw new Error('卡片内容已切换，请重新点击保存');
+        if (article.isConnected && cardTimestamp(article)?.closest('a')?.href !== sourceUrl) throw new Error('卡片内容已切换，请重试');
         const text = Array.from(article.querySelectorAll('[data-testid="tweetText"]')).find(el => belongsToCard(el, article))?.textContent;
         if (text !== lastText) { lastText = text; stableSince = Date.now(); }
         if (article.isConnected && text?.trim() && text !== originalText &&
             text.trim().length >= (originalText?.trim().length || 0) && Date.now() - stableSince >= 300 &&
             !Array.from(article.querySelectorAll('[data-testid="tweet-text-show-more-link"]')).some(el => belongsToCard(el, article))) {
-          const captured = captureObsidianCard(article);
           window.clearInterval(timer);
-          resolve(captured);
-        } else if (Date.now() - started >= 4000) throw new Error('自动展开未完成，请点击正文的“Show more / 显示更多”后重新保存；未保存截断内容。');
+          resolve(article);
+        } else if (Date.now() - started >= 4000) throw new Error('自动展开未完成，请点击正文的“Show more / 显示更多”后重试；未使用截断内容。');
       } catch (err) { window.clearInterval(timer); reject(err); }
     }, 100);
   });
