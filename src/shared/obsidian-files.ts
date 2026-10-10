@@ -44,6 +44,15 @@ export function noteSegments(target: ObsidianTarget, connection: VaultConnection
   return segments;
 }
 
+function commentSourceId(markdown: string): string | undefined {
+  const frontmatter = markdown.match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1];
+  const source = frontmatter?.match(/^source:[ \t]*["']?([^"'\r\n]+)["']?[ \t]*\r?$/m)?.[1]?.trim();
+  // The final provenance line is appended by card capture, after the body
+  // and any quotations. A quoted post must not supply the comment identity.
+  const url = source ?? Array.from(markdown.matchAll(/^原文链接：[ \t]*(\S+)[ \t]*\r?$/gm)).at(-1)?.[1];
+  return url?.match(/^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[a-z0-9_]{1,15}\/status\/(\d+)(?:[?#].*)?$/i)?.[1];
+}
+
 // Caller serializes extension writes. Keep existing notes and check for
 // external changes before committing; the browser has no OS-wide file lock.
 export async function writeVaultNote(connection: VaultConnection, target: ObsidianTarget, markdown: string): Promise<{ path: string; duplicate: boolean }> {
@@ -55,12 +64,36 @@ export async function writeVaultNote(connection: VaultConnection, target: Obsidi
   let directory: FileSystemDirectoryHandle = connection.handle;
   for (const segment of segments.slice(0, -1)) directory = await directory.getDirectoryHandle(segment, { create: true });
   const original = segments.at(-1)!;
+  // Comment captures deliberately keep their first saved snapshot. Timestamps,
+  // engagement, translations and personal edits do not change a comment's ID.
+  const commentId = segments.length === 2 && segments[0] === '09_评论' ? commentSourceId(markdown) : undefined;
+  if (commentId) {
+    const candidates: string[] = [];
+    for await (const [name, handle] of directory.entries()) {
+      if (handle.kind !== 'file' || name.match(/-(\d+)(?: (?:\(\d+\)|\d+))?\.md$/i)?.[1] !== commentId) continue;
+      // Existing candidates must obey the same visible-note/path rules as
+      // new targets; a hidden or invalid file cannot stand in for a note.
+      try { noteSegments({ path: `${segments[0]}/${name}`, absolute: false, vault: '' }, connection); }
+      catch { continue; }
+      candidates.push(name);
+    }
+    // Prefer the canonical name, while also finding old numbered captures or
+    // files saved before the author changed their handle.
+    candidates.sort((a, b) => a === original ? -1 : b === original ? 1 : a.localeCompare(b));
+    for (const name of candidates) {
+      let body: string;
+      try { body = await (await (await directory.getFileHandle(name)).getFile()).text(); }
+      catch (err) { if (err instanceof DOMException && err.name === 'NotFoundError') continue; throw err; }
+      if (commentSourceId(body) === commentId) return { path: [...segments.slice(0, -1), name].join('/'), duplicate: true };
+    }
+  }
   for (let n = 1; n <= 100; n++) {
     const name = n === 1 ? original : original.replace(/\.md$/i, ` (${n}).md`);
     const path = [...segments.slice(0, -1), name].join('/');
     try {
       const existing = await directory.getFileHandle(name);
-      if (await (await existing.getFile()).text() === markdown) return { path, duplicate: true };
+      const body = await (await existing.getFile()).text();
+      if (body === markdown || (commentId && commentSourceId(body) === commentId)) return { path, duplicate: true };
       continue;
     } catch (err) {
       if (!(err instanceof DOMException) || err.name !== 'NotFoundError') throw err;
@@ -69,7 +102,11 @@ export async function writeVaultNote(connection: VaultConnection, target: Obsidi
     const stream = await file.createWritable({ mode: 'exclusive' } as FileSystemCreateWritableOptions);
     try {
       const before = await file.getFile();
-      if (before.size) { await stream.abort(); continue; }
+      if (before.size) {
+        await stream.abort();
+        if (commentId && commentSourceId(await before.text()) === commentId) return { path, duplicate: true };
+        continue;
+      }
       await stream.write(markdown);
       const current = await file.getFile();
       if (current.size !== before.size || current.lastModified !== before.lastModified) {
