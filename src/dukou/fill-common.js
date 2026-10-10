@@ -6,6 +6,7 @@
 
 const ADAPTER = window.WX2X;
 let panel = null;
+let collapseTimer = null;
 
 init();
 
@@ -82,6 +83,7 @@ function showPanel(index, currentId) {
       #wx2x-panel *{margin:0;padding:0;box-sizing:border-box;}
       #wx2x-bubble{display:none;width:72px;height:40px;border:0;border-radius:10px;background:#245bd8;color:#fff;font:600 13px system-ui;
         box-shadow:0 6px 18px rgba(165,48,15,.32);cursor:pointer;align-items:center;justify-content:center;}
+      #wx2x-bubble[data-needs-review="true"]{background:#8a5300;}
       #wx2x-card{width:300px;background:#FFFFFF;border:1px solid #d9e1ee;border-radius:8px;
         box-shadow:0 12px 32px rgba(31,29,26,.13);}
       .dk-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #e8edf5;}
@@ -144,16 +146,10 @@ function showPanel(index, currentId) {
   document.body.appendChild(panel);
 
   const bubble = panel.querySelector('#wx2x-bubble');
-  const card = panel.querySelector('#wx2x-card');
-  const setCollapsed = (c) => {
-    bubble.style.display = c ? 'flex' : 'none';
-    card.style.display = c ? 'none' : 'block';
-    sessionStorage.setItem('wx2x-collapsed', c ? '1' : '0');
-  };
-  setCollapsed(userCollapsed || !autoExpand);
+  setPanelCollapsed(userCollapsed || !autoExpand);
 
-  bubble.addEventListener('click', () => setCollapsed(false));
-  panel.querySelector('#wx2x-collapse').addEventListener('click', () => setCollapsed(true));
+  bubble.addEventListener('click', () => setPanelCollapsed(false));
+  panel.querySelector('#wx2x-collapse').addEventListener('click', () => setPanelCollapsed(true));
 
   // 文章选择器（自绘下拉，向上展开）
   const curBtn = panel.querySelector('#wx2x-cur');
@@ -167,11 +163,15 @@ function showPanel(index, currentId) {
   };
   renderCur();
   curBtn.addEventListener('click', () => {
+    clearTimeout(collapseTimer);
+    collapseTimer = null;
     list.style.display = list.style.display === 'block' ? 'none' : 'block';
   });
   list.addEventListener('click', (ev) => {
     const item = ev.target.closest('.dk-item');
     if (!item) return;
+    clearTimeout(collapseTimer);
+    collapseTimer = null;
     selectedId = item.dataset.id;
     list.querySelectorAll('.dk-item').forEach((el) => el.classList.toggle('sel', el.dataset.id === selectedId));
     renderCur();
@@ -199,8 +199,38 @@ function showPanel(index, currentId) {
 }
 
 function removePanel() {
+  clearTimeout(collapseTimer);
+  collapseTimer = null;
   document.getElementById('wx2x-panel')?.remove();
   panel = null;
+}
+
+function setPanelCollapsed(collapsed) {
+  clearTimeout(collapseTimer);
+  collapseTimer = null;
+  const bubble = panel?.querySelector('#wx2x-bubble');
+  const card = panel?.querySelector('#wx2x-card');
+  if (!bubble || !card) return;
+  const moveFocus = collapsed && card.contains(document.activeElement);
+  bubble.style.display = collapsed ? 'flex' : 'none';
+  card.style.display = collapsed ? 'none' : 'block';
+  sessionStorage.setItem('wx2x-collapsed', collapsed ? '1' : '0');
+  if (moveFocus) bubble.focus({ preventScroll: true });
+}
+
+function schedulePanelCollapse(needsReview, completedPanel) {
+  if (panel !== completedPanel || !completedPanel?.isConnected) return;
+  clearTimeout(collapseTimer);
+  const bubble = panel?.querySelector('#wx2x-bubble');
+  if (!bubble) return;
+  const result = panel.querySelector('#wx2x-progress')?.textContent || '填入完成';
+  bubble.textContent = needsReview ? '⚠ 待检查' : '稿件库';
+  bubble.dataset.needsReview = String(needsReview);
+  bubble.title = `${result}；点击查看填入结果`;
+  bubble.setAttribute('aria-label', bubble.title);
+  collapseTimer = setTimeout(() => {
+    if (panel === completedPanel && completedPanel.isConnected) setPanelCollapsed(true);
+  }, 1500);
 }
 
 // text=进度文字；ratio=0~1可选，驱动顶部细进度条
@@ -219,13 +249,17 @@ function progress(text, ratio) {
 // ---------- 填充主流程 ----------
 
 async function fillArticle(article) {
+  const fillingPanel = panel;
   const fillBtn = document.getElementById('wx2x-fill');
+  setPanelCollapsed(false);
   fillBtn.disabled = true;
+  let titleNote = '';
 
   try {
     // 适配器自定义填充旁路（如公众号排版器：单textarea直接灌raw markdown，不走富文本流程）
     if (typeof ADAPTER.fill === 'function') {
       await ADAPTER.fill(article);
+      schedulePanelCollapse(false, fillingPanel);
       return;
     }
 
@@ -240,6 +274,7 @@ async function fillArticle(article) {
       let title = article.title;
       if (ADAPTER.maxTitleLen && title.length > ADAPTER.maxTitleLen) {
         title = title.slice(0, ADAPTER.maxTitleLen);
+        titleNote = '；⚠️ 标题已截断，请手动调整';
         progress(`标题超过${ADAPTER.maxTitleLen}字已截断，记得手动调整`);
         await sleep(800);
       }
@@ -247,6 +282,7 @@ async function fillArticle(article) {
       await fillTitle(titleEl, title);
       await sleep(500);
     } else {
+      titleNote = '；⚠️ 标题未填入，请手动补充';
       progress('⚠️ 没找到标题框，跳过（可手动填）');
       await sleep(800);
     }
@@ -300,6 +336,7 @@ async function fillArticle(article) {
     // 5. 填封面（站点支持才做，失败不中断）
     // 放最后：X上传头图会弹出裁剪框，放开头会全程挡住填充画面，像卡死
     let coverNote = '';
+    let coverFailed = false;
     if (ADAPTER.fillCover && article.coverDataUrl) {
       progress('上传头图…', 0.95);
       try {
@@ -308,13 +345,16 @@ async function fillArticle(article) {
         await sleep(1500);
         coverNote = '；头图已就位';
       } catch (e) {
+        coverFailed = true;
         console.warn('[wx2x] 头图填入失败（不影响正文）', e);
         coverNote = `；⚠️ 头图未成功（${e.message}），请手动添加`;
       }
     }
 
-    progress(`已填入：${htmlBlocks.length}个段落 + ${images.length - imageFailures}/${images.length}张图${imageFailures ? `；⚠️ ${imageFailures}张图片未确认上传，请手动补充` : ''}，请对照原文检查${coverNote}`, 1);
+    progress(`已填入：${htmlBlocks.length}个段落 + ${images.length - imageFailures}/${images.length}张图${imageFailures ? `；⚠️ ${imageFailures}张图片未确认上传，请手动补充` : ''}，请对照原文检查${titleNote}${coverNote}`, 1);
+    schedulePanelCollapse(imageFailures > 0 || coverFailed || !!titleNote, fillingPanel);
   } catch (e) {
+    if (panel === fillingPanel) setPanelCollapsed(false);
     console.error('[wx2x]', e);
     progress('出错了：' + e.message);
   } finally {
