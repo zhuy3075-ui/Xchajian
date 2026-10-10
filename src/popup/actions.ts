@@ -14,6 +14,7 @@ import { buildFormatExport, type ExportFormat } from '../shared/export-formats';
 import { recordExport } from '../shared/review-prompt';
 import { resolveObsidianTarget } from '../shared/obsidian';
 import { saveObsidianNote, openObsidianConnection } from '../shared/obsidian-files';
+import { loadSettings } from '../shared/settings';
 import { hostMatches } from '../shared/media';
 import { renderMarkdown } from '../ast/render-markdown';
 import { resolveLocalVideo, type VideoAttachment } from '../shared/local-video';
@@ -32,6 +33,7 @@ import {
   chkObsidianFriendly,
   txtFilenameTemplate,
   txtObsidianTags,
+  chkShowInline,
 } from './dom';
 
 // Every button the export flows disable while one of them is running, so a
@@ -297,6 +299,23 @@ export function initActions(): void {
     statusEl.className = 'status hidden';
 
     try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id && hostMatches(tab.url || '', 'x.com', 'www.x.com') && !new URL(tab.url!).pathname.includes('/status/')) {
+        // A timeline has no single target. Reveal per-card controls and let
+        // the user select the intended post rather than guessing a card.
+        const settings = await loadSettings();
+        await chrome.storage.local.set({ xclipper_settings: { ...settings, showInlineButton: true } });
+        chkShowInline.checked = true;
+        let response: { ok?: boolean; count?: number } | undefined;
+        try { response = await chrome.tabs.sendMessage(tab.id, { action: 'XCLIPPER_OBSIDIAN_SHOW_BUTTONS' }); }
+        catch { throw new Error('已开启卡片保存按钮。请刷新 X 页面，再点击目标帖子旁的“笔记＋”保存。'); }
+        if (!response?.ok) throw new Error('已开启卡片保存按钮。请刷新 X 页面，再点击目标帖子旁的“笔记＋”保存。');
+        showStatus(response.count
+          ? '已显示卡片保存按钮。关闭弹窗，点击目标帖子分享按钮旁的“笔记＋”即可保存到 Obsidian。'
+          : '已开启卡片保存按钮。请滚动到要保存的帖子，等待加载后点击“笔记＋”。', 'info');
+        setLoading(false);
+        return;
+      }
       const result = await extractMarkdown('obsidian');
       const target = resolveObsidianTarget(result.filename, readSettingsForm(), result.author.handle);
       const save = async (): Promise<void> => {

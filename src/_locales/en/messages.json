@@ -318,7 +318,7 @@
     "message": "A batch job is already running."
   },
   "btn_obsidian_hint": {
-    "message": "Set a material folder in Settings; notes can be grouped by author account. Check the destination and continue to save. Long notes replace your clipboard. Use 'Download .md' to save images locally."
+    "message": "Connect your vault folder in Settings once and allow writing. On a post page, save directly. On a timeline, show the card controls, then click the target post's note-plus button. Saving shows the file location without opening Obsidian or using the clipboard."
   },
   "obsidian_destination_label": {
     "message": "Material folder (full path)"

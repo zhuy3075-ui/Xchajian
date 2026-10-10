@@ -10,19 +10,26 @@ import { initInlineObsidian } from './obsidian-inline';
 initInlineObsidian();
 
 const BUTTON_ATTR = 'data-xclipper-injected';
-let decorated = new WeakSet<Element>();
 
 let inlineButtonCopies = false;
 let showInlineButton = false;
 let includeReposts = false; // profile batch: keep reposts too (default off)
 
 function removeAllInjectedButtons(): void {
-  document.querySelectorAll(`[${BUTTON_ATTR}]`).forEach((btn) => {
-    // The button is wrapped in a flex container that we appended to the action bar.
-    (btn.parentElement || btn).remove();
+  removeControls(document);
+}
+
+function removeControls(scope: ParentNode): void {
+  scope.querySelectorAll(`[${BUTTON_ATTR}]`).forEach(btn => {
+    const container = btn.closest('[data-xclipper-controls]');
+    if (container) container.remove();
+    else btn.remove();
   });
-  decorated = new WeakSet<Element>();
-  articleTopBarDecorated = new WeakSet<Element>();
+}
+
+function hasControls(scope: Element): boolean {
+  return !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="添加到 Obsidian"]`) &&
+    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="Save as Markdown"]`);
 }
 
 // True until the extension is disabled/reloaded. After that, chrome.* calls
@@ -208,18 +215,17 @@ function matchSiblingIcon(
 }
 
 function decorateArticleActionBar(article: Element): void {
-  if (decorated.has(article)) return;
-
-  const actionBar = article.querySelector('div[role="group"][id^="id__"]')
-    || article.querySelector('div[role="group"]');
+  const groups = Array.from(article.querySelectorAll('div[role="group"]'))
+    .filter(group => group.closest('article') === article && !group.closest('div[role="link"]'));
+  const actionBar = groups.find(group => group.id.startsWith('id__')) || groups[0];
   if (!actionBar) return;
-  if (actionBar.querySelector(`[${BUTTON_ATTR}]`)) {
-    decorated.add(article);
-    return;
-  }
+  // X replaces action bars without replacing their article. Inspect the live
+  // controls rather than remembering that the article used to have buttons.
+  if (hasControls(actionBar)) return;
 
   const url = getStatusUrl(article);
   if (!url) return;
+  removeControls(actionBar);
 
   const btn = makeButton((e) => {
     const fresh = getStatusUrl(article) || url;
@@ -230,6 +236,7 @@ function decorateArticleActionBar(article: Element): void {
     );
   });
   const container = document.createElement('div');
+  container.setAttribute('data-xclipper-controls', '1');
   container.style.cssText = 'display:flex;align-items:center;';
   container.appendChild(btn);
   const obsidianBtn = makeObsidianButton(() => getStatusUrl(article) || url, article);
@@ -240,12 +247,10 @@ function decorateArticleActionBar(article: Element): void {
   matchSiblingIcon(actionBar, btn, btn.querySelector('svg'));
   matchSiblingIcon(actionBar, obsidianBtn, obsidianBtn.querySelector('svg'));
 
-  decorated.add(article);
 }
 
 // On article (long-form) pages, X renders a top action bar above the content.
 // Inject the same button there so users don't have to scroll past long articles.
-let articleTopBarDecorated = new WeakSet<Element>();
 function decorateArticleTopBar(): void {
   if (!window.location.pathname.includes('/status/')) return;
   const articleBody = document.querySelector('[data-testid="twitterArticleRichTextView"]')
@@ -263,11 +268,8 @@ function decorateArticleTopBar(): void {
     cursor = cursor.parentElement;
   }
   if (!candidate) return;
-  if (articleTopBarDecorated.has(candidate)) return;
-  if (candidate.querySelector(`[${BUTTON_ATTR}]`)) {
-    articleTopBarDecorated.add(candidate);
-    return;
-  }
+  if (hasControls(candidate)) return;
+  removeControls(candidate);
 
   const btn = makeButton((e) =>
     triggerExtract(
@@ -277,6 +279,7 @@ function decorateArticleTopBar(): void {
     )
   );
   const container = document.createElement('div');
+  container.setAttribute('data-xclipper-controls', '1');
   container.style.cssText = 'display:flex;align-items:center;';
   container.appendChild(btn);
   const obsidianBtn = makeObsidianButton(() => window.location.href);
@@ -284,7 +287,6 @@ function decorateArticleTopBar(): void {
   candidate.appendChild(container);
   matchSiblingIcon(candidate, btn, btn.querySelector('svg'));
   matchSiblingIcon(candidate, obsidianBtn, obsidianBtn.querySelector('svg'));
-  articleTopBarDecorated.add(candidate);
 }
 
 let scanScheduled = false;
@@ -353,7 +355,14 @@ function harvestTimeline(): HarvestSource {
 // wires it to the popup message + the mutation observer below.
 
 try {
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg?.action === 'XCLIPPER_OBSIDIAN_SHOW_BUTTONS') {
+      if (sender.id !== chrome.runtime.id) { sendResponse({ ok: false }); return false; }
+      showInlineButton = true;
+      scan();
+      sendResponse({ ok: true, count: document.querySelectorAll(`[${BUTTON_ATTR}][aria-label="添加到 Obsidian"]`).length });
+      return false;
+    }
     if (msg && msg.action === 'XCLIPPER_HARVEST') {
       const source = harvestTimeline(); // catch cells rendered since the last mutation
       sendResponse({
