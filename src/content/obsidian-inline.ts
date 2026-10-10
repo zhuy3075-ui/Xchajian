@@ -51,7 +51,7 @@ export function initInlineObsidian(): void {
     const useClipboard = fullUrl.length > 1800;
     const url = useClipboard ? buildObsidianTargetUrl(null, target) : fullUrl;
     if (url.length > 1800) throw new Error('Obsidian 保存路径过长，请在插件设置中缩短目录或文件名');
-    const card = notice('采集完成，正在唤起 Obsidian。请在浏览器提示中允许打开。');
+    const card = notice('采集完成，正在自动发送到 Obsidian…');
     const status = card.querySelector('p')!;
     const destination = document.createElement('div');
     destination.textContent = target.absolute ? target.path : `${target.vault || '当前仓库'} / ${target.path}`;
@@ -65,6 +65,7 @@ export function initInlineObsidian(): void {
     const launch = async (): Promise<void> => {
       if (launching) return;
       launching = true;
+      retry.hidden = true;
       retry.disabled = true;
       try {
         if (useClipboard) await navigator.clipboard.writeText(result.markdown);
@@ -72,16 +73,19 @@ export function initInlineObsidian(): void {
         // Run the protocol on the original page, which remains alive for the
         // browser's confirmation. A URI launch is not a filesystem-save ack.
         window.location.href = url;
-        status.textContent = '已发起 Obsidian 交接，请检查笔记。未打开时点击下方重试。';
+        status.textContent = '已自动发送到 Obsidian。';
         void recordExport();
-      } catch {
-        status.textContent = '浏览器未允许自动交接，正文已保留。请点击“继续保存到 Obsidian”重试。';
+        setTimeout(() => { if (panel === card) card.remove(); }, 3000);
+      } catch (err) {
+        status.textContent = `自动发送失败，正文已保留：${err instanceof Error ? err.message : String(err)}`;
+        retry.hidden = false;
       } finally {
         launching = false;
         retry.disabled = false;
       }
     };
-    const retry = button(card, '继续保存到 Obsidian', () => { void launch(); });
+    const retry = button(card, '重试自动保存', () => { void launch(); });
+    retry.hidden = true;
     button(card, '关闭提示', () => { card.remove(); });
     // The original page owns the complete result before it acknowledges the
     // worker. A blocked clipboard/protocol launch leaves a real-click retry.

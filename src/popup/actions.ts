@@ -307,45 +307,34 @@ export function initActions(): void {
           throw new Error(chrome.i18n.getMessage('obsidian_path_too_long') ||
             'The vault, folder or filename is too long. Shorten it or download .md.');
         }
-        showStatus(useClipboard
-          ? (chrome.i18n.getMessage('obsidian_clipboard_ready') || 'Long note ready. Continue to copy the full text to your clipboard and open Obsidian. This replaces your clipboard.')
-          : (chrome.i18n.getMessage('obsidian_note_ready') || 'Check the destination below, then continue to Obsidian.'), 'info');
-        const destination = document.createElement('code');
-        destination.className = 'obsidian-save-target';
-        destination.textContent = target.absolute ? target.path : `${target.vault || chrome.i18n.getMessage('obsidian_current_vault') || 'Current vault'} / ${target.path}`;
-        statusEl.append(destination);
-        const proceed = document.createElement('button');
-        proceed.type = 'button';
-        proceed.className = 'field-inline-action';
-        proceed.textContent = chrome.i18n.getMessage('obsidian_continue') || 'Continue to Obsidian';
-        statusEl.append(document.createTextNode(' '), proceed);
-        // A fresh click provides the user gesture for clipboard access and
-        // external-app launch, without adding clipboard permissions.
-        proceed.addEventListener('click', async () => {
-          proceed.disabled = true;
+        const launch = async (): Promise<void> => {
           setLoading(true, 'obsidian');
+          showStatus(useClipboard
+            ? '正在自动发送到 Obsidian；长文将通过剪贴板交接…'
+            : '正在自动发送到 Obsidian…', 'info');
           try {
-            if (useClipboard) await navigator.clipboard.writeText(result.markdown);
-          } catch {
-            showStatus(chrome.i18n.getMessage('obsidian_clipboard_failed') ||
-              'Could not copy the note. Keep this popup focused and retry, or download .md and import it into your vault.', 'error');
-            setLoading(false);
-            return;
-          }
-          try {
-            // Keep a browser surface alive for the external-app confirmation.
-            // noopener may return null even on success; it is not an ack.
-            window.open(handoffUrl, '_blank', 'noopener');
-            showStatus(chrome.i18n.getMessage('obsidian_handoff_sent') ||
-              'Open Obsidian when prompted, then check your vault. If nothing opens, retry. Keep the copied text until the note appears.', 'info');
+            if (useClipboard) {
+              try { await navigator.clipboard.writeText(result.markdown); }
+              catch { throw new Error('无法写入剪贴板，请保持当前窗口打开后重试自动保存。'); }
+            }
+            // Browser-managed tab creation does not need a second popup click.
+            // Keep its surface alive for any external-app authorization.
+            await chrome.tabs.create({ url: handoffUrl, active: true });
+            showStatus('已自动发送到 Obsidian。', 'info');
             void recordExport();
           } catch (err) {
             handleExtractionError(err);
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'field-inline-action';
+            retry.textContent = '重试自动保存';
+            retry.addEventListener('click', () => { void launch(); });
+            statusEl.append(retry);
           } finally {
             setLoading(false);
           }
-        });
-        setLoading(false);
+        };
+        await launch();
         return;
       }
     } catch (err) {
