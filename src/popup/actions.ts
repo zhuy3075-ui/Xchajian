@@ -304,7 +304,7 @@ export function initActions(): void {
         showStatus('正在保存到 Obsidian…', 'info');
         try {
           const saved = await saveObsidianNote(result.markdown, target);
-          showStatus(saved.duplicate ? '已保存，无需重复保存。' : '保存成功', 'success');
+          showStatus(`${saved.duplicate ? '已保存，无需重复保存。' : '保存成功'} · 位置（仓库内）：${saved.path}`, 'success');
           void recordExport();
         } catch (err) {
           handleExtractionError(err);

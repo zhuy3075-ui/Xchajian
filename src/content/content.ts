@@ -180,8 +180,8 @@ async function runAutoExtract(
     await copyText(result.markdown);
   } else if (action === 'obsidian') {
     const target = resolveObsidianTarget(result.filename, settings, response.data.author.handle);
-    await saveObsidianNote(result.markdown, target);
-    showInPlaceToast('保存成功', true);
+    const saved = await saveObsidianNote(result.markdown, target);
+    showInPlaceToast(`${saved.duplicate ? '已保存，无需重复保存。' : '保存成功'}\n位置（仓库内）：${saved.path}`, true);
     void recordExport();
   } else {
     const downloadMsg: DownloadRequest = {
@@ -434,7 +434,7 @@ function showInPlaceToast(text: string, bottomRight = false): void {
     'background:rgba(15,20,25,0.92)',
     'color:#fff',
     'padding:10px 16px',
-    'border-radius:9999px',
+    bottomRight ? 'border-radius:12px;max-width:min(360px,calc(100vw - 48px));white-space:pre-line;overflow-wrap:anywhere' : 'border-radius:9999px',
     'font:500 14px/1.2 system-ui,-apple-system,Segoe UI,sans-serif',
     'box-shadow:0 4px 16px rgba(0,0,0,0.25)',
     'z-index:2147483647',
@@ -451,7 +451,7 @@ function showInPlaceToast(text: string, bottomRight = false): void {
     t.style.opacity = '0';
     t.style.transform = `${bottomRight ? '' : 'translateX(-50%) '}translateY(-8px)`;
     setTimeout(() => t.remove(), 220);
-  }, 2000);
+  }, bottomRight ? 5000 : 2000);
 }
 
 // ─── In-place triggers (same-tab extraction) ────────────────────────

@@ -78,6 +78,14 @@ export async function writeVaultNote(connection: VaultConnection, target: Obsidi
       await stream.close();
     }
     catch (err) { await stream.abort().catch(() => {}); throw err; }
+    // Reopen by name after commit: a successful close alone does not prove
+    // that the expected body is readable from the destination file.
+    try {
+      const saved = await directory.getFileHandle(name);
+      if (await (await saved.getFile()).text() !== markdown) throw new Error('文件内容与本次采集不一致');
+    } catch (err) {
+      throw new Error(`写入后校验失败（${path}）：${err instanceof Error ? err.message : String(err)}`);
+    }
     return { path, duplicate: false };
   }
   throw new Error('同名笔记过多，请修改文件名后重试');

@@ -78,8 +78,12 @@ export function initInlineObsidian(): void {
         if (panel !== card || !card.isConnected) return;
         status.textContent = saved.duplicate ? '已保存，无需重复保存。' : '保存成功';
         status.title = saved.path;
+        const location = document.createElement('p');
+        location.style.cssText = 'margin:0;font-size:12px;color:#53657d;user-select:text;';
+        location.textContent = `位置（仓库内）：${saved.path}`;
+        card.append(location);
         void recordExport();
-        setTimeout(() => { if (panel === card) card.remove(); }, 3000);
+        setTimeout(() => { if (panel === card) card.remove(); }, 5000);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         const needsConnection = message === CONNECT_REQUIRED;
