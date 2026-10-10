@@ -12,8 +12,8 @@ import type {
 import { postProcess, markdownOptions, buildFilename, type PostProcessResult } from '../shared/post-process';
 import { buildFormatExport, type ExportFormat } from '../shared/export-formats';
 import { recordExport } from '../shared/review-prompt';
-import { buildObsidianTargetUrl, resolveObsidianTarget } from '../shared/obsidian';
-import { writeFocusedClipboard } from '../shared/focused-clipboard';
+import { resolveObsidianTarget } from '../shared/obsidian';
+import { saveObsidianNote, openObsidianConnection } from '../shared/obsidian-files';
 import { hostMatches } from '../shared/media';
 import { renderMarkdown } from '../ast/render-markdown';
 import { resolveLocalVideo, type VideoAttachment } from '../shared/local-video';
@@ -289,6 +289,8 @@ export function initActions(): void {
     }
   });
 
+  document.getElementById('btn-connect-obsidian')?.addEventListener('click', openObsidianConnection);
+
   // ─── Add to Obsidian Flow ───
   btnObsidian.addEventListener('click', async () => {
     setLoading(true, 'obsidian');
@@ -297,47 +299,29 @@ export function initActions(): void {
     try {
       const result = await extractMarkdown('obsidian');
       const target = resolveObsidianTarget(result.filename, readSettingsForm(), result.author.handle);
-      const url = buildObsidianTargetUrl(result.markdown, target);
-
-      // Conservative handoff budget, not a browser URL limit. OS protocol
-      // launchers can reject a URI long before the browser's own limit.
-      const useClipboard = url.length > 1800;
-      {
-        const handoffUrl = useClipboard ? buildObsidianTargetUrl(null, target) : url;
-        if (handoffUrl.length > 1800) {
-          throw new Error(chrome.i18n.getMessage('obsidian_path_too_long') ||
-            'The vault, folder or filename is too long. Shorten it or download .md.');
-        }
-        const launch = async (): Promise<void> => {
-          setLoading(true, 'obsidian');
-          showStatus(useClipboard
-            ? '正在自动发送到 Obsidian；长文将通过剪贴板交接…'
-            : '正在自动发送到 Obsidian…', 'info');
-          try {
-            if (useClipboard) {
-              try { await writeFocusedClipboard(result.markdown, new AbortController().signal, () => showStatus('内容已采集，切回此窗口后将自动保存，无需再次点击。', 'info')); }
-              catch { throw new Error('无法写入剪贴板，请保持当前窗口打开后重试自动保存。'); }
-            }
-            // Browser-managed tab creation does not need a second popup click.
-            // Keep its surface alive for any external-app authorization.
-            await chrome.tabs.create({ url: handoffUrl, active: true });
-            showStatus('已自动发送到 Obsidian。', 'info');
-            void recordExport();
-          } catch (err) {
-            handleExtractionError(err);
-            const retry = document.createElement('button');
-            retry.type = 'button';
-            retry.className = 'field-inline-action';
-            retry.textContent = '重试自动保存';
-            retry.addEventListener('click', () => { void launch(); });
-            statusEl.append(retry);
-          } finally {
-            setLoading(false);
-          }
-        };
-        await launch();
-        return;
-      }
+      const save = async (): Promise<void> => {
+        setLoading(true, 'obsidian');
+        showStatus('正在保存到 Obsidian…', 'info');
+        try {
+          const saved = await saveObsidianNote(result.markdown, target);
+          showStatus(saved.duplicate ? '已保存，无需重复保存。' : '保存成功', 'success');
+          void recordExport();
+        } catch (err) {
+          handleExtractionError(err);
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'field-inline-action';
+          retry.textContent = '重试保存';
+          retry.addEventListener('click', () => { void save(); });
+          const connect = document.createElement('button');
+          connect.type = 'button';
+          connect.className = 'field-inline-action';
+          connect.textContent = '连接仓库目录';
+          connect.addEventListener('click', openObsidianConnection);
+          statusEl.append(retry, connect);
+        } finally { setLoading(false); }
+      };
+      await save();
     } catch (err) {
       handleExtractionError(err);
     }

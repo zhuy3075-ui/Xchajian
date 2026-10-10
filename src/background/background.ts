@@ -21,6 +21,7 @@ import { resolveVideoUrls } from './resolve-video';
 import { initDukou } from '../dukou/background';
 import { initLens } from '../lens/background';
 import { initObsidianCapture } from './obsidian-capture';
+import { initObsidianFiles } from './obsidian-files';
 
 // ─── Context menu: Save / Copy tweet as Markdown ────────────────────
 
@@ -108,6 +109,7 @@ initFastBatch();
 initDukou();
 initLens();
 initObsidianCapture();
+initObsidianFiles();
 
 // One-time migration: project renamed tweet2md → XClipper in v2.0.0. Existing
 // users have preferences stored under the old `tweet2md_settings` key. Copy

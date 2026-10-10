@@ -1,10 +1,10 @@
 import { loadSettings } from '../shared/settings';
-import { buildObsidianTargetUrl, resolveObsidianTarget } from '../shared/obsidian';
+import { resolveObsidianTarget } from '../shared/obsidian';
 import { recordExport } from '../shared/review-prompt';
 import { normalizeStatusUrl } from './status-url';
 import { captureObsidianCard } from './obsidian-card';
 import { postProcess, markdownOptions } from '../shared/post-process';
-import { writeFocusedClipboard } from '../shared/focused-clipboard';
+import { saveObsidianNote, openObsidianConnection } from '../shared/obsidian-files';
 
 export type ObsidianCapture = { markdown: string; filename: string; handle: string; sourceUrl: string };
 const MARKER = /^#xclipper-obsidian=([\w-]{20,80})(?:&single=(1))?$/;
@@ -56,52 +56,37 @@ export function initInlineObsidian(): void {
     const target = resolveObsidianTarget(result.filename, isComment
       ? { ...settings, obsidianFolder: COMMENT_FOLDER, obsidianGroupByAuthor: false }
       : settings, result.handle);
-    const fullUrl = buildObsidianTargetUrl(result.markdown, target);
-    const useClipboard = fullUrl.length > 1800;
-    const url = useClipboard ? buildObsidianTargetUrl(null, target) : fullUrl;
-    if (url.length > 1800) throw new Error('Obsidian 保存路径过长，请在插件设置中缩短目录或文件名');
-    const card = notice('采集完成，正在自动发送到 Obsidian…');
+    const card = notice('正在保存到 Obsidian…');
     const status = card.querySelector('p')!;
-    const destination = document.createElement('div');
-    destination.textContent = target.absolute ? target.path : `${target.vault || '当前仓库'} / ${target.path}`;
-    card.append(destination);
-    if (useClipboard) {
-      const hint = document.createElement('div');
-      hint.textContent = '长文通过剪贴板交接，会替换剪贴板内容；笔记出现前请勿复制其他内容。';
-      card.append(hint);
-    }
-    let launching = false;
-    const controller = new AbortController();
-    const launch = async (): Promise<void> => {
-      if (launching) return;
-      launching = true;
+    let saving = false;
+    const save = async (): Promise<void> => {
+      if (saving) return;
+      saving = true;
       retry.hidden = true;
-      retry.disabled = true;
+      connect.hidden = true;
+      dismiss.hidden = true;
+      status.textContent = '正在保存到 Obsidian…';
       try {
-        if (useClipboard) await writeFocusedClipboard(result.markdown, controller.signal, () => {
-          status.textContent = '内容已采集，切回此页面后将自动保存，无需再次点击。';
-        });
+        const saved = await saveObsidianNote(result.markdown, target);
         if (panel !== card || !card.isConnected) return;
-        // Run the protocol on the original page, which remains alive for the
-        // browser's confirmation. A URI launch is not a filesystem-save ack.
-        window.location.href = url;
-        status.textContent = '已自动发送到 Obsidian。';
+        status.textContent = saved.duplicate ? '已保存，无需重复保存。' : '保存成功';
+        status.title = saved.path;
         void recordExport();
         setTimeout(() => { if (panel === card) card.remove(); }, 3000);
       } catch (err) {
-        status.textContent = `自动发送失败，正文已保留：${err instanceof Error ? err.message : String(err)}`;
+        status.textContent = `保存失败，正文已保留：${err instanceof Error ? err.message : String(err)}`;
         retry.hidden = false;
-      } finally {
-        launching = false;
-        retry.disabled = false;
-      }
+        connect.hidden = false;
+        dismiss.hidden = false;
+      } finally { saving = false; }
     };
-    const retry = button(card, '重试自动保存', () => { void launch(); });
-    retry.hidden = true;
-    button(card, '关闭提示', () => { controller.abort(); card.remove(); });
-    // The original page owns the complete result before it acknowledges the
-    // worker. A blocked clipboard/protocol launch leaves a real-click retry.
-    await launch();
+    const retry = button(card, '重试保存', () => { void save(); });
+    const connect = button(card, '连接仓库目录', openObsidianConnection);
+    const dismiss = button(card, '关闭提示', () => card.remove());
+    retry.hidden = connect.hidden = dismiss.hidden = true;
+    // Once submitted, the background owns the write. Closing this notice
+    // would not cancel it, so only failed requests expose dismiss controls.
+    await save();
   }
 
   window.addEventListener('xclipper:obsidian', (event) => {

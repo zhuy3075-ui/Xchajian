@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>连接 Obsidian 仓库</title>
+<style>body{margin:48px auto;padding:0 24px;max-width:620px;background:#f6f8fc;color:#172b4d;font:16px/1.7 system-ui}main{background:white;padding:28px;border:1px solid #d9e1ee;border-radius:16px}h1{font-size:24px}label{display:block;margin-top:24px}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #aebcd1;border-radius:8px;font:inherit}button{padding:12px 20px;margin-top:20px;background:#2457dc;color:white;border:0;border-radius:8px;font:inherit;cursor:pointer}button:disabled{opacity:.6;cursor:default}#status{overflow-wrap:anywhere}</style></head>
+<body><main><h1>连接 Obsidian 仓库</h1><p>首次选择仓库根目录并允许写入。连接后，保存只会显示结果提示，不打开 Obsidian。</p>
+<label for="vault-path">仓库完整路径</label><input id="vault-path" value="E:\x-obsidian\X智库" spellcheck="false"><p>请选择上面路径对应的「X智库」文件夹，包含 .obsidian、02_X素材、09_评论等目录。浏览器仅提供所选文件夹的访问权，请核对选择的位置。</p>
+<button type="button" id="connect">选择仓库并允许写入</button><p id="status" role="status">评论仍保存到 09_评论，主帖按插件设置保存。不会覆盖已有笔记。</p>
+<p>浏览器若提示访问时长，可选择始终允许；若以后授权失效，在此重新连接即可。可在浏览器的网站权限设置中撤销目录访问。</p></main><script src="obsidian-connect.js"></script></body></html>

@@ -87,6 +87,11 @@ async function build() {
     format: 'iife',
   });
 
+  const obsidianConnectBuild = esbuild.build({
+    ...commonOptions, entryPoints: [resolve(__dirname, 'src/obsidian-connect/connect.ts')],
+    outfile: resolve(__dirname, outDir, 'obsidian-connect.js'), format: 'iife',
+  });
+
   // Build print page (IIFE)
   const printBuild = esbuild.build({
     ...commonOptions,
@@ -117,7 +122,7 @@ async function build() {
   }
   cpSync(resolve(__dirname, 'src/workbench.css'), resolve(__dirname, outDir, 'workbench.css'));
 
-  await Promise.all([...lensBuilds, contentBuild, injectorBuild, backgroundBuild, popupBuild, printBuild, ...dukouBuilds]);
+  await Promise.all([...lensBuilds, obsidianConnectBuild, contentBuild, injectorBuild, backgroundBuild, popupBuild, printBuild, ...dukouBuilds]);
 
   for (const file of ['popup.html', 'import.html', 'x-adapter.js', 'bili-adapter.js',
     'huasheng-adapter.js', 'fill-common.js', 'jszip.min.js', 'LICENSE', 'NOTICE.md']) {
@@ -129,6 +134,8 @@ async function build() {
   cpSync(resolve(__dirname, 'src/popup/popup.html'), resolve(__dirname, outDir, 'popup.html'));
   cpSync(resolve(__dirname, 'src/popup/popup.css'), resolve(__dirname, outDir, 'popup.css'));
   cpSync(resolve(__dirname, 'src/print/print.html'), resolve(__dirname, outDir, 'print.html'));
+
+  cpSync(resolve(__dirname, 'src/obsidian-connect/connect.html'), resolve(__dirname, outDir, 'obsidian-connect.html'));
 
   // Copy icons
   const iconsDir = resolve(__dirname, 'src/icons');

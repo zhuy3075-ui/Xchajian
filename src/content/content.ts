@@ -2,7 +2,8 @@ import type { BatchItemResultMessage, DownloadRequest, ExtractResponse } from '.
 import { postProcess, markdownOptions, buildFilename } from '../shared/post-process';
 import { buildFormatExport, type ExportFormat } from '../shared/export-formats';
 import { loadSettings } from '../shared/settings';
-import { buildObsidianTargetUrl, resolveObsidianTarget } from '../shared/obsidian';
+import { resolveObsidianTarget } from '../shared/obsidian';
+import { saveObsidianNote } from '../shared/obsidian-files';
 import { recordExport } from '../shared/review-prompt';
 import { delay, isArticlePage } from './dom';
 import { extractArticle } from './article';
@@ -129,7 +130,7 @@ async function autoExtract(
   try {
     await runAutoExtract(action, opts);
   } catch (err) {
-    showInPlaceToast(err instanceof Error ? err.message : String(err));
+    showInPlaceToast(err instanceof Error ? err.message : String(err), action === 'obsidian');
   } finally {
     autoExtractInFlight = false;
   }
@@ -163,17 +164,8 @@ async function runAutoExtract(
     await copyText(result.markdown);
   } else if (action === 'obsidian') {
     const target = resolveObsidianTarget(result.filename, settings, response.data.author.handle);
-    const url = buildObsidianTargetUrl(result.markdown, target);
-    if (allowClose) {
-      // New-tab flow: navigate the tab itself so the OS protocol handler
-      // picks it up.
-      window.location.href = url;
-    } else {
-      // In-place flow (already on the tweet's permalink): don't navigate the
-      // user away from x.com. Pop a throwaway tab whose only job is to hand
-      // the URL off to the OS, then show a confirmation toast.
-      window.open(url, '_blank', 'noopener');
-    }
+    await saveObsidianNote(result.markdown, target);
+    showInPlaceToast('保存成功', true);
     void recordExport();
   } else {
     const downloadMsg: DownloadRequest = {
@@ -190,22 +182,17 @@ async function runAutoExtract(
 
   // In-place runs (inline button / context menu on the current page) get a
   // brief toast since there's no popup UI or new tab to provide feedback.
-  if (!allowClose) {
+  if (!allowClose && action !== 'obsidian') {
     const key =
       action === 'copy' ? 'copied'
-      : action === 'obsidian' ? 'obsidian_opened'
       : 'downloaded';
     const fallback =
       action === 'copy' ? 'Copied!'
-      : action === 'obsidian' ? 'Opening Obsidian…'
       : 'Downloaded!';
     showInPlaceToast(chrome.i18n.getMessage(key) || fallback);
   }
 
-  // The Obsidian flow navigates the tab to an `obsidian://` URL, which triggers
-  // an OS-level "Open Obsidian.app?" prompt that the user must confirm. Closing
-  // the tab here would dismiss that prompt before they can answer it, so the
-  // close-after-export toggle is intentionally skipped for this action.
+  // Leave the reading page visible so its save result can be seen.
   if (shouldClose && action !== 'obsidian') {
     await delay(400);
     window.close();
@@ -420,14 +407,14 @@ if (BATCH_MARKER_RE.test(window.location.hash)) {
 
 // ─── In-place toast ─────────────────────────────────────────────────
 
-function showInPlaceToast(text: string): void {
+function showInPlaceToast(text: string, bottomRight = false): void {
   const t = document.createElement('div');
   t.textContent = text;
   t.style.cssText = [
     'position:fixed',
-    'top:24px',
-    'left:50%',
-    'transform:translateX(-50%) translateY(-8px)',
+    bottomRight ? 'bottom:24px' : 'top:24px',
+    bottomRight ? 'right:24px' : 'left:50%',
+    `transform:${bottomRight ? '' : 'translateX(-50%) '}translateY(-8px)`,
     'background:rgba(15,20,25,0.92)',
     'color:#fff',
     'padding:10px 16px',
@@ -442,11 +429,11 @@ function showInPlaceToast(text: string): void {
   document.body.appendChild(t);
   requestAnimationFrame(() => {
     t.style.opacity = '1';
-    t.style.transform = 'translateX(-50%) translateY(0)';
+    t.style.transform = `${bottomRight ? '' : 'translateX(-50%) '}translateY(0)`;
   });
   setTimeout(() => {
     t.style.opacity = '0';
-    t.style.transform = 'translateX(-50%) translateY(-8px)';
+    t.style.transform = `${bottomRight ? '' : 'translateX(-50%) '}translateY(-8px)`;
     setTimeout(() => t.remove(), 220);
   }, 2000);
 }

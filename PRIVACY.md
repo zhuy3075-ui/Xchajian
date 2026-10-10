@@ -32,7 +32,13 @@ The service binds to loopback, rejects ordinary website origins and unexpected H
 
 `activeTab`, `storage`, `downloads`, `contextMenus` and `alarms` retain their original roles. Background export requests validate their sender, media URLs and filenames. X Fast Batch remains optional: `webRequest` and X host access capture your existing X request templates/authentication headers to fetch data from X. No password or paid X API key is requested. Neither the article library nor bridge exports those headers.
 
-Downloads fetch permitted X media; PDF export uses the browser's print engine; Obsidian handoff uses a local URI. Batch state and export preferences remain local. There is no remote XClipper backend.
+Downloads fetch permitted X media; PDF export uses the browser's print engine; Obsidian saving uses a user-authorized local directory handle. Batch state and export preferences remain local. There is no remote XClipper backend.
+
+## Obsidian directory access
+
+The Chrome/Edge silent-save flow requires the user to choose and authorize their vault directory. Its handle and user-entered root path are stored in the extension's local IndexedDB. The browser does not expose the real absolute path of the selected directory; users must verify their selection. Writes stay inside the selected directory tree, reject hidden/path-traversal targets and only create Markdown notes. Existing same-name notes are read to compare content; different content is saved under a new numbered name. The extension does not enumerate the entire vault or upload its notes.
+
+Saving does not launch Obsidian or use the clipboard. Success is reported after the browser file stream closes. No additional manifest permission or local service is installed. Users can revoke directory permission through browser controls; an expired grant requires reconnection. Firefox does not support this directory picker workflow and ordinary file exports remain available. Existing clipboard permission is retained for explicit copy operations.
 
 ## Verification and questions
 
