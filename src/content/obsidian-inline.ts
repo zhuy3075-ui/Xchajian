@@ -8,9 +8,9 @@ import { saveObsidianNote, openObsidianConnection, CONNECT_REQUIRED } from '../s
 
 export type ObsidianCapture = { markdown: string; filename: string; handle: string; sourceUrl: string };
 const MARKER = /^#xclipper-obsidian=([\w-]{20,80})(?:&single=(1))?$/;
-// This local build uses the user's dedicated comment library, independently
+// Comments stay in one flat folder inside the connected vault, independently
 // of the main-post export folder configured in the popup.
-const COMMENT_FOLDER = 'E:/x-obsidian/X智库/09_评论';
+const COMMENT_FOLDER = '09_评论';
 const COMMENT_INDEX = '[[09_评论/评论索引|返回评论索引]]';
 
 export function initInlineObsidian(): void {
@@ -88,7 +88,7 @@ export function initInlineObsidian(): void {
         const message = err instanceof Error ? err.message : String(err);
         const needsConnection = message === CONNECT_REQUIRED;
         status.textContent = needsConnection
-          ? '还未获得仓库写入权限，正文已保留。请点击“连接仓库目录”，选择 X智库 根文件夹并允许写入；返回此页会自动继续保存。'
+          ? '还未获得仓库写入权限，正文已保留。请点击“连接仓库目录”，选择你的 Obsidian 仓库根文件夹并允许写入；返回此页会自动继续保存。'
           : `保存失败，正文已保留：${message}`;
         retry.hidden = needsConnection;
         connect.hidden = false;

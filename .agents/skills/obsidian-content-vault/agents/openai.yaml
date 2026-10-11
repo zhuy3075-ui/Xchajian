@@ -1,0 +1,4 @@
+interface:
+  display_name: "Obsidian 素材库搭建"
+  short_description: "创建以 X 素材为主的 Obsidian 目录、索引、模板与 AI 入档流程"
+  default_prompt: "使用 $obsidian-content-vault，为我指定的路径建立自媒体素材库，保留已有内容并提供 AI 提炼入档模板。"
