@@ -1,7 +1,8 @@
 .xcl-lens-badge {
   display: inline-flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  max-width: 100%;
   white-space: nowrap;
   gap: 4px;
   flex: none;            /* 不被头部那一行压缩,宁可让名字省略 */
@@ -93,5 +94,6 @@
 .xcl-lens-tag.rel { background:#ede8ff; color:#6140b4; }
 .xcl-lens-ratio { color:inherit; }
 #xcl-lens-tip { max-width:calc(100vw - 16px); }
+#xcl-lens-tip .xcl-lens-tip-meaning { max-width:270px; margin-top:8px; padding-top:8px; border-top:1px solid #ccd3dc; white-space:normal; overflow-wrap:anywhere; }
 #xcl-lens-tip .xcl-lens-tip-r span, #xcl-lens-tip .dim { color:#526176; }
 #xcl-lens-tip[data-theme="dark"] .xcl-lens-tip-r span, #xcl-lens-tip[data-theme="dark"] .dim { color:#a9b6c7; }

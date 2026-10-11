@@ -70,6 +70,20 @@ const num = v => count(v) ?? 0;
 
   const ratioOf = (u) => (u.following > 0 ? u.followers / u.following : null);
 
+  function ratioMeaning(u) {
+    if (!validCount(u.followers) || !validCount(u.following) || u.following === 0) return null;
+    const ratio = ratioOf(u);
+    const counts = `${u.followers.toLocaleString()} 人关注此账号；此账号关注 ${u.following.toLocaleString()} 人。`;
+    if (ratio > 1.25) {
+      return { label: `被关注更多 · ${fmtRatio(ratio)}倍`, description: `${counts}关注此账号的人更多，粉丝人数约为关注人数的 ${fmtRatio(ratio)} 倍。` };
+    }
+    if (ratio < 0.8) {
+      const multiple = u.followers > 0 ? fmtRatio(u.following / u.followers) : null;
+      return { label: `关注别人更多${multiple ? ` · ${multiple}倍` : ''}`, description: `${counts}${multiple ? `此账号关注的人更多，关注人数约为粉丝人数的 ${multiple} 倍。` : '当前粉丝数为 0，无法计算倍数。'}` };
+    }
+    return { label: '粉丝与关注相近', description: `${counts}两边人数接近；人数接近不代表这些人互相关注。` };
+  }
+
   function engagementOf(stat) {
     if (!stat || stat.views < 2000) return null;
     return stat.interactions / stat.views;
@@ -146,4 +160,4 @@ const num = v => count(v) ?? 0;
   }
 
 
-export { extract, tags, tier, fmt, fmtRatio, ratioOf, engagementOf, shouldDim, deltaFrom };
+export { extract, tags, tier, fmt, fmtRatio, ratioOf, ratioMeaning, engagementOf, shouldDim, deltaFrom };

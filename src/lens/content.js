@@ -141,10 +141,13 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     main.textContent = `${P.fmt(u.followers)} 粉丝`;
     wrap.append(main);
 
-    if (settings.showRatio && u.following > 0) {
+    const meaning = P.ratioMeaning(u);
+    if (settings.showRatio && meaning) {
       const r = document.createElement("span");
       r.className = "xcl-lens-ratio";
-      r.textContent = `比 ${P.fmtRatio(P.ratioOf(u))}`;
+      r.textContent = meaning.label;
+      r.title = meaning.description;
+      r.setAttribute('aria-label', meaning.description);
       wrap.append(r);
     }
 
@@ -336,8 +339,10 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     const rel = u.followedBy && u.iFollow ? "互相关注" : u.followedBy ? "TA 关注了你" : u.iFollow ? "你关注了 TA" : "";
     if (rel) rows.push(["关系", rel]);
     rows.push(["提示", "规则标签仅供参考"]);
+    const meaning = P.ratioMeaning(u);
     return `<div class="xcl-lens-tip-h">@${esc(handle)}</div>` +
-      rows.map(([k, v]) => `<div class="xcl-lens-tip-r"><span>${k}</span><b>${v}</b></div>`).join("");
+      rows.map(([k, v]) => `<div class="xcl-lens-tip-r"><span>${k}</span><b>${v}</b></div>`).join("") +
+      (meaning ? `<div class="xcl-lens-tip-meaning"><strong>${esc(meaning.label)}</strong><br>${esc(meaning.description)}<br>这反映关注数量的倾向，不代表影响力、账号质量或回关意愿。</div>` : '');
   }
 
   function showTip(badge) {
