@@ -140,10 +140,10 @@ import { accountCardHtml, relationLabel } from './card-view';
       wrap.addEventListener('blur', scheduleHideTip);
       wrap.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ' || (e.key === 'Tab' && !e.shiftKey && activeBadge === wrap)) {
-          e.preventDefault(); e.stopPropagation(); showTip(wrap); tip?.querySelector('summary')?.focus();
+          e.preventDefault(); e.stopPropagation(); showTip(wrap); tip?.focus({ preventScroll: true });
         }
       });
-      wrap.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); showTip(wrap); tip?.querySelector('summary')?.focus(); });
+      wrap.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); showTip(wrap); tip?.focus({ preventScroll: true }); });
     }
 
     const main = document.createElement("span");
@@ -356,15 +356,15 @@ import { accountCardHtml, relationLabel } from './card-view';
     if (!user) return;
     if (!tip) {
       tip = document.createElement('div'); tip.id = 'xcl-lens-tip';
+      tip.tabIndex = -1;
       tip.setAttribute('role', 'dialog'); tip.setAttribute('aria-label', '账号详情');
       tip.setAttribute('aria-modal', 'false');
       tip.addEventListener('mouseenter', () => clearTimeout(closeTimer));
       tip.addEventListener('mouseleave', scheduleHideTip);
       tip.addEventListener('focusin', () => clearTimeout(closeTimer));
       tip.addEventListener('focusout', scheduleHideTip);
-      tip.addEventListener('toggle', positionTip, true);
       tip.addEventListener('keydown', event => {
-        if (event.key === 'Tab' && event.shiftKey && event.target === tip.querySelector('summary')) {
+        if (event.key === 'Tab' && event.shiftKey && event.target === tip) {
           event.preventDefault(); activeBadge?.focus();
         }
       });

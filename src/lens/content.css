@@ -80,12 +80,6 @@
 #xcl-lens-tip .xcl-lens-tip-r > div { text-align:right; overflow-wrap:anywhere; }
 #xcl-lens-tip .xcl-lens-tip-r b { font-weight: 600; }
 #xcl-lens-tip .xcl-lens-tip-r small { display:block; font-size:12px; color:#526176; margin-top:3px; }
-#xcl-lens-tip .xcl-lens-more { margin-top:12px; border-top:1px solid #ccd3dc; }
-#xcl-lens-tip summary { cursor:pointer; min-height:48px; align-content:center; color:#2458ac; }
-#xcl-lens-tip summary:focus-visible { outline:2px solid #1673c4; outline-offset:2px; border-radius:4px; }
-#xcl-lens-tip .xcl-lens-explanations { line-height:1.65; overflow-wrap:anywhere; }
-#xcl-lens-tip .xcl-lens-explanations p { margin:0 0 14px; }
-#xcl-lens-tip .xcl-lens-explanations strong { display:block; margin-bottom:4px; }
 #xcl-lens-tip .dim { color: rgb(113, 118, 123); font-weight: 400; }
 #xcl-lens-tip .up { color: rgb(0, 160, 108); }
 #xcl-lens-tip .down { color: rgb(226, 22, 116); }
@@ -113,4 +107,3 @@
 #xcl-lens-tip[data-theme="dark"] .xcl-lens-tip-r span, #xcl-lens-tip[data-theme="dark"] .dim { color:#a9b6c7; }
 #xcl-lens-tip[data-theme="dark"] .xcl-lens-tip-h span, #xcl-lens-tip[data-theme="dark"] small { color:#a9b6c7; }
 #xcl-lens-tip[data-theme="dark"] .xcl-lens-relation { background:#243249; color:#c1d7ff; }
-#xcl-lens-tip[data-theme="dark"] summary { color:#a9caff; }

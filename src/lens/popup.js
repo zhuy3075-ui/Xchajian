@@ -20,7 +20,7 @@ function paint() {
     const el = document.createElement('span'); el.className = 'xcl-lens-tag rel'; el.textContent = '与你互关'; badge.append(el);
   }
   preview.append(badge);
-  document.getElementById('preview-caption').textContent = '时间线只显示粉丝与关注关系，更多数据可在详情中展开。当前布局：' + ({ auto: '自动适应空间', inline: '与名字同行', below: '独立一行' }[settings.layout]) + '。';
+  document.getElementById('preview-caption').textContent = '时间线只显示粉丝与关注关系，悬停或点击查看关键数据。当前布局：' + ({ auto: '自动适应空间', inline: '与名字同行', below: '独立一行' }[settings.layout]) + '。';
 }
 async function historyCount() {
   const stored = await chrome.storage.local.get(HISTORY_KEY);
