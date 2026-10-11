@@ -156,7 +156,7 @@ const num = v => count(v) ?? 0;
       if (!best || Math.abs(age - WEEK) < Math.abs(now - best.ts - WEEK)) best = { ts, f };
     }
     if (!best) return null;
-    return { days: Math.max(1, Math.round((now - best.ts) / 86400e3)), diff: current - best.f, base: best.f };
+    return { days: Math.max(1, Math.round((now - best.ts) / 86400e3)), diff: current - best.f, base: best.f, ts: best.ts };
   }
 
 

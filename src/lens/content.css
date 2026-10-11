@@ -56,21 +56,36 @@
   position: fixed;
   z-index: 2147483647;
   display: none;
-  min-width: 190px;
-  padding: 10px 12px;
+  width: 340px;
+  box-sizing: border-box;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
   border-radius: 12px;
   font: 13px/1.5 -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
-  pointer-events: none;
+  pointer-events: auto;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
   background: #fff;
   color: #0f1419;
   border: 1px solid rgba(113, 118, 123, 0.3);
 }
 #xcl-lens-tip[data-theme="dark"] { background: #16181c; color: #e7e9ea; border-color: rgba(113, 118, 123, 0.5); }
-#xcl-lens-tip .xcl-lens-tip-h { font-weight: 700; margin-bottom: 4px; }
-#xcl-lens-tip .xcl-lens-tip-r { display: flex; justify-content: space-between; gap: 16px; }
+#xcl-lens-tip .xcl-lens-tip-h { display:flex; flex-direction:column; gap:2px; overflow-wrap:anywhere; }
+#xcl-lens-tip .xcl-lens-tip-h strong { font-size:16px; }
+#xcl-lens-tip .xcl-lens-tip-h span { color:#526176; }
+#xcl-lens-tip .xcl-lens-relation { margin:10px 0 14px; padding:8px 10px; border-radius:6px; background:#edf3ff; color:#234c91; }
+#xcl-lens-tip .xcl-lens-tip-r { display: grid; grid-template-columns:85px minmax(0,1fr); gap:10px; padding:6px 0; }
 #xcl-lens-tip .xcl-lens-tip-r span { color: rgb(113, 118, 123); }
-#xcl-lens-tip .xcl-lens-tip-r b { font-weight: 600; text-align: right; }
+#xcl-lens-tip .xcl-lens-tip-r > div { text-align:right; overflow-wrap:anywhere; }
+#xcl-lens-tip .xcl-lens-tip-r b { font-weight: 600; }
+#xcl-lens-tip .xcl-lens-tip-r small { display:block; font-size:12px; color:#526176; margin-top:3px; }
+#xcl-lens-tip .xcl-lens-more { margin-top:12px; border-top:1px solid #ccd3dc; }
+#xcl-lens-tip summary { cursor:pointer; min-height:48px; align-content:center; color:#2458ac; }
+#xcl-lens-tip summary:focus-visible { outline:2px solid #1673c4; outline-offset:2px; border-radius:4px; }
+#xcl-lens-tip .xcl-lens-explanations { line-height:1.65; overflow-wrap:anywhere; }
+#xcl-lens-tip .xcl-lens-explanations p { margin:0 0 14px; }
+#xcl-lens-tip .xcl-lens-explanations strong { display:block; margin-bottom:4px; }
 #xcl-lens-tip .dim { color: rgb(113, 118, 123); font-weight: 400; }
 #xcl-lens-tip .up { color: rgb(0, 160, 108); }
 #xcl-lens-tip .down { color: rgb(226, 22, 116); }
@@ -94,6 +109,8 @@
 .xcl-lens-tag.rel { background:#ede8ff; color:#6140b4; }
 .xcl-lens-ratio { color:inherit; }
 #xcl-lens-tip { max-width:calc(100vw - 16px); }
-#xcl-lens-tip .xcl-lens-tip-meaning { max-width:270px; margin-top:8px; padding-top:8px; border-top:1px solid #ccd3dc; white-space:normal; overflow-wrap:anywhere; }
 #xcl-lens-tip .xcl-lens-tip-r span, #xcl-lens-tip .dim { color:#526176; }
 #xcl-lens-tip[data-theme="dark"] .xcl-lens-tip-r span, #xcl-lens-tip[data-theme="dark"] .dim { color:#a9b6c7; }
+#xcl-lens-tip[data-theme="dark"] .xcl-lens-tip-h span, #xcl-lens-tip[data-theme="dark"] small { color:#a9b6c7; }
+#xcl-lens-tip[data-theme="dark"] .xcl-lens-relation { background:#243249; color:#c1d7ff; }
+#xcl-lens-tip[data-theme="dark"] summary { color:#a9caff; }

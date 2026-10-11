@@ -1,5 +1,5 @@
 import { SETTINGS_KEY, HISTORY_KEY, mergeSettings } from './model';
-import { tags, fmt, tier } from './parse';
+import { fmt, tier } from './parse';
 let settings = mergeSettings();
 const status = document.getElementById('save-status');
 let queue = Promise.resolve();
@@ -16,12 +16,11 @@ function paint() {
   const user = { followers: 12600, following: 420, followedBy: true, iFollow: true, createdAt: '2015-01-01' };
   const badge = document.createElement('span'); badge.className = 'xcl-lens-badge';
   const count = document.createElement('span'); count.className = 'xcl-lens-main' + (settings.tierColors ? ' t' + tier(user.followers) : ''); count.textContent = fmt(user.followers) + ' 粉丝'; badge.append(count);
-  if (settings.showRatio) { const ratio = document.createElement('span'); ratio.className = 'xcl-lens-ratio'; ratio.textContent = '比 30'; badge.append(ratio); }
-  for (const tag of tags(user, { views: 12000, interactions: 440 }, Date.now(), settings).slice(0, settings.maxTags)) {
-    const el = document.createElement('span'); el.className = 'xcl-lens-tag ' + tag.cls; el.textContent = tag.text; badge.append(el);
+  if (settings.tags.relation) {
+    const el = document.createElement('span'); el.className = 'xcl-lens-tag rel'; el.textContent = '与你互关'; badge.append(el);
   }
   preview.append(badge);
-  document.getElementById('preview-caption').textContent = '当前布局：' + ({ auto: '自动适应空间', inline: '与名字同行', below: '独立一行' }[settings.layout]) + '。此处为示例，实际位置随 X 页面空间调整。';
+  document.getElementById('preview-caption').textContent = '时间线只显示粉丝与关注关系，更多数据可在详情中展开。当前布局：' + ({ auto: '自动适应空间', inline: '与名字同行', below: '独立一行' }[settings.layout]) + '。';
 }
 async function historyCount() {
   const stored = await chrome.storage.local.get(HISTORY_KEY);

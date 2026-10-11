@@ -1,5 +1,6 @@
 import * as P from './parse';
 import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from './model';
+import { accountCardHtml, relationLabel } from './card-view';
 (() => {
   const users = new Map();      // handle -> user
   const tweetSeen = new Map();  // 去重,避免同一条推文重复累计
@@ -89,7 +90,7 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     try { json = JSON.parse(body); } catch (_) { return; }
     const { users: us, tweets } = P.extract(json);
     for (const u of us) {
-      users.set(u.handle, u);
+      users.set(u.handle, { ...u, observedAt: Date.now() });
       recordHistory(u);
     }
     for (const t of tweets) tweetSeen.set(t.id, t);
@@ -97,8 +98,8 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     while (tweetSeen.size > 5000) tweetSeen.delete(tweetSeen.keys().next().value);
     stats.clear();
     for (const t of tweetSeen.values()) {
-      const sum = stats.get(t.author) || { views: 0, interactions: 0 };
-      sum.views += t.views; sum.interactions += t.interactions;
+      const sum = stats.get(t.author) || { views: 0, interactions: 0, posts: 0 };
+      sum.views += t.views; sum.interactions += t.interactions; sum.posts++;
       stats.set(t.author, sum);
     }
   }
@@ -112,7 +113,7 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     return null;
   }
 
-  function buildBadge(handle, compact) {
+  function buildBadge(handle, compact, timeline = false) {
     const u = users.get(handle);
     if (!u) return null;
     const stat = stats.get(handle);
@@ -127,13 +128,22 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
       wrap.addEventListener(ev, (e) => e.stopPropagation());
     }
     wrap.addEventListener("mouseenter", () => showTip(wrap));
-    wrap.addEventListener("mouseleave", hideTip);
+    wrap.addEventListener("mouseleave", scheduleHideTip);
     if (settings.hoverCard) {
       wrap.tabIndex = 0;
+      wrap.setAttribute('role', 'button');
+      wrap.setAttribute('aria-haspopup', 'dialog');
+      wrap.setAttribute('aria-expanded', 'false');
+      wrap.setAttribute('aria-controls', 'xcl-lens-tip');
       wrap.setAttribute('aria-label', '@' + handle + '，' + u.followers + ' 粉丝，查看详情');
-      wrap.addEventListener('focus', () => showTip(wrap));
-      wrap.addEventListener('blur', hideTip);
-      wrap.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); hideTip(); } });
+      wrap.addEventListener('focus', () => { if (!restoringFocus) showTip(wrap); });
+      wrap.addEventListener('blur', scheduleHideTip);
+      wrap.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ' || (e.key === 'Tab' && !e.shiftKey && activeBadge === wrap)) {
+          e.preventDefault(); e.stopPropagation(); showTip(wrap); tip?.querySelector('summary')?.focus();
+        }
+      });
+      wrap.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); showTip(wrap); tip?.querySelector('summary')?.focus(); });
     }
 
     const main = document.createElement("span");
@@ -142,7 +152,7 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     wrap.append(main);
 
     const meaning = P.ratioMeaning(u);
-    if (settings.showRatio && meaning) {
+    if (!timeline && settings.showRatio && meaning) {
       const r = document.createElement("span");
       r.className = "xcl-lens-ratio";
       r.textContent = meaning.label;
@@ -151,7 +161,13 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
       wrap.append(r);
     }
 
-    if (!compact) {
+    if (timeline) {
+      const relation = relationLabel(u);
+      if (settings.tags.relation && relation) {
+        const el = document.createElement('span');
+        el.className = 'xcl-lens-tag rel'; el.textContent = relation; wrap.append(el);
+      }
+    } else if (!compact) {
       for (const t of list.slice(0, settings.maxTags)) {
         const el = document.createElement("span");
         el.className = "xcl-lens-tag " + t.cls;
@@ -164,7 +180,10 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
 
   function sigOf(handle, compact) {
     const u = users.get(handle), s = stats.get(handle);
-    return JSON.stringify([handle, u, s, settingsVer, compact]);
+    // Re-reading identical counts must not replace a focused badge or close
+    // an expanded card. The open card keeps the snapshot shown to the reader.
+    const { observedAt, ...visibleUser } = u || {};
+    return JSON.stringify([handle, visibleUser, s, settingsVer, compact]);
   }
 
   // ----- 推文头部:行内 / 单独一行 / 自动 -----
@@ -211,7 +230,7 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     if (rec && rec.badge.isConnected && rec.sig === sig) return;
     if (rec) { rec.badge.remove(); if (rec.line) rec.line.remove(); }
 
-    const built = buildBadge(handle, false);
+    const built = buildBadge(handle, false, true);
     if (!built) return;
     let line = null;
     if (settings.layout === "below") {
@@ -264,6 +283,7 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
       const nameBlock = cell.querySelector('[dir="ltr"]')?.closest("div");
       decorateCell(cell, nameBlock);
     });
+    if (activeBadge && !activeBadge.isConnected) hideTip();
     updateHud();
   }
 
@@ -299,81 +319,90 @@ import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from '
     if (hud.textContent !== text) hud.textContent = text;
   }
 
-  // ---------- 悬停详情卡 ----------
+  // ---------- 可交互账号详情 ----------
   let tip = null;
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let activeBadge = null;
+  let closeTimer = null;
+  let restoringFocus = false;
 
-  function accountAge(createdAt, now) {
-    const d = new Date(createdAt);
-    if (!Number.isFinite(d.getTime())) return "";
-    const months = Math.floor((now - d.getTime()) / (30.44 * 86400e3));
-    const y = Math.floor(months / 12), m = months % 12;
-    const span = y > 0 ? `${y} 年${m ? ` ${m} 个月` : ""}` : `${m} 个月`;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")} · ${span}`;
+  function scheduleHideTip() {
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      const focused = document.activeElement;
+      if (focused === activeBadge || tip?.contains(focused) || tip?.matches(':hover') || activeBadge?.matches(':hover')) return;
+      hideTip();
+    }, 220);
   }
 
-  function tipHtml(handle) {
-    const u = users.get(handle);
-    if (!u) return "";
-    const now = Date.now();
-    const stat = stats.get(handle);
-    const er = P.engagementOf(stat);
-    const rows = [];
-    rows.push(["粉丝", u.followers.toLocaleString()]);
-    rows.push(["关注", u.following === null ? "—" : u.following.toLocaleString()]);
-    rows.push(["粉丝/关注比", P.fmtRatio(P.ratioOf(u))]);
-    if (u.tweets !== null && u.tweets !== undefined) rows.push(["推文数", Number(u.tweets).toLocaleString()]);
-    if (u.createdAt) rows.push(["注册", accountAge(u.createdAt, now)]);
-    rows.push(["当前样本互动率", er === null ? `<span class="dim">样本不足(需浏览量合计 ≥ 2000)</span>` : `${(er * 100).toFixed(2)}%`]);
-    if (settings.trackHistory) {
-      const d = P.deltaFrom(hist[handle], u.followers, now);
-      if (d) {
-        const sign = d.diff > 0 ? "+" : d.diff < 0 ? "" : "±";
-        const cls = d.diff > 0 ? "up" : d.diff < 0 ? "down" : "";
-        const pct = d.base > 0 ? ` (${sign}${((d.diff / d.base) * 100).toFixed(1)}%)` : "";
-        rows.push([`近 ${d.days} 天`, `<span class="${cls}">${sign}${d.diff.toLocaleString()}${pct}</span>`]);
-      } else {
-        rows.push(["变化", `<span class="dim">已开始记录,明天起显示</span>`]);
-      }
-    }
-    const rel = u.followedBy && u.iFollow ? "互相关注" : u.followedBy ? "TA 关注了你" : u.iFollow ? "你关注了 TA" : "";
-    if (rel) rows.push(["关系", rel]);
-    rows.push(["提示", "规则标签仅供参考"]);
-    const meaning = P.ratioMeaning(u);
-    return `<div class="xcl-lens-tip-h">@${esc(handle)}</div>` +
-      rows.map(([k, v]) => `<div class="xcl-lens-tip-r"><span>${k}</span><b>${v}</b></div>`).join("") +
-      (meaning ? `<div class="xcl-lens-tip-meaning"><strong>${esc(meaning.label)}</strong><br>${esc(meaning.description)}<br>这反映关注数量的倾向，不代表影响力、账号质量或回关意愿。</div>` : '');
+  function positionTip() {
+    if (!activeBadge?.isConnected || !tip || tip.style.display === 'none') return;
+    const r = activeBadge.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - tip.offsetWidth - 8));
+    const belowSpace = Math.max(0, window.innerHeight - r.bottom - 14);
+    const aboveSpace = Math.max(0, r.top - 14);
+    const below = belowSpace >= tip.scrollHeight || belowSpace >= aboveSpace;
+    // Keep the trigger uncovered, even when neither side fits the whole card.
+    // Let the panel scroll instead of moving it on top of the clicked badge.
+    tip.style.maxHeight = `${below ? belowSpace : aboveSpace}px`;
+    const top = below ? r.bottom + 6 : Math.max(8, r.top - tip.offsetHeight - 6);
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
   }
 
   function showTip(badge) {
+    clearTimeout(closeTimer);
     if (!settings?.enabled || !settings.hoverCard) return;
-    const handle = badge.dataset.lensHandle;
+    if (activeBadge === badge && tip?.style.display === 'block') return;
+    const user = users.get(badge.dataset.lensHandle);
+    if (!user) return;
     if (!tip) {
-      tip = document.createElement("div");
-      tip.id = "xcl-lens-tip";
-      tip.setAttribute("role", "tooltip");
+      tip = document.createElement('div'); tip.id = 'xcl-lens-tip';
+      tip.setAttribute('role', 'dialog'); tip.setAttribute('aria-label', '账号详情');
+      tip.setAttribute('aria-modal', 'false');
+      tip.addEventListener('mouseenter', () => clearTimeout(closeTimer));
+      tip.addEventListener('mouseleave', scheduleHideTip);
+      tip.addEventListener('focusin', () => clearTimeout(closeTimer));
+      tip.addEventListener('focusout', scheduleHideTip);
+      tip.addEventListener('toggle', positionTip, true);
+      tip.addEventListener('keydown', event => {
+        if (event.key === 'Tab' && event.shiftKey && event.target === tip.querySelector('summary')) {
+          event.preventDefault(); activeBadge?.focus();
+        }
+      });
       document.documentElement.append(tip);
     }
-    tip.innerHTML = tipHtml(handle);
-    badge.setAttribute("aria-describedby", "xcl-lens-tip");
-    const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
-    tip.dataset.theme = (+m[0] * 299 + +m[1] * 587 + +m[2] * 114) / 1000 < 128 ? "dark" : "light";
-    tip.style.display = "block";
-    const r = badge.getBoundingClientRect();
-    const tw = tip.offsetWidth, th = tip.offsetHeight;
-    let left = Math.min(Math.max(8, r.left), window.innerWidth - tw - 8);
-    let top = r.bottom + 6;
-    if (top + th > window.innerHeight - 8) top = Math.max(8, r.top - th - 6);
-    tip.style.left = left + "px";
-    tip.style.top = top + "px";
+    activeBadge?.setAttribute('aria-expanded', 'false');
+    activeBadge = badge;
+    tip.innerHTML = accountCardHtml(user, stats.get(user.handle), hist[user.handle], settings);
+    badge.setAttribute('aria-expanded', 'true');
+    const colors = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
+    tip.dataset.theme = (+colors[0] * 299 + +colors[1] * 587 + +colors[2] * 114) / 1000 < 128 ? 'dark' : 'light';
+    tip.style.display = 'block'; positionTip();
   }
-  function hideTip() {
+
+  function hideTip(returnFocus = false) {
+    clearTimeout(closeTimer);
+    const previous = activeBadge;
+    const focusInCard = tip?.contains(document.activeElement);
+    activeBadge = null;
+    previous?.setAttribute('aria-expanded', 'false');
     if (tip) tip.style.display = 'none';
-    document.querySelectorAll('[aria-describedby="xcl-lens-tip"]').forEach(b => b.removeAttribute('aria-describedby'));
+    if (returnFocus || focusInCard) {
+      const target = previous?.isConnected ? previous : Array.from(document.querySelectorAll('.xcl-lens-badge')).find(badge => badge.dataset.lensHandle === previous?.dataset.lensHandle);
+      if (target) {
+        restoringFocus = true; target.focus({ preventScroll: true }); restoringFocus = false;
+      } else if (focusInCard) document.activeElement?.blur();
+    }
   }
 
-  window.addEventListener("scroll", hideTip, { passive: true });
-
+  document.addEventListener('pointerdown', event => {
+    if (activeBadge && !activeBadge.contains(event.target) && !tip?.contains(event.target)) hideTip();
+  }, true);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && activeBadge) {
+      event.preventDefault(); event.stopPropagation(); hideTip(true);
+    }
+  }, true);
+  window.addEventListener('scroll', () => hideTip(), { passive: true });
   window.addEventListener('resize', () => { settingsVer++; hideTip(); scheduleRender(); }, { passive: true });
   init();
 })();
