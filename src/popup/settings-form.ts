@@ -28,7 +28,7 @@ import { isAbsoluteObsidianFolder, resolveObsidianTarget } from '../shared/obsid
 import { attachPlaceholderAutocomplete } from './placeholder-autocomplete';
 import { updateFloodHint } from './fast-batch-ui';
 import {
-  fmtButtons,
+  singleFormatSelect,
   batchFormatControls,
   batchFormatSelect,
   outSeparate,
@@ -96,17 +96,13 @@ export function currentFrontmatterFields(obsidianFriendly: boolean): FieldMap {
 }
 
 // ─── Single-export format selector (md + html / json / txt / csv) ──
-// The active button (aria-checked) is the source of truth read back into the
-// persisted settings; the action flows read it the same way at click time.
+// Keep the existing singleFormat storage key when replacing the button grid.
 export function readSingleFormat(): BatchFormat {
-  const active = fmtButtons.find((b) => b.getAttribute('aria-checked') === 'true');
-  return (active?.dataset.format as BatchFormat) || 'md';
+  return (singleFormatSelect.value as BatchFormat) || 'md';
 }
 
 export function applySingleFormat(fmt: BatchFormat): void {
-  for (const b of fmtButtons) {
-    b.setAttribute('aria-checked', String(b.dataset.format === fmt));
-  }
+  singleFormatSelect.value = fmt;
 }
 
 // The form as a Settings object — what persistAll saves, and what the action
@@ -211,7 +207,7 @@ function syncOutputForFormat(): void {
 // In Batch mode, grey out the toggles a format doesn't use, so it's clear they
 // have no effect: local images apply only to Markdown; engagement stats to
 // Markdown + HTML; metadata to Markdown + CSV. Single mode leaves all enabled
-// (the format is chosen per-button there, not up front).
+// so the dedicated PDF and Obsidian actions can still use them.
 function syncBatchToggles(): void {
   const batchMode = !batchFormatControls.classList.contains('hidden');
   const fmt = batchFormatSelect.value;

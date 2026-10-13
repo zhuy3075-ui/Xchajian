@@ -11,11 +11,7 @@ export const btnObsidian = document.getElementById('btn-obsidian') as HTMLButton
 export const statusEl = document.getElementById('status') as HTMLDivElement;
 
 // ─── Single-export format selector (md + html / json / txt / csv) ─────
-// Radio-style buttons; the active one (aria-checked="true") is the target the
-// Download/Copy actions act on.
-export const fmtButtons = Array.from(
-  document.querySelectorAll<HTMLButtonElement>('.btn-fmt')
-);
+export const singleFormatSelect = document.getElementById('single-format') as HTMLSelectElement;
 
 // ─── Batch export (bookmarks) ────────────────────────────────────────
 export const btnBatch = document.getElementById('btn-batch') as HTMLButtonElement;

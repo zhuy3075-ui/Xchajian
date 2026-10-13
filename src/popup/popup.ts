@@ -10,7 +10,6 @@ import { initBatchUi } from './batch-ui';
 import { initModeTabs } from './mode';
 import { initReviewBanner } from './review-banner';
 import { initFastBatchUi } from './fast-batch-ui';
-import { initDukouEntry } from './dukou';
 
 // ─── Footer version ───────────────────────────────────────────────────
 
@@ -34,11 +33,13 @@ btnSettings?.addEventListener('click', () => {
   viewMain?.classList.add('hidden');
   viewSettings?.classList.remove('hidden');
   btnSettings?.classList.add('hidden');
+  btnBack?.focus();
 });
 btnBack?.addEventListener('click', () => {
   viewSettings?.classList.add('hidden');
   viewMain?.classList.remove('hidden');
   btnSettings?.classList.remove('hidden');
+  btnSettings?.focus();
 });
 
 // ─── Collapsible "More formats" row ───────────────────────────────────
@@ -59,7 +60,6 @@ if (formatDetails) {
 // ─── Feature modules ──────────────────────────────────────────────────
 
 initFastBatchUi();
-initDukouEntry();
 initModeTabs();
 initSettingsForm();
 initActions();

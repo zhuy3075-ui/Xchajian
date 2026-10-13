@@ -18,15 +18,14 @@ import { loadSettings } from '../shared/settings';
 import { hostMatches } from '../shared/media';
 import { renderMarkdown } from '../ast/render-markdown';
 import { resolveLocalVideo, type VideoAttachment } from '../shared/local-video';
-import { currentFrontmatterFields, readSingleFormat, applySingleFormat, persistAll, readSettingsForm, saveLocalMediaEnabled } from './settings-form';
-import type { BatchFormat } from '../shared/settings';
+import { currentFrontmatterFields, readSingleFormat, persistAll, readSettingsForm, saveLocalMediaEnabled } from './settings-form';
 import {
   btnDownload,
   btnCopy,
   chkZip,
   btnPdf,
   btnObsidian,
-  fmtButtons,
+  singleFormatSelect,
   statusEl,
   chkMetadata,
   chkInlineStats,
@@ -39,7 +38,7 @@ import {
 // Every button the export flows disable while one of them is running, so a
 // second click can't race an in-flight extraction (the format selectors too,
 // so the target format can't change mid-flight).
-const allExportButtons = [btnDownload, btnCopy, btnPdf, btnObsidian, ...fmtButtons];
+const allExportButtons = [btnDownload, btnCopy, btnPdf, btnObsidian, singleFormatSelect];
 let statusHideTimeout: ReturnType<typeof setTimeout> | undefined;
 
 function showStatus(
@@ -226,13 +225,7 @@ export function initActions(): void {
     else void runFormatExport(fmt, 'copy');
   });
 
-  // ─── Format selector: activate + persist the clicked format ───
-  for (const btn of fmtButtons) {
-    btn.addEventListener('click', () => {
-      applySingleFormat(btn.dataset.format as BatchFormat);
-      persistAll();
-    });
-  }
+  singleFormatSelect.addEventListener('change', persistAll);
 
   // ─── PDF Export Flow ───
   btnPdf.addEventListener('click', async () => {
