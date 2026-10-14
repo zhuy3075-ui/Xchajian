@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>导出当前内容</title><link rel="stylesheet" href="page-tools.css"></head><body>
+<h1>导出当前内容</h1>
+<label>格式 <select id="format"><option value="md">Markdown (.md)</option><option value="txt">TXT (.txt)</option><option value="html">HTML (.html)</option><option value="json">JSON (.json)</option><option value="csv">CSV (.csv)</option><option value="pdf">PDF (.pdf)</option></select></label>
+<label>范围 <select id="scope"><option value="single">仅此条</option><option value="thread">完整线程（尽力补全）</option></select></label>
+<p class="hint">评论默认仅此条；线程不含其他人的回复。长文会通过临时详情页补全。</p>
+<div class="row"><button id="download" disabled>下载文件</button><button id="copy" disabled>复制为所选格式</button><button id="close">关闭</button></div>
+<p id="status" role="status" aria-live="polite"></p>
+<script src="page-export.js"></script></body></html>

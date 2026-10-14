@@ -2,23 +2,27 @@
 // action bar. Clicking opens the tweet's permalink in a new tab with the
 // `#xclipper=1` marker, which the main content script's bootstrap handles.
 
-import { getStatusUrl, normalizeStatusUrl } from './status-url';
+import { normalizeStatusUrl } from './status-url';
 import { decorateSelection, enterSelection, exitSelection } from './selection';
 import { pageSourceOfPath, type XPage } from '../shared/x-routes';
 import { initInlineObsidian } from './obsidian-inline';
 import { copyComment } from './comment-copy';
 import { displayPostTimes } from './post-time';
+import { openExportMenu, closeExportMenu } from './export-menu';
+import { obsidianCardUrl as getStatusUrl } from './obsidian-card';
+import { capturePageExport } from './page-export';
+import { syncPageTools, showPageTools } from './page-tools-host';
 
 initInlineObsidian();
 
 const BUTTON_ATTR = 'data-xclipper-injected';
 
-let inlineButtonCopies = false;
 let showInlineButton = false;
 let includeReposts = false; // profile batch: keep reposts too (default off)
 
 function removeAllInjectedButtons(): void {
   removeControls(document);
+  closeExportMenu();
 }
 
 function removeControls(scope: ParentNode): void {
@@ -31,7 +35,7 @@ function removeControls(scope: ParentNode): void {
 
 function hasControls(scope: Element, withCopy = false): boolean {
   return !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="添加到 Obsidian"]`) &&
-    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="Save as Markdown"]`) &&
+    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="导出"]`) &&
     (!withCopy || !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="复制正文"]`));
 }
 
@@ -54,11 +58,12 @@ function loadInlineMode(): void {
         inlineButtonCopies?: boolean;
         showInlineButton?: boolean;
         includeReposts?: boolean;
+        pageToolsSide?: 'left' | 'right';
       };
       includeReposts = s.includeReposts === true;
-      inlineButtonCopies = s.inlineButtonCopies === true;
       const wasShown = showInlineButton;
-      showInlineButton = s.showInlineButton === true; // default false in v2.0.0
+      showInlineButton = s.showInlineButton !== false;
+      syncPageTools(showInlineButton, s.pageToolsSide);
       if (wasShown && !showInlineButton) {
         removeAllInjectedButtons();
       } else if (!wasShown && showInlineButton) {
@@ -105,46 +110,13 @@ function buildIcon(obsidian = false): SVGElement {
   return svg;
 }
 
-function openWithMarker(
-  url: string,
-  action: 'download' | 'copy',
-  single: boolean
-): void {
-  const sep = url.includes('#') ? '&' : '#';
-  const singleSuffix = single ? '&xclipper_single=1' : '';
-  window.open(url + sep + 'xclipper=' + action + singleSuffix, '_blank', 'noopener');
-}
-
-// If the target tweet is the current page, extract in place rather than
-// opening a duplicate tab. Otherwise fall through to the new-tab flow.
-function triggerExtract(
-  url: string,
-  action: 'download' | 'copy',
-  single: boolean
-): void {
-  const target = normalizeStatusUrl(url);
-  const page = normalizeStatusUrl(window.location.href);
-  if (target && page && target === page) {
-    window.dispatchEvent(
-      new CustomEvent('xclipper:autoextract', { detail: { action, single } })
-    );
-    return;
-  }
-  openWithMarker(url, action, single);
-}
-
-function singleFromEvent(e: Event): boolean {
-  const me = e as MouseEvent | KeyboardEvent;
-  return me.shiftKey === true || me.altKey === true;
-}
-
 function makeButton(onClick: (e: Event) => void, obsidian = false): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.setAttribute(BUTTON_ATTR, '1');
   wrapper.setAttribute('role', 'button');
   wrapper.setAttribute('tabindex', '0');
-  wrapper.setAttribute('aria-label', obsidian ? '添加到 Obsidian' : 'Save as Markdown');
-  wrapper.title = obsidian ? '添加到 Obsidian\nShift/Alt + 点击：只采集此条推文' : 'Save as Markdown (XClipper)\nShift/Alt-click: just this tweet';
+  wrapper.setAttribute('aria-label', obsidian ? '添加到 Obsidian' : '导出');
+  wrapper.title = obsidian ? '保存此条内容到 Obsidian' : '导出：选择格式、下载文件或复制';
   wrapper.style.cssText = [
     'display:inline-flex',
     'align-items:center',
@@ -183,9 +155,9 @@ function makeButton(onClick: (e: Event) => void, obsidian = false): HTMLElement 
 }
 
 function makeObsidianButton(url: () => string, article?: Element): HTMLElement {
-  return makeButton((event) => {
+  return makeButton(() => {
     window.dispatchEvent(new CustomEvent('xclipper:obsidian', {
-      detail: { url: url(), single: singleFromEvent(event), article },
+      detail: { url: url(), single: true, article },
     }));
   }, true);
 }
@@ -230,18 +202,15 @@ function decorateArticleActionBar(article: Element): void {
   if (!url) return;
   removeControls(actionBar);
 
-  const btn = makeButton((e) => {
-    const fresh = getStatusUrl(article) || url;
-    triggerExtract(
-      fresh,
-      inlineButtonCopies ? 'copy' : 'download',
-      singleFromEvent(e)
-    );
+  const btn = makeButton(() => {
+    const fresh = getStatusUrl(article);
+    if (fresh) void openExportMenu(btn, fresh, article);
   });
+  btn.setAttribute('aria-haspopup', 'dialog');
+  btn.setAttribute('aria-expanded', 'false');
   const container = document.createElement('div');
   container.setAttribute('data-xclipper-controls', '1');
   container.style.cssText = 'display:flex;align-items:center;';
-  container.appendChild(btn);
   const obsidianBtn = makeObsidianButton(() => getStatusUrl(article) || url, article);
   obsidianBtn.title = '保存此条内容到 Obsidian（不采集整串评论）';
   container.appendChild(obsidianBtn);
@@ -250,6 +219,7 @@ function decorateArticleActionBar(article: Element): void {
   copyBtn.title = '复制此条评论/推文的正文（不含引用内容）';
   copyBtn.querySelector('path')!.setAttribute('d', 'M8 2h12a2 2 0 0 1 2 2v12h-2V4H8V2zM4 6h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v12h12V8H4z');
   container.appendChild(copyBtn);
+  container.appendChild(btn);
   actionBar.appendChild(container);
 
   matchSiblingIcon(actionBar, btn, btn.querySelector('svg'));
@@ -280,19 +250,14 @@ function decorateArticleTopBar(): void {
   if (hasControls(candidate)) return;
   removeControls(candidate);
 
-  const btn = makeButton((e) =>
-    triggerExtract(
-      window.location.href,
-      inlineButtonCopies ? 'copy' : 'download',
-      singleFromEvent(e)
-    )
-  );
+  const btn = makeButton(() => { void openExportMenu(btn, normalizeStatusUrl(location.href)!); });
+  btn.setAttribute('aria-haspopup', 'dialog');
   const container = document.createElement('div');
   container.setAttribute('data-xclipper-controls', '1');
   container.style.cssText = 'display:flex;align-items:center;';
-  container.appendChild(btn);
   const obsidianBtn = makeObsidianButton(() => window.location.href);
   container.appendChild(obsidianBtn);
+  container.appendChild(btn);
   candidate.appendChild(container);
   matchSiblingIcon(candidate, btn, btn.querySelector('svg'));
   matchSiblingIcon(candidate, obsidianBtn, obsidianBtn.querySelector('svg'));
@@ -366,6 +331,19 @@ function harvestTimeline(): HarvestSource {
 
 try {
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg?.action === 'XCLIPPER_CAPTURE_PAGE') {
+      if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL('page-export.html'))) return false;
+      capturePageExport(msg.url, msg.single !== false).then(
+        data => sendResponse({ success: true, data }),
+        err => sendResponse({ success: false, error: String(err.message || err) }));
+      return true;
+    }
+    if (msg?.action === 'XCLIPPER_PAGE_TOOLS_STATUS') {
+      sendResponse({ enabled: showInlineButton }); return false;
+    }
+    if (msg?.action === 'XCLIPPER_PAGE_TOOLS_SHOW') {
+      showPageTools(); sendResponse({ ok: true }); return false;
+    }
     if (msg?.action === 'XCLIPPER_OBSIDIAN_SHOW_BUTTONS') {
       if (sender.id !== chrome.runtime.id) { sendResponse({ ok: false }); return false; }
       showInlineButton = true;

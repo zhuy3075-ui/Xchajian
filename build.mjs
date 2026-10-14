@@ -87,6 +87,13 @@ async function build() {
     format: 'iife',
   });
 
+  const pageToolsBuilds = ['page-tools', 'page-export'].map(name => esbuild.build({
+    ...commonOptions, entryPoints: [resolve(__dirname, 'src/page-tools/' + name + '.ts')],
+    outfile: resolve(__dirname, outDir, name + '.js'), format: 'iife',
+  }));
+  for (const file of ['page-tools.html', 'page-export.html', 'page-tools.css']) {
+    cpSync(resolve(__dirname, 'src/page-tools', file), resolve(__dirname, outDir, file));
+  }
   const obsidianConnectBuild = esbuild.build({
     ...commonOptions, entryPoints: [resolve(__dirname, 'src/obsidian-connect/connect.ts')],
     outfile: resolve(__dirname, outDir, 'obsidian-connect.js'), format: 'iife',
@@ -122,7 +129,7 @@ async function build() {
   }
   cpSync(resolve(__dirname, 'src/workbench.css'), resolve(__dirname, outDir, 'workbench.css'));
 
-  await Promise.all([...lensBuilds, obsidianConnectBuild, contentBuild, injectorBuild, backgroundBuild, popupBuild, printBuild, ...dukouBuilds]);
+  await Promise.all([...pageToolsBuilds, ...lensBuilds, obsidianConnectBuild, contentBuild, injectorBuild, backgroundBuild, popupBuild, printBuild, ...dukouBuilds]);
 
   for (const file of ['popup.html', 'import.html', 'x-adapter.js', 'bili-adapter.js',
     'huasheng-adapter.js', 'fill-common.js', 'jszip.min.js', 'LICENSE', 'NOTICE.md']) {

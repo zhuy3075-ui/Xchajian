@@ -122,19 +122,14 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Settings view is a focused config panel — drop the intro copy AND the
-   header logo so the box stays compact. `:has()` is fine for an extension
-   targeting modern Chrome. */
-.popup-container:has(#view-settings:not(.hidden)) .popup-header,
-.popup-container:has(#view-settings:not(.hidden)) .popup-footer {
-  display: none;
-}
+
 
 /* ─── Button Group ─────────────────────────────────────────── */
 /* Export format followed by a compact pair of actions. */
 .export-picker { display: flex; flex-direction: column; gap: 12px; }
 .export-actions { display: flex; gap: 8px; }
 .export-format-field { padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+.export-format-field.hidden { display: none; }
 .export-format-field .batch-select { flex: 1; max-width: 230px; min-height: 36px; }
 .settings-mode-tabs { margin-top: 12px; }
 .settings-export-hint { font-size: 12px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 12px; }
@@ -2344,3 +2339,11 @@ details.option-group[open] .option-group-chevron {
 #lens-settings .danger:disabled { opacity: .5; cursor: default; }
 #lens-save-status { padding: 10px 0; }
 #lens-settings a { color: var(--accent); }
+:root .page-settings-summary {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #aab8cb;
+  border-radius: 12px;
+}
+.page-settings-summary p { margin: 8px 0; font-size: 12px; line-height: 1.6; }
+.page-settings-summary .field-label { margin-top: 12px; }

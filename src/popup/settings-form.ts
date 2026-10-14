@@ -42,7 +42,6 @@ import {
   saveLocalMedia,
   chkMetadata,
   chkCloseTab,
-  chkInlineCopies,
   chkShowInline,
   chkInlineStats,
   chkIncludeReposts,
@@ -114,7 +113,9 @@ export function readSettingsForm(): Settings {
     saveVideos: readSaveLocal() === 'media',
     includeMetadata: chkMetadata.checked,
     closeTabAfterExport: chkCloseTab.checked,
-    inlineButtonCopies: chkInlineCopies.checked,
+    inlineButtonCopies: legacyInlineCopies,
+    pageToolsSide: (document.getElementById('page-tools-side') as HTMLSelectElement).value as 'left' | 'right',
+    pageExportFormat: preferredPageFormat,
     showInlineButton: chkShowInline.checked,
     inlineStats: chkInlineStats.checked,
     includeReposts: chkIncludeReposts.checked,
@@ -135,7 +136,11 @@ export function readSettingsForm(): Settings {
   };
 }
 
+let settingsReady = false;
+let legacyInlineCopies = false;
+let preferredPageFormat: Settings['pageExportFormat'];
 export function persistAll(): void {
+  if (!settingsReady) return;
   saveSettings(readSettingsForm());
 }
 
@@ -247,11 +252,7 @@ export function syncBatchControls(): void {
   updateFloodHint();
 }
 
-function updateInlineCopiesEnabled(): void {
-  const enabled = chkShowInline.checked;
-  chkInlineCopies.disabled = !enabled;
-  chkInlineCopies.closest('.toggle-label')?.classList.toggle('disabled', !enabled);
-}
+
 
 // ─── Collapsible settings sections (LRU cap = SECTION_MAX_OPEN) ────
 
@@ -407,7 +408,9 @@ export function initSettingsForm(): void {
     setSaveLocal(settings.downloadImages ? (settings.saveVideos ? 'media' : 'images') : 'off');
     chkMetadata.checked = settings.includeMetadata;
     chkCloseTab.checked = settings.closeTabAfterExport;
-    chkInlineCopies.checked = settings.inlineButtonCopies;
+    preferredPageFormat = settings.pageExportFormat;
+    legacyInlineCopies = settings.inlineButtonCopies;
+    (document.getElementById('page-tools-side') as HTMLSelectElement).value = settings.pageToolsSide || 'right';
     chkShowInline.checked = settings.showInlineButton;
     chkInlineStats.checked = settings.inlineStats;
     chkIncludeReposts.checked = settings.includeReposts;
@@ -432,9 +435,9 @@ export function initSettingsForm(): void {
     updateFieldPickerMode();
     updateFieldPickerEnabled();
     updateFilenamePreview();
-    updateInlineCopiesEnabled();
     updateTagsTemplateEnabled();
     updateTagsPreview();
+    settingsReady = true;
   });
 
   // ─── Collapsible sections ───
@@ -553,9 +556,9 @@ export function initSettingsForm(): void {
     persistAll();
   });
   chkCloseTab.addEventListener('change', persistAll);
-  chkInlineCopies.addEventListener('change', persistAll);
+  singleFormatSelect.addEventListener('change', () => { preferredPageFormat = readSingleFormat(); persistAll(); });
+  document.getElementById('page-tools-side')!.addEventListener('change', persistAll);
   chkShowInline.addEventListener('change', () => {
-    updateInlineCopiesEnabled();
     persistAll();
   });
   chkInlineStats.addEventListener('change', persistAll);

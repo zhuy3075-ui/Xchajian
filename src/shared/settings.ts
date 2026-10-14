@@ -44,6 +44,8 @@ export interface Settings {
   // Single export: the format the Download/Copy buttons act on. Same set as
   // the batch format (PDF is a separate button, not part of this selector).
   singleFormat: BatchFormat;
+  pageExportFormat?: BatchFormat | 'pdf';
+  pageToolsSide?: 'left' | 'right';
   // Batch export: file format for the whole job (PDF isn't batchable).
   batchFormat: BatchFormat;
   // Batch export: per-item files, one combined file, or both. CSV is always
@@ -73,7 +75,7 @@ export const DEFAULT_SETTINGS: Settings = {
   includeMetadata: true, // on by default
   closeTabAfterExport: false,
   inlineButtonCopies: false, // inline button downloads by default
-  showInlineButton: false, // off by default in v2.0.0 — avoids DOM conflicts with other X/Twitter extensions; v1.9.0 migrants keep their stored value
+  showInlineButton: true, // New installs show page actions; a saved false remains respected.
   inlineStats: false, // off — changes visible content, opt-in
   includeReposts: false, // off — profile exports own posts only, matching prior behavior
   obsidianFriendly: false, // off — changes frontmatter shape, opt-in
@@ -128,5 +130,7 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 export function saveSettings(settings: Settings): void {
-  chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+  chrome.storage.local.get(SETTINGS_KEY, raw => {
+    chrome.storage.local.set({ [SETTINGS_KEY]: { ...(raw[SETTINGS_KEY] || {}), ...settings } });
+  });
 }

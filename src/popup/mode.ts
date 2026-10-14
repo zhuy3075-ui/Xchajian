@@ -27,6 +27,8 @@ export function setExportMode(single: boolean, persist = true): void {
   settingsBatch?.classList.toggle('active', !single);
   settingsSingle?.setAttribute('aria-pressed', String(single));
   settingsBatch?.setAttribute('aria-pressed', String(!single));
+  document.getElementById('single-default-format')?.classList.toggle('hidden', !single);
+  document.getElementById('batch-default-format')?.classList.toggle('hidden', single);
   panelSingle?.classList.toggle('hidden', !single);
   panelBatch?.classList.toggle('hidden', single);
   batchFormatControls?.classList.toggle('hidden', single);

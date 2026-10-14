@@ -22,6 +22,9 @@ import { initDukou } from '../dukou/background';
 import { initLens } from '../lens/background';
 import { initObsidianCapture } from './obsidian-capture';
 import { initObsidianFiles } from './obsidian-files';
+import { initPageExportWorker } from './page-export-worker';
+
+initPageExportWorker();
 
 // ─── Context menu: Save / Copy tweet as Markdown ────────────────────
 

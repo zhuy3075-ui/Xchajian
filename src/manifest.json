@@ -71,5 +71,19 @@
       ],
       "run_at": "document_start"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page-tools.html",
+        "page-tools.js",
+        "page-export.html",
+        "page-export.js",
+        "page-tools.css"
+      ],
+      "matches": [
+        "https://x.com/*"
+      ]
+    }
   ]
 }

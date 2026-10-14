@@ -4,7 +4,9 @@
 // virtualization; checks are re-painted by decorateSelection() (called from the
 // injector's mutation observer) as cells re-mount.
 
-import { getStatusUrl } from './status-url';
+import { obsidianCardUrl as getStatusUrl } from './obsidian-card';
+import { loadSettings, type BatchFormat } from '../shared/settings';
+import { pageNotice } from './page-notice';
 
 const SELECT_MARK_ATTR = 'data-xclipper-select';
 const SELECTED_ATTR = 'data-xclipper-selected';
@@ -14,8 +16,11 @@ let selectionMode = false;
 const selectedUrls = new Set<string>();
 let selectionBar: HTMLElement | null = null;
 let selectionCountEl: HTMLElement | null = null;
+let selectionFormat: HTMLSelectElement | null = null;
+let starting = false;
 
 function syncMark(mark: HTMLElement, selected: boolean): void {
+  mark.setAttribute('aria-pressed', String(selected));
   mark.textContent = selected ? '✓' : '';
   mark.style.background = selected ? ACCENT : 'rgba(15,20,25,0.55)';
   mark.style.borderColor = selected ? ACCENT : '#fff';
@@ -30,7 +35,9 @@ export function decorateSelection(): void {
     if (!mark) {
       const host = article as HTMLElement;
       if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
-      mark = document.createElement('div');
+      mark = document.createElement('button');
+      (mark as HTMLButtonElement).type = 'button';
+      mark.setAttribute('aria-label', '选择此条内容');
       mark.setAttribute(SELECT_MARK_ATTR, '1');
       mark.style.cssText = [
         'position:absolute',
@@ -66,6 +73,7 @@ export function decorateSelection(): void {
     }
     // Cells get recycled by the virtualizer — re-sync visuals from state.
     const isSelected = selectedUrls.has(url);
+    mark.setAttribute('aria-pressed', String(isSelected));
     syncMark(mark, isSelected);
     if (isSelected) article.setAttribute(SELECTED_ATTR, '1');
     else article.removeAttribute(SELECTED_ATTR);
@@ -78,8 +86,8 @@ function updateSelectionBar(): void {
   // running count once the user starts picking tweets.
   selectionCountEl.textContent =
     selectedUrls.size === 0
-      ? chrome.i18n.getMessage('batch_bar_hint') || 'Tap tweets to select'
-      : `${selectedUrls.size} ${chrome.i18n.getMessage('batch_bar_selected') || 'selected'}`;
+      ? '勾选帖子以批量导出'
+      : `已选 ${selectedUrls.size} 条`;
 }
 
 function barButton(label: string, solid: boolean, onClick: () => void): HTMLElement {
@@ -123,6 +131,7 @@ export function enterSelection(): void {
     'opacity:0',
     'transition:opacity .22s ease, transform .22s ease',
     'display:flex',
+    'flex-wrap:wrap',
     'align-items:center',
     'gap:14px',
     'background:rgba(15,20,25,0.97)',
@@ -137,31 +146,43 @@ export function enterSelection(): void {
 
   selectionCountEl = document.createElement('span');
   selectionBar.appendChild(selectionCountEl);
+  const format = document.createElement('select');
+  format.setAttribute('aria-label', '批量导出格式');
+  format.style.cssText = 'font:inherit;padding:8px;max-width:130px;color:#172b4d;background:white;';
+  for (const value of ['md', 'txt', 'html', 'json', 'csv']) format.add(new Option(value.toUpperCase(), value));
+  selectionFormat = format;
+  let edited = false;
+  format.onchange = () => { edited = true; };
+  void loadSettings().then(settings => { if (!edited && format.isConnected) format.value = settings.batchFormat; });
+  selectionBar.append(format);
   selectionBar.appendChild(
-    barButton(chrome.i18n.getMessage('batch_bar_export') || 'Export', true, () => {
-      if (selectedUrls.size === 0) return;
-      try {
+    barButton('导出所选', true, () => {
+      if (selectedUrls.size === 0 || starting) return;
+      starting = true;
+      const urls = Array.from(selectedUrls);
+      const format = selectionFormat?.value as BatchFormat || 'md';
+      void loadSettings().then(settings => {
         chrome.runtime.sendMessage(
-          { action: 'BATCH_START', urls: Array.from(selectedUrls), origin: 'selection' },
+          { action: 'BATCH_START', urls, origin: 'selection', format, output: format === 'csv' ? 'combined' : settings.batchOutput },
           (resp) => {
-            void chrome.runtime.lastError;
-            if (resp?.success) {
+            const error = chrome.runtime.lastError;
+            starting = false;
+            if (!error && resp?.success) {
               if (selectionCountEl) {
                 selectionCountEl.textContent =
                   chrome.i18n.getMessage('batch_started') || 'Batch started';
               }
               setTimeout(exitSelection, 1200);
+              pageNotice('批量任务已开始，可在页面“采集工具”查看进度。');
             } else if (selectionCountEl) {
-              selectionCountEl.textContent = resp?.error || 'Could not start the batch.';
+              selectionCountEl.textContent = resp?.error || error?.message || '无法开始批量导出';
             }
           }
         );
-      } catch {
-        /* extension context gone */
-      }
+      }).catch(err => { starting = false; pageNotice(String(err), true); });
     })
   );
-  selectionBar.appendChild(barButton('✕', false, exitSelection));
+  selectionBar.appendChild(barButton('取消选择', false, exitSelection));
   document.body.appendChild(selectionBar);
 
   updateSelectionBar();
@@ -183,4 +204,5 @@ export function exitSelection(): void {
   selectionBar?.remove();
   selectionBar = null;
   selectionCountEl = null;
+  selectionFormat = null;
 }
