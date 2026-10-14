@@ -1,6 +1,4 @@
-// Injects a "Save as Markdown" icon next to the share button in each tweet's
-// action bar. Clicking opens the tweet's permalink in a new tab with the
-// `#xclipper=1` marker, which the main content script's bootstrap handles.
+// Page actions use the selected side and export in the configured default format.
 
 import { normalizeStatusUrl } from './status-url';
 import { decorateSelection, enterSelection, exitSelection } from './selection';
@@ -18,6 +16,7 @@ initInlineObsidian();
 const BUTTON_ATTR = 'data-xclipper-injected';
 
 let showInlineButton = false;
+let controlsSide: 'left' | 'right' = 'right';
 let includeReposts = false; // profile batch: keep reposts too (default off)
 
 function removeAllInjectedButtons(): void {
@@ -35,7 +34,8 @@ function removeControls(scope: ParentNode): void {
 
 function hasControls(scope: Element, withCopy = false): boolean {
   return !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="添加到 Obsidian"]`) &&
-    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="导出"]`) &&
+    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="下载"]`) &&
+    !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="导出选项"]`) &&
     (!withCopy || !!scope.querySelector(`[${BUTTON_ATTR}][aria-label="复制正文"]`));
 }
 
@@ -63,7 +63,11 @@ function loadInlineMode(): void {
       includeReposts = s.includeReposts === true;
       const wasShown = showInlineButton;
       showInlineButton = s.showInlineButton !== false;
+      controlsSide = s.pageToolsSide === 'left' ? 'left' : 'right';
       syncPageTools(showInlineButton, s.pageToolsSide);
+      document.querySelectorAll<HTMLElement>('[data-xclipper-controls]').forEach(container => {
+        if (container.parentElement) positionControls(container.parentElement, container);
+      });
       if (wasShown && !showInlineButton) {
         removeAllInjectedButtons();
       } else if (!wasShown && showInlineButton) {
@@ -115,8 +119,8 @@ function makeButton(onClick: (e: Event) => void, obsidian = false): HTMLElement 
   wrapper.setAttribute(BUTTON_ATTR, '1');
   wrapper.setAttribute('role', 'button');
   wrapper.setAttribute('tabindex', '0');
-  wrapper.setAttribute('aria-label', obsidian ? '添加到 Obsidian' : '导出');
-  wrapper.title = obsidian ? '保存此条内容到 Obsidian' : '导出：选择格式、下载文件或复制';
+  wrapper.setAttribute('aria-label', obsidian ? '添加到 Obsidian' : '下载');
+  wrapper.title = obsidian ? '保存此条内容到 Obsidian' : '按默认单条格式下载';
   wrapper.style.cssText = [
     'display:inline-flex',
     'align-items:center',
@@ -162,6 +166,26 @@ function makeObsidianButton(url: () => string, article?: Element): HTMLElement {
   }, true);
 }
 
+function positionControls(actionBar: Element, container: HTMLElement): void {
+  if (controlsSide === 'left') {
+    if (actionBar.firstElementChild !== container) actionBar.prepend(container);
+  } else if (actionBar.lastElementChild !== container) actionBar.append(container);
+}
+
+function makeExportOptions(url: () => string | null): HTMLElement {
+  const button = makeButton(() => {
+    const target = url();
+    if (target) void openExportMenu(button, target);
+  });
+  button.setAttribute('aria-label', '导出选项');
+  button.setAttribute('aria-haspopup', 'dialog');
+  button.setAttribute('aria-expanded', 'false');
+  button.title = '选择格式、范围或复制为其他格式';
+  button.style.padding = '8px 4px';
+  button.querySelector('path')!.setAttribute('d', 'M6.7 8.3 12 13.6l5.3-5.3 1.4 1.4L12 16.4 5.3 9.7z');
+  return button;
+}
+
 // X renders icons at different sizes and slightly different gray values
 // depending on context (focused tweet vs timeline, light vs dark theme).
 // Measure a sibling icon's actual rendered size and fill, and pin ours to
@@ -196,7 +220,10 @@ function decorateArticleActionBar(article: Element): void {
   if (!actionBar) return;
   // X replaces action bars without replacing their article. Inspect the live
   // controls rather than remembering that the article used to have buttons.
-  if (hasControls(actionBar, true)) return;
+  if (hasControls(actionBar, true)) {
+    positionControls(actionBar, actionBar.querySelector<HTMLElement>('[data-xclipper-controls]')!);
+    return;
+  }
 
   const url = getStatusUrl(article);
   if (!url) return;
@@ -204,7 +231,7 @@ function decorateArticleActionBar(article: Element): void {
 
   const btn = makeButton(() => {
     const fresh = getStatusUrl(article);
-    if (fresh) void openExportMenu(btn, fresh, article);
+    if (fresh) void openExportMenu(btn, fresh, article, true);
   });
   btn.setAttribute('aria-haspopup', 'dialog');
   btn.setAttribute('aria-expanded', 'false');
@@ -220,7 +247,8 @@ function decorateArticleActionBar(article: Element): void {
   copyBtn.querySelector('path')!.setAttribute('d', 'M8 2h12a2 2 0 0 1 2 2v12h-2V4H8V2zM4 6h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v12h12V8H4z');
   container.appendChild(copyBtn);
   container.appendChild(btn);
-  actionBar.appendChild(container);
+  container.appendChild(makeExportOptions(() => getStatusUrl(article)));
+  positionControls(actionBar, container);
 
   matchSiblingIcon(actionBar, btn, btn.querySelector('svg'));
   matchSiblingIcon(actionBar, obsidianBtn, obsidianBtn.querySelector('svg'));
@@ -247,10 +275,13 @@ function decorateArticleTopBar(): void {
     cursor = cursor.parentElement;
   }
   if (!candidate) return;
-  if (hasControls(candidate)) return;
+  if (hasControls(candidate)) {
+    positionControls(candidate, candidate.querySelector<HTMLElement>('[data-xclipper-controls]')!);
+    return;
+  }
   removeControls(candidate);
 
-  const btn = makeButton(() => { void openExportMenu(btn, normalizeStatusUrl(location.href)!); });
+  const btn = makeButton(() => { void openExportMenu(btn, normalizeStatusUrl(location.href)!, undefined, true); });
   btn.setAttribute('aria-haspopup', 'dialog');
   const container = document.createElement('div');
   container.setAttribute('data-xclipper-controls', '1');
@@ -258,7 +289,8 @@ function decorateArticleTopBar(): void {
   const obsidianBtn = makeObsidianButton(() => window.location.href);
   container.appendChild(obsidianBtn);
   container.appendChild(btn);
-  candidate.appendChild(container);
+  container.appendChild(makeExportOptions(() => normalizeStatusUrl(location.href)));
+  positionControls(candidate, container);
   matchSiblingIcon(candidate, btn, btn.querySelector('svg'));
   matchSiblingIcon(candidate, obsidianBtn, obsidianBtn.querySelector('svg'));
 }
@@ -339,7 +371,7 @@ try {
       return true;
     }
     if (msg?.action === 'XCLIPPER_PAGE_TOOLS_STATUS') {
-      sendResponse({ enabled: showInlineButton }); return false;
+      sendResponse({ enabled: showInlineButton, controlsVersion: 2, side: controlsSide }); return false;
     }
     if (msg?.action === 'XCLIPPER_PAGE_TOOLS_SHOW') {
       showPageTools(); sendResponse({ ok: true }); return false;

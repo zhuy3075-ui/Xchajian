@@ -7,7 +7,8 @@ const copy = document.getElementById('copy') as HTMLButtonElement;
 const download = document.getElementById('download') as HTMLButtonElement;
 const close = document.getElementById('close') as HTMLButtonElement;
 const status = document.getElementById('status')!;
-const url = normalizeStatusUrl(new URLSearchParams(location.hash.slice(1)).get('url') || '');
+const params = new URLSearchParams(location.hash.slice(1));
+const url = normalizeStatusUrl(params.get('url') || '');
 let busy = false, revision = 0;
 let tabId: number | undefined;
 const tell = (type: string, extra = {}) => parent.postMessage({ type, ...extra }, 'https://x.com');
@@ -69,9 +70,11 @@ async function run(mode: 'copy' | 'download') {
     await exportCaptured(data, selected, mode, text => {
       status.textContent = text; tell('xclipper-export-result', { text });
     });
+    return true;
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
     status.textContent = text; tell('xclipper-export-result', { text, error: true });
+    return false;
   } finally {
     if (keepAlive) clearInterval(keepAlive);
     owner?.disconnect();
@@ -90,5 +93,7 @@ async function init() {
   sync(); format.focus();
   copy.disabled = download.disabled = !url || tabId === undefined;
   if (!url || tabId === undefined) throw new Error('请从 X 帖子下方打开导出菜单。');
+  // A direct click waits for persisted preferences before starting exactly once.
+  if (params.get('download') === '1' && await run('download')) dismiss();
 }
 void init().catch(err => { status.textContent = String(err.message || err); });

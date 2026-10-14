@@ -18,8 +18,23 @@ if (location.hash === '#lens') {
   const section = document.getElementById('lens-settings') as HTMLDetailsElement;
   section.open = true; section.scrollIntoView({ block: 'start' });
 }
+const refreshButton = document.getElementById('btn-refresh-page-tools') as HTMLButtonElement;
+const refreshWarning = document.getElementById('page-refresh-warning')!;
+refreshButton.onclick = async () => {
+  const state = document.getElementById('page-tools-status')!;
+  refreshButton.disabled = true;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id || !tab.url?.startsWith('https://x.com/')) throw new Error('请先切换到需要更新的 X 页面。');
+    await chrome.tabs.reload(tab.id);
+    refreshButton.hidden = refreshWarning.hidden = true;
+    state.textContent = 'X 页面正在刷新，加载完成后即可使用新的位置和下载设置。';
+  } catch (err) { state.textContent = '刷新失败：' + String(err); }
+  finally { refreshButton.disabled = false; }
+};
 async function refreshStatus() {
   const state = document.getElementById('page-tools-status')!;
+  let needsRefresh = false;
   try {
     const settings = await loadSettings();
     if (!settings.showInlineButton) state.textContent = '页面工具已关闭，可在下方重新开启。';
@@ -29,8 +44,15 @@ async function refreshStatus() {
       else {
         try {
           const response = await chrome.tabs.sendMessage(tab.id, { action: 'XCLIPPER_PAGE_TOOLS_STATUS' }, { frameId: 0 });
-          state.textContent = response?.enabled ? '页面工具已启用。' : '请刷新 X 页面以加载页面工具。';
-        } catch { state.textContent = '请刷新 X 页面以加载新版页面工具。'; }
+          needsRefresh = response?.controlsVersion !== 2;
+          if (needsRefresh) state.textContent = '当前 X 页面仍在使用旧版控件。位置与默认格式已保存，刷新后生效。';
+          else state.textContent = response?.enabled
+            ? `页面工具已启用，当前位于${response.side === 'left' ? '左侧' : '右侧'}。`
+            : '页面工具正在同步设置。';
+        } catch {
+          needsRefresh = true;
+          state.textContent = '当前 X 页面未连接新版工具。位置与默认格式已保存，请刷新页面后使用。';
+        }
       }
     }
     const [standard, fast] = await Promise.all([
@@ -41,6 +63,7 @@ async function refreshStatus() {
     setStandardJobActive(running);
     if (running) state.textContent += ' 批量任务进行中，请在页面采集工具查看。';
   } catch (err) { state.textContent = '无法读取状态：' + String(err); }
+  refreshButton.hidden = refreshWarning.hidden = !needsRefresh;
   const vault = document.getElementById('vault-status')!;
   try {
     const connection = await vaultConnection();

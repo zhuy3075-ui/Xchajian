@@ -3,14 +3,14 @@ let dismiss: (() => void) | undefined;
 export function closeExportMenu(): void { dismiss?.(); }
 
 // Keep session/video access in extension origin, as in the old popup.
-export async function openExportMenu(anchor: HTMLElement, url: string, _card?: Element): Promise<void> {
+export async function openExportMenu(anchor: HTMLElement, url: string, _card?: Element, download = false): Promise<void> {
   dismiss?.();
   if (dismiss) return; // The existing menu still owns an in-flight temporary tab.
   const frame = document.createElement('iframe');
   frame.title = '导出当前内容';
   frame.allow = 'clipboard-write';
   frame.dataset.xclipperExportMenu = '1';
-  frame.src = chrome.runtime.getURL('page-export.html') + '#' + new URLSearchParams({ url });
+  frame.src = chrome.runtime.getURL('page-export.html') + '#' + new URLSearchParams({ url, ...(download ? { download: '1' } : {}) });
   frame.style.cssText = 'position:fixed;z-index:2147483646;width:min(320px,calc(100vw - 24px));height:min(370px,calc(100vh - 24px));border:1px solid #8a9aaa;border-radius:12px;background:Canvas;color-scheme:light dark;box-shadow:0 8px 30px #0004;';
   let busy = false;
   const position = () => {
