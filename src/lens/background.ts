@@ -2,7 +2,7 @@ import { SETTINGS_KEY, HISTORY_KEY, EPOCH_KEY, mergeSettings, recordSamples } fr
 
 export function trustedLensSender(sender: chrome.runtime.MessageSender, clear: boolean): boolean {
   if (sender.id !== chrome.runtime.id || !sender.url) return false;
-  if (clear) return sender.url === chrome.runtime.getURL('lens/popup.html');
+  if (clear) return sender.url.split('#')[0] === chrome.runtime.getURL('popup.html');
   try { return new URL(sender.url).origin === 'https://x.com' && sender.tab?.id !== undefined && (sender.frameId ?? 0) === 0; }
   catch { return false; }
 }

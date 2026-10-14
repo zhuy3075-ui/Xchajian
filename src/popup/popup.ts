@@ -10,6 +10,7 @@ import { initBatchUi } from './batch-ui';
 import { initModeTabs } from './mode';
 import { initReviewBanner } from './review-banner';
 import { initFastBatchUi } from './fast-batch-ui';
+import { initLensSettings } from './lens-settings';
 
 // ─── Footer version ───────────────────────────────────────────────────
 
@@ -29,17 +30,24 @@ const viewSettings = document.getElementById('view-settings');
 const btnSettings = document.getElementById('btn-settings');
 const btnBack = document.getElementById('btn-back');
 
-btnSettings?.addEventListener('click', () => {
+function openSettings(lens = false): void {
   viewMain?.classList.add('hidden');
   viewSettings?.classList.remove('hidden');
   btnSettings?.classList.add('hidden');
-  btnBack?.focus();
-});
+  if (lens) {
+    const section = document.getElementById('lens-settings') as HTMLDetailsElement;
+    section.open = true;
+    section.querySelector('summary')?.focus();
+    section.scrollIntoView({ block: 'start' });
+  } else btnBack?.focus();
+}
+btnSettings?.addEventListener('click', () => openSettings());
 btnBack?.addEventListener('click', () => {
   viewSettings?.classList.add('hidden');
   viewMain?.classList.remove('hidden');
   btnSettings?.classList.remove('hidden');
   btnSettings?.focus();
+  if (location.hash === '#lens') history.replaceState(null, '', location.pathname);
 });
 
 // ─── Collapsible "More formats" row ───────────────────────────────────
@@ -65,7 +73,9 @@ initSettingsForm();
 initActions();
 void initBatchUi();
 void initReviewBanner();
+void initLensSettings();
 
 document.getElementById('btn-lens')?.addEventListener('click', () => {
-  void chrome.tabs.create({ url: chrome.runtime.getURL('lens/popup.html') });
+  openSettings(true);
 });
+if (location.hash === '#lens') openSettings(true);
