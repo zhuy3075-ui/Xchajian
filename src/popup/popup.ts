@@ -7,6 +7,10 @@ import { initLensSettings } from './lens-settings';
 import { initSettingsNavigation } from './navigation';
 import { openObsidianConnection } from '../shared/obsidian-files';
 
+if (!chrome.extension?.getViews?.({ type: 'popup' }).includes(window)) {
+  document.documentElement.classList.add('standalone-view');
+}
+
 applyI18n();
 initFastBatchUi();
 initSettingsForm();
