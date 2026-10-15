@@ -84,17 +84,31 @@ async function nativeFollow(user, source, button) {
   if (controls.length > 1) throw new Error('存在多个关注入口，请使用 X 原生按钮');
   let target = controls[0];
   let caret, ownedMenu;
+  let cancelled = false;
+  const cancelOnEscape = event => { if (event.key === 'Escape') cancelled = true; };
   const response = followResult(doc, handle);
   try {
     if (!target) {
       if (!article || doc.querySelector('[role="menu"], [role="dialog"]')) throw new Error('请先关闭当前弹层，再点击关注');
       caret = article.querySelector('[data-testid="caret"]');
       if (!visible(caret) || caret.disabled || caret.getAttribute('aria-expanded') === 'true') throw new Error('未找到原生关注菜单，请使用 X 原生按钮');
+      doc.addEventListener('keydown', cancelOnEscape, true);
       caret.click();
       const deadline = Date.now() + 1800;
+      let expanded = false;
       while (!target && Date.now() < deadline) {
-        if (!validSource() || caret.getAttribute('aria-expanded') !== 'true') throw new Error('关注操作已取消');
+        if (cancelled || !validSource()) throw new Error('关注操作已取消');
+        const isExpanded = caret.getAttribute('aria-expanded') === 'true';
+        // X commits its React menu asynchronously. A collapsed trigger before
+        // the first expansion is still opening, not a user cancellation.
+        if (expanded && !isExpanded) throw new Error('关注操作已取消');
+        expanded ||= isExpanded;
+        if (!expanded) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          continue;
+        }
         const menus = [...doc.querySelectorAll('[role="menu"]')].filter(visible);
+        if (ownedMenu && menus[0] !== ownedMenu) throw new Error('关注操作已取消');
         if (menus.length === 1) {
           ownedMenu = menus[0];
           const items = [...ownedMenu.querySelectorAll('[role="menuitem"]')].filter(el => {
@@ -107,6 +121,7 @@ async function nativeFollow(user, source, button) {
       }
       if (!target) throw new Error('未找到此账号的关注操作，请使用 X 原生菜单');
     }
+    if (cancelled) throw new Error('关注操作已取消');
     if (!validSource() || !visible(target)) throw new Error('账号区域已变化，请刷新页面后再操作');
     const id = target.getAttribute('data-testid') || '';
     if (id.endsWith('-unfollow') || id.endsWith('-pending') || /^(?:Unfollow|取消关注|取消關注)\s/i.test(target.textContent.trim())) {
@@ -116,9 +131,12 @@ async function nativeFollow(user, source, button) {
     target.click();
     return await response.promise;
   } finally {
+    doc.removeEventListener('keydown', cancelOnEscape, true);
     response.cancel();
     // Close only the menu opened by this operation, never another user's dialog.
-    if (ownedMenu?.isConnected && caret?.isConnected && caret.getAttribute('aria-expanded') === 'true') caret.click();
+    const menus = [...doc.querySelectorAll('[role="menu"]')].filter(visible);
+    if (ownedMenu && menus.length === 1 && menus[0] === ownedMenu && validSource() &&
+        article?.querySelector('[data-testid="caret"]') === caret && caret.getAttribute('aria-expanded') === 'true') caret.click();
   }
 }
 
