@@ -7,29 +7,65 @@ const copy = document.getElementById('copy') as HTMLButtonElement;
 const download = document.getElementById('download') as HTMLButtonElement;
 const close = document.getElementById('close') as HTMLButtonElement;
 const status = document.getElementById('status')!;
+const panel = document.getElementById('export-panel')!;
+const scopeHint = document.getElementById('scope-hint')!;
 const params = new URLSearchParams(location.hash.slice(1));
 const url = normalizeStatusUrl(params.get('url') || '');
 let busy = false, revision = 0;
 let tabId: number | undefined;
 const tell = (type: string, extra = {}) => parent.postMessage({ type, ...extra }, 'https://x.com');
+let lastHeight = 0;
+new ResizeObserver(() => {
+  const style = getComputedStyle(document.body);
+  const height = Math.ceil(panel.getBoundingClientRect().height + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 2);
+  if (height !== lastHeight) { lastHeight = height; tell('xclipper-export-size', { height }); }
+}).observe(panel);
+
+function setStatus(text: string, kind: 'busy' | 'success' | 'error') {
+  status.hidden = !text;
+  status.dataset.kind = kind;
+  status.replaceChildren();
+  if (text.startsWith('已发起下载：')) {
+    const result = text.slice('已发起下载：'.length);
+    // A semicolon is legal in a filename. Only peel off the known warning
+    // appended by exportCaptured, rather than splitting user filenames.
+    const videoWarning = '；视频保留链接，请重新加载原帖后再试';
+    const hasWarning = result.endsWith(videoWarning);
+    const filename = hasWarning ? result.slice(0, -videoWarning.length) : result;
+    const label = document.createElement('span');
+    label.textContent = '已发起下载';
+    const detail = document.createElement('span');
+    detail.className = 'export-filename'; detail.textContent = filename; detail.title = filename;
+    status.append(label, detail);
+    if (hasWarning) {
+      const warning = document.createElement('div'); warning.textContent = videoWarning.slice(1); status.append(warning);
+    }
+  } else status.textContent = text;
+}
 const dismiss = () => { if (!busy) tell('xclipper-export-close'); };
 close.onclick = dismiss;
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') dismiss();
   if (event.key === 'Tab') {
-    const controls = [format, scope, download, copy, close].filter(el => !el.hidden && !el.disabled);
+    const controls = [close, format, scope, download, copy].filter(el => !el.hidden && !el.disabled);
     const first = controls[0], last = controls.at(-1);
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   }
 });
-function sync() { copy.hidden = format.value === 'pdf'; download.textContent = copy.hidden ? '导出 PDF' : '下载文件'; }
+function sync() {
+  copy.hidden = format.value === 'pdf';
+  download.querySelector('[data-label]')!.textContent = copy.hidden ? '导出 PDF' : '下载文件';
+}
+scope.onchange = () => {
+  scopeHint.textContent = scope.value === 'thread' ? '尽力补全作者连续发文，不含他人回复' : '仅当前帖子或评论，长文自动补全';
+};
 format.onchange = () => {
   revision++; sync();
   void chrome.storage.local.get(SETTINGS_KEY).then(raw => chrome.storage.local.set({
     [SETTINGS_KEY]: { ...(raw[SETTINGS_KEY] as object || {}), pageExportFormat: format.value,
       ...(format.value !== 'pdf' ? { singleFormat: format.value } : {}) },
-  })).catch(err => { status.textContent = '格式偏好未保存：' + String(err); });
+  })).catch(err => { setStatus('格式偏好未保存：' + String(err), 'error'); });
 };
 async function capture(id: number, single: boolean) {
   const result = await chrome.tabs.sendMessage(id, { action: 'XCLIPPER_CAPTURE_PAGE', url, single }, { frameId: 0 });
@@ -44,7 +80,7 @@ async function run(mode: 'copy' | 'download') {
   let temporary: number | undefined;
   let owner: chrome.runtime.Port | undefined;
   let keepAlive: ReturnType<typeof setInterval> | undefined;
-  status.textContent = '正在采集…';
+  setStatus('正在采集…', 'busy');
   try {
     let data = await capture(tabId, single);
     if (!data) {
@@ -56,7 +92,7 @@ async function run(mode: 'copy' | 'download') {
       });
       keepAlive = setInterval(() => { try { owner?.postMessage({ type: 'keepalive' }); } catch { /* capture reports disconnect */ } }, 20000);
       if (temporary === undefined) throw new Error('无法打开临时详情页。');
-      status.textContent = '正在补全详情，完成后自动关闭临时页面…';
+      setStatus('正在补全长文…', 'busy');
       let ready = false;
       for (let i = 0; i < 100; i++) {
         try { ready = !!await chrome.tabs.sendMessage(temporary, { action: 'XCLIPPER_PAGE_TOOLS_STATUS' }, { frameId: 0 }); } catch { /* navigation in progress */ }
@@ -68,12 +104,12 @@ async function run(mode: 'copy' | 'download') {
     }
     if (!data) throw new Error('未采集到正文。');
     await exportCaptured(data, selected, mode, text => {
-      status.textContent = text; tell('xclipper-export-result', { text });
+      setStatus(text, 'success'); tell('xclipper-export-result', { text });
     });
     return true;
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
-    status.textContent = text; tell('xclipper-export-result', { text, error: true });
+    setStatus(text, 'error'); tell('xclipper-export-result', { text, error: true });
     return false;
   } finally {
     if (keepAlive) clearInterval(keepAlive);
@@ -96,4 +132,4 @@ async function init() {
   // A direct click waits for persisted preferences before starting exactly once.
   if (params.get('download') === '1' && await run('download')) dismiss();
 }
-void init().catch(err => { status.textContent = String(err.message || err); });
+void init().catch(err => { setStatus(String(err.message || err), 'error'); });
