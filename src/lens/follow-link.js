@@ -15,14 +15,14 @@ export function createFollowLink(user, ownHandle, doc = document) {
   const followed = user.iFollow === true;
   const el = doc.createElement(followed ? 'span' : 'a');
   el.className = 'xcl-lens-follow' + (followed ? ' is-following' : '');
-  el.textContent = followed ? '已关注' : '＋关注';
-  el.setAttribute('aria-label', followed ? `已关注 @${user.handle}` : `在 X 中关注 @${user.handle}（新标签页）`);
+  el.textContent = followed ? '已关注' : '前往关注';
+  el.setAttribute('aria-label', followed ? `已关注 @${user.handle}` : `前往 X 关注 @${user.handle}（新标签页，由你完成关注）`);
   el.addEventListener('click', event => event.stopPropagation());
   if (!followed) {
     el.href = `https://x.com/intent/follow?screen_name=${encodeURIComponent(user.handle)}`;
     el.target = '_blank';
     el.rel = 'noopener noreferrer';
-    el.title = `打开 X 关注页，关注 @${user.handle}`;
+    el.title = `在新标签页打开 X，由你完成对 @${user.handle} 的关注`;
     // Keep X's surrounding card from navigating; let the real link handle
     // opening/login/confirmation without claiming that a follow succeeded.
     el.addEventListener('keydown', event => event.stopPropagation());
