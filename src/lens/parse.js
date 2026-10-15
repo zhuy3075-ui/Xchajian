@@ -30,14 +30,18 @@ const num = v => count(v) ?? 0;
   function readTweet(t, author) {
     const legacy = t.legacy || {};
     if (typeof t.rest_id !== 'string' || !/^\d{1,64}$/.test(t.rest_id) || legacy.favorite_count === undefined) return null;
-    const views = t.views && t.views.count !== undefined ? num(t.views.count) : 0;
+    const views = count(t.views?.count);
+    const metrics = [legacy.favorite_count, legacy.retweet_count, legacy.reply_count, legacy.quote_count].map(count);
+    // A sample must contribute both a valid denominator and valid interactions.
+    // Missing counters are unknown, not zero; never turn them into advice.
+    if (views === null || views === 0 || metrics.some(value => value === null)) return null;
+    const interactions = metrics.reduce((sum, value) => sum + value, 0);
+    if (!validCount(interactions)) return null;
     return {
       id: String(t.rest_id).slice(0, 64),
       author,
       views,
-      interactions:
-        num(legacy.favorite_count) + num(legacy.retweet_count) +
-        num(legacy.reply_count) + num(legacy.quote_count),
+      interactions,
     };
   }
 
@@ -87,6 +91,22 @@ const num = v => count(v) ?? 0;
   function engagementOf(stat) {
     if (!stat || stat.views < 2000) return null;
     return stat.interactions / stat.views;
+  }
+
+  // Reading priority from observed engagement, not a verdict on account quality.
+  function followAdvice(stat) {
+    if (!stat || !validCount(stat.views) || !validCount(stat.interactions) || stat.views < 2000) {
+      return { grade: 'unknown', label: '待判断', description: '互动样本不足，先看看内容；浏览更多帖子后再判断。' };
+    }
+    const rate = engagementOf(stat);
+    const evidence = `当前已加载样本 ${stat.views.toLocaleString()} 次浏览、${stat.interactions.toLocaleString()} 次互动。`;
+    if (rate >= 0.03) {
+      return { grade: 'a', label: 'A · 优先了解', description: `${evidence}样本互动较活跃，建议优先读几条，再决定是否关注。` };
+    }
+    if (rate < 0.001) {
+      return { grade: 'c', label: 'C · 先观察', description: `${evidence}样本互动较少，建议先观察内容是否适合你。` };
+    }
+    return { grade: 'b', label: 'B · 按需了解', description: `${evidence}样本互动居中，按主题兴趣决定是否进一步了解。` };
   }
 
   // 质量标签。阈值是经验值,放在这里方便调。按展示优先级排序。
@@ -160,4 +180,4 @@ const num = v => count(v) ?? 0;
   }
 
 
-export { extract, tags, tier, fmt, fmtRatio, ratioOf, ratioMeaning, engagementOf, shouldDim, deltaFrom };
+export { extract, tags, tier, fmt, fmtRatio, ratioOf, ratioMeaning, engagementOf, followAdvice, shouldDim, deltaFrom };

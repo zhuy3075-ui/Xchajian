@@ -30,13 +30,16 @@
   background: linear-gradient(135deg, rgba(249, 24, 128, 0.18), rgba(255, 159, 10, 0.18));
   color: rgb(226, 22, 116);
 }
-.xcl-lens-ratio {
-  padding: 2px 5px;
-  border-radius: 4px;
-  border: 1px solid rgba(113, 118, 123, 0.35);
-  color: rgb(113, 118, 123);
-  font-variant-numeric: tabular-nums;
+.xcl-lens-advice {
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: #eef1f5;
+  color: #526176;
 }
+.xcl-lens-advice.a { background: #e4f3ec; color: #236348; }
+.xcl-lens-advice.b { background: #e8effb; color: #345f98; }
+.xcl-lens-advice.c { background: #f8efdf; color: #805b23; }
 .xcl-lens-tag {
   padding: 2px 5px;
   border-radius: 4px;

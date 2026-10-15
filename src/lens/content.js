@@ -151,13 +151,14 @@ import { accountCardHtml, relationLabel } from './card-view';
     main.textContent = `${P.fmt(u.followers)} 粉丝`;
     wrap.append(main);
 
-    const meaning = P.ratioMeaning(u);
-    if (!timeline && settings.showRatio && meaning) {
+    if (!timeline && settings.showRatio) {
+      const advice = P.followAdvice(stat);
       const r = document.createElement("span");
-      r.className = "xcl-lens-ratio";
-      r.textContent = meaning.label;
-      r.title = meaning.description;
-      r.setAttribute('aria-label', meaning.description);
+      r.className = "xcl-lens-advice " + advice.grade;
+      r.textContent = advice.label;
+      r.title = advice.description;
+      r.setAttribute('aria-label', advice.label + '。' + advice.description);
+      if (settings.hoverCard) wrap.setAttribute('aria-label', wrap.getAttribute('aria-label') + '。' + advice.label + '。' + advice.description);
       wrap.append(r);
     }
 

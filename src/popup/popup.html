@@ -47,7 +47,7 @@
 <fieldset id="lens-controls"><legend class="sr-only">粉丝透镜设置</legend>
 <section class="lens-panel" data-lens-pane="display"><h2>显示方式</h2>
 <label class="setting-row"><span>粉丝量分级配色</span><input type="checkbox" data-lens-key="tierColors"></label>
-<label class="setting-row"><span>在账号列表显示关注倾向</span><input type="checkbox" data-lens-key="showRatio"></label>
+<label class="setting-row" title="用于关注、粉丝等账号列表，按已加载互动样本分级"><span>显示关注建议分级</span><input type="checkbox" data-lens-key="showRatio"></label>
 <label class="setting-row"><span>账号详情卡</span><input type="checkbox" data-lens-key="hoverCard"></label>
 <label class="setting-row"><span>徽标布局</span><select data-lens-key="layout"><option value="auto">自动适应空间</option><option value="inline">与名字同行</option><option value="below">独立一行</option></select></label>
 <label class="setting-row"><span>账号列表最多显示的规则标签</span><select data-lens-key="maxTags"><option value="0">不显示标签</option><option value="1">1 个</option><option value="2">2 个</option><option value="3">3 个</option></select></label>
@@ -55,7 +55,6 @@
 <section class="lens-panel" data-lens-pane="tags" hidden><h2>关系与规则标签</h2><p>规则标签仅用于账号列表。</p>
 <div class="tag-options"><label><input type="checkbox" data-lens-tag="relation"> 互关 / 关注了你</label><label><input type="checkbox" data-lens-tag="bigV"> 高粉丝比</label><label><input type="checkbox" data-lens-tag="farm"> 粉关接近</label><label><input type="checkbox" data-lens-tag="newAcct"> 新号</label><label><input type="checkbox" data-lens-tag="oldAcct"> 老号</label><label><input type="checkbox" data-lens-tag="engaged"> 样本高互动</label><label><input type="checkbox" data-lens-tag="lowActive"> 样本低互动</label></div>
 <label class="setting-row"><span>淡化“粉关接近 / 样本低互动”账号</span><input type="checkbox" data-lens-key="dimLowQuality"></label>
-<details class="rules"><summary>这些标签如何计算？</summary><p>高粉丝比：粉丝 ≥ 1 万，粉丝 / 关注 ≥ 10。粉关接近：关注 ≥ 1000、粉丝 &lt; 5000、比例在 0.8–1.25 之间。新号：注册不足 90 天；老号：超过 8 年。</p><p>样本互动率 = 已加载推文的赞、转发、回复与引用合计 / 浏览量合计；浏览量至少 2000 才判断，≥ 3% 为高互动，&lt; 0.1% 且粉丝 ≥ 5000 为低互动。规则标签不代表账号真实性或整体质量。</p></details>
 </section>
 <section class="lens-panel" data-lens-pane="history" hidden><h2>本地粉丝历史</h2><label class="setting-row"><span>记录浏览过账号的粉丝数<small>仅保存在本机</small></span><input type="checkbox" data-lens-key="trackHistory"></label></section>
 <details class="lens-panel" data-lens-pane="history" hidden><summary>高级选项</summary><label class="setting-row"><span>显示页面调试计数</span><input type="checkbox" data-lens-key="debug"></label></details>
