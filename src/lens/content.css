@@ -30,9 +30,18 @@
   font-weight: 600;
   text-decoration: none;
 }
-a.xcl-lens-follow:hover { background: #dceaff; }
-a.xcl-lens-follow:focus-visible { outline: 2px solid #245b9e; outline-offset: 2px; }
+button.xcl-lens-follow { cursor: pointer; }
+button.xcl-lens-follow:hover:not(:disabled) { background: #dceaff; }
+button.xcl-lens-follow:focus-visible { outline: 2px solid #245b9e; outline-offset: 2px; }
+button.xcl-lens-follow:disabled { cursor: default; }
 .xcl-lens-follow.is-following { color: #526176; background: #eef1f5; border-color: transparent; }
+#xcl-lens-follow-notice {
+  position: fixed; right: 20px; bottom: 24px; z-index: 2147483647;
+  max-width: min(360px, calc(100vw - 40px)); box-sizing: border-box;
+  padding: 12px 16px; border: 1px solid #dbe4f0; border-radius: 14px;
+  background: #fff; color: #24364c; box-shadow: 0 4px 22px #182e4820;
+  font: 14px/1.5 system-ui, sans-serif;
+}
 .xcl-lens-main {
   padding: 2px 7px;
   border-radius: 999px;

@@ -1,9 +1,10 @@
 import * as P from './parse';
 import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from './model';
 import { accountCardHtml, relationLabel } from './card-view';
-import { createFollowLink, currentHandle } from './follow-link';
+import { createFollowButton, currentHandle, isFollowResult } from './follow-control';
 (() => {
   const users = new Map();      // handle -> user
+  const followChanges = new Map(); // Native mutation results supersede cached timeline data.
   const tweetSeen = new Map();  // 去重,避免同一条推文重复累计
   const stats = new Map();      // handle -> { views, interactions }
   let settings = null;          // 读完存储后才渲染
@@ -45,7 +46,7 @@ import { createFollowLink, currentHandle } from './follow-link';
       if (!settings.enabled || !settings.trackHistory) {
         samples.clear(); clearTimeout(saveTimer); saveTimer = null;
       }
-      if (!settings.enabled) { users.clear(); tweetSeen.clear(); stats.clear(); pending.length = 0; }
+      if (!settings.enabled) { users.clear(); followChanges.clear(); tweetSeen.clear(); stats.clear(); pending.length = 0; }
       applyDebug();
       scheduleRender();
     });
@@ -76,6 +77,15 @@ import { createFollowLink, currentHandle } from './follow-link';
   }
 
   // ---------- 数据包处理 ----------
+  window.addEventListener('message', e => {
+    if (!settings?.enabled || !isFollowResult(e, window)) return;
+    const handle = e.data.handle.toLowerCase();
+    const change = { iFollow: e.data.following, followRequested: e.data.requested };
+    followChanges.set(handle, change);
+    if (followChanges.size > 3000) followChanges.delete(followChanges.keys().next().value);
+    if (users.has(handle)) users.set(handle, { ...users.get(handle), ...change });
+    scheduleRender();
+  });
   window.addEventListener("message", (e) => {
     if (e.source !== window || e.origin !== location.origin || e.data?.source !== "xchajian-lens" || typeof e.data.body !== "string" || e.data.body.length > 4 * 1024 * 1024) return;
     msgCount++;
@@ -91,7 +101,12 @@ import { createFollowLink, currentHandle } from './follow-link';
     try { json = JSON.parse(body); } catch (_) { return; }
     const { users: us, tweets } = P.extract(json);
     for (const u of us) {
-      users.set(u.handle, { ...u, observedAt: Date.now() });
+      // A protected account can approve the request later without another
+      // local mutation. Allow that confirmed relationship to advance.
+      if (followChanges.get(u.handle)?.followRequested && u.iFollow) {
+        followChanges.set(u.handle, { iFollow: true, followRequested: false });
+      }
+      users.set(u.handle, { ...u, ...followChanges.get(u.handle), observedAt: Date.now() });
       recordHistory(u);
     }
     for (const t of tweets) tweetSeen.set(t.id, t);
@@ -114,13 +129,13 @@ import { createFollowLink, currentHandle } from './follow-link';
     return null;
   }
 
-  function buildBadge(handle, compact, timeline = false) {
+  function buildBadge(handle, compact, timeline = false, source) {
     const u = users.get(handle);
     if (!u) return null;
     const stat = stats.get(handle);
     const list = P.tags(u, stat, Date.now(), settings);
 
-    // The follow link is a sibling of the details button, never nested in it.
+    // The follow control is a sibling of the details button, never nested in it.
     const group = document.createElement('span');
     group.className = 'xcl-lens-group';
 
@@ -156,7 +171,7 @@ import { createFollowLink, currentHandle } from './follow-link';
     main.textContent = `${P.fmt(u.followers)} 粉丝`;
     wrap.append(main);
     group.append(wrap);
-    const follow = createFollowLink(u, currentHandle());
+    const follow = createFollowButton(u, currentHandle(), source);
     if (follow) group.append(follow);
 
     if (!timeline && settings.showRatio) {
@@ -239,7 +254,7 @@ import { createFollowLink, currentHandle } from './follow-link';
     if (rec && rec.badge.isConnected && rec.sig === sig) return;
     if (rec) { rec.badge.remove(); if (rec.line) rec.line.remove(); }
 
-    const built = buildBadge(handle, false, true);
+    const built = buildBadge(handle, false, true, un);
     if (!built) return;
     let line = null;
     if (settings.layout === "below") {
@@ -271,7 +286,7 @@ import { createFollowLink, currentHandle } from './follow-link';
     const old = cell.querySelector(".xcl-lens-group");
     if (old && old.querySelector('.xcl-lens-badge')?.dataset.lensHandle === handle && old.dataset.lensSig === sig) return;
     if (old) old.remove();
-    const built = buildBadge(handle, compact);
+    const built = buildBadge(handle, compact, false, cell);
     if (!built || !anchor) return;
     built.wrap.dataset.lensSig = sig;
     appendOutsideLink(anchor, built.wrap);

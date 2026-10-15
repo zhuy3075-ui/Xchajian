@@ -16,6 +16,7 @@ const num = v => count(v) ?? 0;
     const tc = u.tweet_counts || {};
     const created = core.created_at ?? legacy.created_at;
     return {
+      id: typeof u.rest_id === 'string' && /^\d{1,64}$/.test(u.rest_id) ? u.rest_id : null,
       handle: String(handle).toLowerCase(),
       name: core.name || legacy.name || "",
       followers: num(followers),
@@ -24,6 +25,7 @@ const num = v => count(v) ?? 0;
       createdAt: typeof created === 'string' && Number.isFinite(Date.parse(created)) ? new Date(created).toISOString() : null,
       followedBy: (rp.followed_by ?? legacy.followed_by) === true,   // 对方关注了我
       iFollow: (rp.following ?? legacy.following) === true,        // 我关注了对方
+      followRequested: (rp.follow_request_sent ?? legacy.follow_request_sent) === true,
     };
   }
 
