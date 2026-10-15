@@ -6,11 +6,11 @@
 
 在 X 页面保存帖子与评论、复制正文、下载内容，并查看发文时间和账号信息。
 
-**这份教程以当前 `pre-release` 的可见界面为准。** 内容操作在 X 页面完成；浏览器工具栏弹窗只负责设置和 Obsidian 目录连接。
+**这份教程对应正式版 v2.9.0。** 内容操作在 X 页面完成；浏览器工具栏弹窗只负责设置和 Obsidian 目录连接。
 
-[代码仓库](https://github.com/zhuy3075-ui/Xchajian/tree/pre-release) · [问题反馈](https://github.com/zhuy3075-ui/Xchajian/issues) · [来源清单](docs/sources.md) · [许可证](LICENSE.md)
+[代码仓库](https://github.com/zhuy3075-ui/Xchajian) · [问题反馈](https://github.com/zhuy3075-ui/Xchajian/issues) · [来源清单](docs/sources.md) · [许可证](LICENSE.md)
 
-> 当前整合版本为 **2.9.0**，仍在 `pre-release` 分支。推荐 Windows + Chrome/Edge。扩展管理页显示“知拾 — X 内容收藏与账号洞察”与蓝色书签图标；上游 XClipper 基线仍为 2.8.4。
+> 当前正式版为 **2.9.0**。稳定代码位于 `main`，后续候选改动位于 `pre-release`。推荐 Windows + Chrome/Edge。扩展管理页显示“知拾 — X 内容收藏与账号洞察”与蓝色书签图标；上游 XClipper 基线仍为 2.8.4。
 
 ## 目录
 
@@ -48,7 +48,16 @@
 <a id="extension"></a>
 ## 安装插件
 
-### 1. 准备环境
+### 直接安装（推荐，无需构建）
+
+1. 打开 [v2.9.0 下载页](https://github.com/zhuy3075-ui/Xchajian/releases/tag/v2.9.0)，下载 **`zhishi-2.9.0-chrome.zip`**。不要把 GitHub 自动生成的 Source code 压缩包当作安装包。
+2. 解压到固定目录，例如 `D:\Apps\Zhishi`；解压后该目录应直接包含 `manifest.json`。
+3. 打开 `chrome://extensions` 或 `edge://extensions`，开启开发者模式，点击“加载已解压的扩展程序”，选择上一步目录。
+4. 固定「知拾」到工具栏，打开 X 并刷新页面。保存到 Obsidian 时再按下文连接仓库。
+
+安装包已经构建好，普通用户无需安装 Git、Node.js 或 npm。这是 GitHub 分发版，不是 Chrome 商店或已签名 CRX 安装包。发布页提供 `SHA256SUMS.txt`；可用 PowerShell 的 `Get-FileHash .\zhishi-2.9.0-chrome.zip -Algorithm SHA256` 核对文件。
+
+### 从源码构建：1. 准备环境
 
 | 用途 | 所需环境 |
 | --- | --- |
@@ -60,10 +69,10 @@
 
 以下命令以 Windows PowerShell 为例。先检查 `git --version`、`node --version` 和 `npm --version`；若 PowerShell 阻止 `npm.ps1`，可使用 `npm.cmd`。
 
-### 2. 获取并构建
+### 从源码构建：2. 获取并构建
 
 ```powershell
-git clone --branch pre-release https://github.com/zhuy3075-ui/Xchajian.git
+git clone --branch main https://github.com/zhuy3075-ui/Xchajian.git
 cd Xchajian
 npm ci
 if ($LASTEXITCODE -ne 0) { throw '依赖安装失败' }
@@ -72,9 +81,9 @@ if ($LASTEXITCODE -ne 0) { throw '构建失败' }
 Test-Path ./dist/manifest.json
 ```
 
-最后应输出 `True`。也可下载 `pre-release` 分支 ZIP，解压后在有 `package.json` 的目录执行安装和构建。不要把私有笔记库放进源码目录。
+最后应输出 `True`。也可下载 `main` 分支 ZIP，解压后在有 `package.json` 的目录执行安装和构建。不要把私有笔记库放进源码目录。
 
-### 3. 加载到浏览器
+### 从源码构建：3. 加载到浏览器
 
 1. 打开 `chrome://extensions` 或 `edge://extensions`。
 2. 开启开发者模式，点击“加载已解压的扩展程序”。
@@ -203,11 +212,13 @@ D:\Knowledge\我的智库\
 <a id="maintenance"></a>
 ## 更新与备份
 
-在原源码目录更新，保持原来的加载路径：
+使用安装包的用户：下载新版安装包，备份原扩展目录，将解压后的文件更新到原加载目录，然后在扩展管理页点击“重新加载”。保持目录与扩展实例不变，避免丢失设置关联。
+
+源码用户在原目录更新，保持原来的加载路径。以下命令适用于已切到 `main` 的源码副本；此前使用 `pre-release` 的用户先保存本地改动，再执行 `git fetch origin` 和 `git switch main`：
 
 ```powershell
 git status --short
-git pull --ff-only origin pre-release
+git pull --ff-only origin main
 if ($LASTEXITCODE -ne 0) { throw '更新失败，先处理本地改动或分支分歧' }
 npm ci
 if ($LASTEXITCODE -ne 0) { throw '依赖安装失败' }
@@ -227,7 +238,7 @@ if ($LASTEXITCODE -ne 0) { throw '构建失败' }
 | 现象 | 检查方法 |
 | --- | --- |
 | 按旧截图找不到按钮 | 以本文入口表为准；当前弹窗只做设置，保存和下载在 X 卡片下方 |
-| 找不到 manifest | 构建成功后加载 `dist`，不是源码根目录 |
+| 找不到 manifest | 安装包加载解压后含 `manifest.json` 的目录；源码构建则加载 `dist` |
 | npm 提示 EBADENGINE | 检查 Node 小版本是否满足安装要求 |
 | 页面没有新增按钮 | 确认加载本仓库的最新 `dist`，重载扩展并刷新 X |
 | 弹窗窄成一条或仍是旧版界面 | 重新构建、核对加载路径、重载扩展，再关闭重开弹窗 |
@@ -281,7 +292,7 @@ npm run build:firefox
 
 设置和粉丝历史保存在浏览器本地；素材写入授权目录。远程媒体和目标平台会使用网络。配套 AI 是否发送内容给模型，取决于所选 AI 工具，详见[隐私说明](PRIVACY.md)。
 
-2026-10-11 的历史依赖审计记录包含 `source-map-js@1.2.1` 告警。本次仅整理教程，未重新审计或升级依赖，构建结果不能替代安全审计。
+2.9.0 发布准备已将开发依赖 `source-map-js` 从 1.2.1 升级至 1.2.2，修复历史告警。2026-10-15 的 `npm audit` 未报告已知漏洞；审计结果只反映当时依赖数据库，不能覆盖所有安全问题。
 
 <a id="sources"></a>
 ## 来源、配套工作与许可
