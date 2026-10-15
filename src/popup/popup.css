@@ -2339,11 +2339,3 @@ details.option-group[open] .option-group-chevron {
 #lens-settings .danger:disabled { opacity: .5; cursor: default; }
 #lens-save-status { padding: 10px 0; }
 #lens-settings a { color: var(--accent); }
-:root .page-settings-summary {
-  margin-bottom: 16px;
-  padding: 14px;
-  border: 1px solid #aab8cb;
-  border-radius: 12px;
-}
-.page-settings-summary p { margin: 8px 0; font-size: 12px; line-height: 1.6; }
-.page-settings-summary .field-label { margin-top: 12px; }

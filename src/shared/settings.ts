@@ -75,7 +75,7 @@ export const DEFAULT_SETTINGS: Settings = {
   includeMetadata: true, // on by default
   closeTabAfterExport: false,
   inlineButtonCopies: false, // inline button downloads by default
-  showInlineButton: true, // New installs show page actions; a saved false remains respected.
+  showInlineButton: true, // Page tools are always available.
   inlineStats: false, // off — changes visible content, opt-in
   includeReposts: false, // off — profile exports own posts only, matching prior behavior
   obsidianFriendly: false, // off — changes frontmatter shape, opt-in
@@ -85,8 +85,8 @@ export const DEFAULT_SETTINGS: Settings = {
   obsidianTagsTemplate: '', // empty → use DEFAULT_TAGS_TEMPLATE in post-process
   downloadFolder: '', // empty → save directly in Downloads
   filenameTemplate: '', // empty → legacy {handle}-{id}.md / {handle}-{slug}.md
-  singleFormat: 'md', // Markdown — the default single-export target
-  batchFormat: 'md', // Markdown — matches the single-export default
+  singleFormat: 'html',
+  batchFormat: 'html',
   batchOutput: 'separate', // per-item files only; 'both' adds a combined file
   batchZip: false, // off — loose per-item files, matching prior behavior
   frontmatterFields: allEnabled(FRONTMATTER_FIELDS_DEFAULT),
@@ -121,6 +121,10 @@ export async function loadSettings(): Promise<Settings> {
       resolve({
         ...DEFAULT_SETTINGS,
         ...saved,
+        showInlineButton: true,
+        singleFormat: 'html',
+        pageExportFormat: 'html',
+        batchFormat: 'html',
         frontmatterFields,
         frontmatterFieldsObsidian,
         settingsSectionsOpen,

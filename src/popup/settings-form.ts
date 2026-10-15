@@ -42,7 +42,7 @@ import {
   saveLocalMedia,
   chkMetadata,
   chkCloseTab,
-  chkShowInline,
+
   chkInlineStats,
   chkIncludeReposts,
   chkObsidianFriendly,
@@ -97,11 +97,11 @@ export function currentFrontmatterFields(obsidianFriendly: boolean): FieldMap {
 // ─── Single-export format selector (md + html / json / txt / csv) ──
 // Keep the existing singleFormat storage key when replacing the button grid.
 export function readSingleFormat(): BatchFormat {
-  return (singleFormatSelect.value as BatchFormat) || 'md';
+  return 'html';
 }
 
-export function applySingleFormat(fmt: BatchFormat): void {
-  singleFormatSelect.value = fmt;
+export function applySingleFormat(_fmt: BatchFormat): void {
+  singleFormatSelect.value = 'html';
 }
 
 // The form as a Settings object — what persistAll saves, and what the action
@@ -114,9 +114,9 @@ export function readSettingsForm(): Settings {
     includeMetadata: chkMetadata.checked,
     closeTabAfterExport: chkCloseTab.checked,
     inlineButtonCopies: legacyInlineCopies,
-    pageToolsSide: (document.getElementById('page-tools-side') as HTMLSelectElement).value as 'left' | 'right',
-    pageExportFormat: preferredPageFormat,
-    showInlineButton: chkShowInline.checked,
+    pageToolsSide: savedToolsSide,
+    pageExportFormat: 'html',
+    showInlineButton: true,
     inlineStats: chkInlineStats.checked,
     includeReposts: chkIncludeReposts.checked,
     obsidianFriendly: chkObsidianFriendly.checked,
@@ -127,7 +127,7 @@ export function readSettingsForm(): Settings {
     downloadFolder: txtDownloadFolder.value.trim(),
     filenameTemplate: txtFilenameTemplate.value.trim(),
     singleFormat: readSingleFormat(),
-    batchFormat: batchFormatSelect.value as BatchFormat,
+    batchFormat: 'html',
     batchOutput: readBatchOutput(),
     batchZip: chkZip.checked,
     frontmatterFields,
@@ -138,7 +138,7 @@ export function readSettingsForm(): Settings {
 
 let settingsReady = false;
 let legacyInlineCopies = false;
-let preferredPageFormat: Settings['pageExportFormat'];
+let savedToolsSide: Settings['pageToolsSide'];
 export function persistAll(): void {
   if (!settingsReady) return;
   saveSettings(readSettingsForm());
@@ -225,7 +225,7 @@ function syncBatchToggles(): void {
   gate(chkMetadata, fmt === 'md' || fmt === 'csv');
   // Same greying rule for the save-locally group, but it's a radio set in a
   // .batch-field rather than a .toggle-label, so gate() doesn't fit it.
-  const saveLocalDisabled = batchMode && fmt !== 'md';
+  const saveLocalDisabled = true; // HTML retains remote media links.
   for (const r of [saveLocalOff, saveLocalImages, saveLocalMedia]) r.disabled = saveLocalDisabled;
   saveLocalField.classList.toggle('disabled', saveLocalDisabled);
   // Zip means different things per mode, so it gates differently. In Batch it
@@ -408,10 +408,9 @@ export function initSettingsForm(): void {
     setSaveLocal(settings.downloadImages ? (settings.saveVideos ? 'media' : 'images') : 'off');
     chkMetadata.checked = settings.includeMetadata;
     chkCloseTab.checked = settings.closeTabAfterExport;
-    preferredPageFormat = settings.pageExportFormat;
+    savedToolsSide = settings.pageToolsSide;
     legacyInlineCopies = settings.inlineButtonCopies;
-    (document.getElementById('page-tools-side') as HTMLSelectElement).value = settings.pageToolsSide || 'right';
-    chkShowInline.checked = settings.showInlineButton;
+
     chkInlineStats.checked = settings.inlineStats;
     chkIncludeReposts.checked = settings.includeReposts;
     chkObsidianFriendly.checked = settings.obsidianFriendly;
@@ -556,11 +555,6 @@ export function initSettingsForm(): void {
     persistAll();
   });
   chkCloseTab.addEventListener('change', persistAll);
-  singleFormatSelect.addEventListener('change', () => { preferredPageFormat = readSingleFormat(); persistAll(); });
-  document.getElementById('page-tools-side')!.addEventListener('change', persistAll);
-  chkShowInline.addEventListener('change', () => {
-    persistAll();
-  });
   chkInlineStats.addEventListener('change', persistAll);
   chkIncludeReposts.addEventListener('change', persistAll);
   chkObsidianFriendly.addEventListener('change', () => {

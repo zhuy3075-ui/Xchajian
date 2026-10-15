@@ -16,18 +16,7 @@
 
 
 
-    <main class="popup-main" id="view-settings"><section class="page-settings-summary"><strong>页面操作 · 插件设置</strong><p>保存、复制和导出请使用帖子下方的按钮；批量操作在页面“采集工具”中。</p><p id="page-tools-status" role="status">正在检查页面工具…</p><p id="vault-status" role="status">正在读取仓库连接…</p><label class="toggle-label" data-tooltip="显示帖子保存、复制、导出按钮和页面采集工具">
-            <span class="toggle-text">
-              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span>显示页面操作控件</span>
-            </span>
-            <input type="checkbox" id="chk-show-inline" class="toggle-input">
-            <span class="toggle-switch"></span>
-          </label><label class="field-label">页面控件位置 <select id="page-tools-side"><option value="right">右侧</option><option value="left">左侧</option></select></label><p>同时调整帖子下方的插件按钮和悬浮采集工具。</p><button type="button" id="btn-refresh-page-tools" hidden>刷新当前 X 页面以应用更新</button><small id="page-refresh-warning" hidden>刷新会重新加载当前页面，请先保留未发送的草稿。</small></section>
+    <main class="popup-main" id="view-settings">
       <div class="settings-topbar">
 
         <span class="settings-help-wrap">
@@ -76,26 +65,8 @@
           <div class="export-tabs settings-mode-tabs" role="group" aria-label="导出设置模式">
             <button id="settings-mode-single" class="export-tab active" type="button" aria-pressed="true" data-i18n="group_single">Single export</button>
             <button id="settings-mode-batch" class="export-tab" type="button" aria-pressed="false" data-i18n="group_batch">Batch export</button>
-          </div><label class="batch-field export-format-field" id="single-default-format">
-            <span class="batch-field-label">默认单条格式</span>
-            <select id="single-format" class="batch-select">
-              <option value="md">Markdown (.md)</option>
-              <option value="txt">Text (.txt)</option>
-              <option value="html">HTML (.html)</option>
-              <option value="json">JSON (.json)</option>
-              <option value="csv">CSV (.csv)</option>
-            </select>
-          </label><label class="batch-field export-format-field" id="batch-default-format">
-            <span class="batch-field-label">默认批量格式</span>
-            <select id="batch-format" class="batch-select">
-              <option value="md">Markdown (.md)</option>
-              <option value="txt">Text (.txt)</option>
-              <option value="html">HTML (.html)</option>
-              <option value="json">JSON (.json)</option>
-              <option value="csv">CSV (.csv)</option>
-            </select>
-          </label>
-          <p class="settings-export-hint">在这里设置默认格式；实际导出时也可在页面菜单中选择。下列通用选项由单条和批量共用，批量专用选项仅在批量模式显示。</p>
+          </div><p>下载格式：HTML (.html)</p><input type="hidden" id="single-format" value="html"><input type="hidden" id="batch-format" value="html">
+          <p class="settings-export-hint">单条和批量均下载 HTML；下列通用选项共用，批量专用选项仅在批量模式显示。</p>
           <div class="batch-field save-local-field" id="save-local-field" data-tooltip="Off: link to media on X. Images: save images next to the markdown file. Media: save videos as .mp4 too — these are much larger." data-i18n-tooltip="opt_save_local_title">
             <span class="toggle-text">
               <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
