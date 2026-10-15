@@ -1,4 +1,6 @@
-# XClipper 稿件分发使用说明
+# 保留模块：独立稿件页使用说明
+
+本模块已没有主弹窗入口，不属于当前插件首页教程。普通保存、复制和下载请看 [README](../README.md)；仍需维护独立稿件流程时再阅读本文，完整桥和飞书配置见[补充说明](optional-integrations.md)。
 
 本地整合基于渡口 3.3.0（[上游仓库](https://github.com/alchaincyf/dukou)，提交 `9c530a3c5f469349e45641456fe8b4bf9a257219`），保留原 XClipper 单篇/批量导出功能。
 
