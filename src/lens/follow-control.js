@@ -89,7 +89,11 @@ async function nativeFollow(user, source, button) {
   const response = followResult(doc, handle);
   try {
     if (!target) {
-      if (!article || doc.querySelector('[role="menu"], [role="dialog"]')) throw new Error('请先关闭当前弹层，再点击关注');
+      // The lens keeps its non-modal hover card in the DOM after hiding it.
+      // Only visible external overlays should prevent opening X's native menu.
+      const blockingOverlay = [...doc.querySelectorAll('[role="menu"], [role="dialog"]')].some(el =>
+        visible(el) && !(el.id === 'xcl-lens-tip' && el.getAttribute('aria-modal') === 'false'));
+      if (!article || blockingOverlay) throw new Error('请先关闭当前弹层，再点击关注');
       caret = article.querySelector('[data-testid="caret"]');
       if (!visible(caret) || caret.disabled || caret.getAttribute('aria-expanded') === 'true') throw new Error('未找到原生关注菜单，请使用 X 原生按钮');
       doc.addEventListener('keydown', cancelOnEscape, true);
