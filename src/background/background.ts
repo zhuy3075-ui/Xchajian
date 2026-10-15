@@ -64,7 +64,7 @@ function registerContextMenus(): void {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: MENU_PARENT,
-      title: 'XClipper',
+      title: '知拾',
       contexts: ['link', 'page'],
       targetUrlPatterns: ['*://x.com/*/status/*'],
       documentUrlPatterns: ['*://x.com/*'],

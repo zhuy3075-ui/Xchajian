@@ -19,7 +19,7 @@ export function syncPageTools(enabled: boolean, side: 'left' | 'right' = 'right'
       if (!frame) {
         frame = document.createElement('iframe');
         frame.src = chrome.runtime.getURL('page-tools.html');
-        frame.title = 'Xchajian 页面采集工具';
+        frame.title = '知拾 页面采集工具';
         shadow.insertBefore(frame, trigger!);
       } else frame.hidden = !frame.hidden;
       trigger!.textContent = frame.hidden ? '采集工具' : '收起采集工具';

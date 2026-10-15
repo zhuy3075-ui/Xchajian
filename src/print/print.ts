@@ -77,7 +77,7 @@ async function main(): Promise<void> {
 function showError(message: string): void {
   document.body.innerHTML =
     `<div style="font:14px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;` +
-    `color:#b91c1c;padding:40px;text-align:center">XClipper print error: ${escapeHtml(message)}</div>`;
+    `color:#b91c1c;padding:40px;text-align:center">知拾打印失败： ${escapeHtml(message)}</div>`;
 }
 
 function escapeHtml(s: string): string {

@@ -44,7 +44,7 @@ export function renderPdfHtmlMany(docs: Document[], opts: RenderPdfHtmlOptions =
     .map((doc) => `<div class="xclipper-root">${renderBody(doc, opts)}</div>`)
     .join('\n<hr>\n');
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>XClipper export (${docs.length})</title>
+<html lang="en"><head><meta charset="utf-8"><title>知拾导出 (${docs.length})</title>
 <style>${STYLES}</style></head><body>${items}</body></html>`;
 }
 

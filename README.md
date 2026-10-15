@@ -1,6 +1,8 @@
-# Xchajian
+# 知拾（Xchajian）
 
-<img src="assets/branding/xchajian-logo.png" width="80" height="80" alt="Xchajian：交叠纸片与书签组成的蓝色图标">
+<img src="assets/branding/xchajian-logo.png" width="80" height="80" alt="知拾：交叠纸片与书签组成的蓝色图标">
+
+知拾，收藏帖子与评论，随手存入知识库。GitHub 仓库名称保留 `Xchajian`。
 
 在 X 页面保存帖子与评论、复制正文、下载内容，并查看发文时间和账号信息。
 
@@ -8,7 +10,7 @@
 
 [代码仓库](https://github.com/zhuy3075-ui/Xchajian/tree/pre-release) · [问题反馈](https://github.com/zhuy3075-ui/Xchajian/issues) · [来源清单](docs/sources.md) · [许可证](LICENSE.md)
 
-> 当前整合版本为 **2.9.0**，仍在 `pre-release` 分支。推荐 Windows + Chrome/Edge。扩展管理页显示 Xchajian 与蓝色书签图标；上游 XClipper 基线仍为 2.8.4。
+> 当前整合版本为 **2.9.0**，仍在 `pre-release` 分支。推荐 Windows + Chrome/Edge。扩展管理页显示“知拾 — X 内容收藏与账号洞察”与蓝色书签图标；上游 XClipper 基线仍为 2.8.4。
 
 ## 目录
 
