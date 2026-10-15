@@ -1,6 +1,7 @@
 import * as P from './parse';
 import { SETTINGS_KEY, HISTORY_KEY as HIST_KEY, EPOCH_KEY, cleanHistory } from './model';
 import { accountCardHtml, relationLabel } from './card-view';
+import { createFollowLink, currentHandle } from './follow-link';
 (() => {
   const users = new Map();      // handle -> user
   const tweetSeen = new Map();  // 去重,避免同一条推文重复累计
@@ -119,6 +120,10 @@ import { accountCardHtml, relationLabel } from './card-view';
     const stat = stats.get(handle);
     const list = P.tags(u, stat, Date.now(), settings);
 
+    // The follow link is a sibling of the details button, never nested in it.
+    const group = document.createElement('span');
+    group.className = 'xcl-lens-group';
+
     const wrap = document.createElement("span");
     wrap.className = "xcl-lens-badge";
     wrap.dataset.lensHandle = handle;
@@ -150,6 +155,9 @@ import { accountCardHtml, relationLabel } from './card-view';
     main.className = "xcl-lens-main" + (settings.tierColors ? " t" + P.tier(u.followers) : "");
     main.textContent = `${P.fmt(u.followers)} 粉丝`;
     wrap.append(main);
+    group.append(wrap);
+    const follow = createFollowLink(u, currentHandle());
+    if (follow) group.append(follow);
 
     if (!timeline && settings.showRatio) {
       const advice = P.followAdvice(stat);
@@ -159,24 +167,24 @@ import { accountCardHtml, relationLabel } from './card-view';
       r.title = advice.description;
       r.setAttribute('aria-label', advice.label + '。' + advice.description);
       if (settings.hoverCard) wrap.setAttribute('aria-label', wrap.getAttribute('aria-label') + '。' + advice.label + '。' + advice.description);
-      wrap.append(r);
+      group.append(r);
     }
 
     if (timeline) {
       const relation = relationLabel(u);
       if (settings.tags.relation && relation) {
         const el = document.createElement('span');
-        el.className = 'xcl-lens-tag rel'; el.textContent = relation; wrap.append(el);
+        el.className = 'xcl-lens-tag rel'; el.textContent = relation; group.append(el);
       }
     } else if (!compact) {
       for (const t of list.slice(0, settings.maxTags)) {
         const el = document.createElement("span");
         el.className = "xcl-lens-tag " + t.cls;
         el.textContent = t.text;
-        wrap.append(el);
+        group.append(el);
       }
     }
-    return { wrap, list };
+    return { wrap: group, list };
   }
 
   function sigOf(handle, compact) {
@@ -184,7 +192,7 @@ import { accountCardHtml, relationLabel } from './card-view';
     // Re-reading identical counts must not replace a focused badge or close
     // an expanded card. The open card keeps the snapshot shown to the reader.
     const { observedAt, ...visibleUser } = u || {};
-    return JSON.stringify([handle, visibleUser, s, settingsVer, compact]);
+    return JSON.stringify([handle, visibleUser, s, settingsVer, compact, currentHandle()]);
   }
 
   // ----- 推文头部:行内 / 单独一行 / 自动 -----
@@ -236,9 +244,9 @@ import { accountCardHtml, relationLabel } from './card-view';
     let line = null;
     if (settings.layout === "below") {
       line = placeBelow(un, built.wrap);
-      if (!line) un.append(built.wrap);
+      if (!line) appendOutsideLink(un, built.wrap);
     } else {
-      un.append(built.wrap);
+      appendOutsideLink(un, built.wrap);
       // 自动:放进去之后名字被挤省略了,就挪到下一行(只判断这一次,不来回挪)
       if (settings.layout === "auto" && crowded(un, built.wrap)) line = placeBelow(un, built.wrap);
     }
@@ -246,28 +254,34 @@ import { accountCardHtml, relationLabel } from './card-view';
   }
 
   // ----- 关注 / 粉丝列表里的用户行 -----
+  function appendOutsideLink(host, group) {
+    const link = host.closest('a');
+    if (link) link.after(group);
+    else host.append(group);
+  }
+
   function decorateCell(cell, anchor) {
     const handle = handleOf(cell);
     if (!handle || !users.has(handle)) {
-      cell.querySelectorAll('.xcl-lens-badge').forEach(b => b.remove());
+      cell.querySelectorAll('.xcl-lens-group').forEach(b => b.remove());
       cell.classList.remove('xcl-lens-dim'); return;
     }
     const compact = !!cell.closest('[data-testid="sidebarColumn"]');
     const sig = sigOf(handle, compact);
-    const old = cell.querySelector(".xcl-lens-badge");
-    if (old && old.dataset.lensHandle === handle && old.dataset.lensSig === sig) return;
+    const old = cell.querySelector(".xcl-lens-group");
+    if (old && old.querySelector('.xcl-lens-badge')?.dataset.lensHandle === handle && old.dataset.lensSig === sig) return;
     if (old) old.remove();
     const built = buildBadge(handle, compact);
     if (!built || !anchor) return;
     built.wrap.dataset.lensSig = sig;
-    if (anchor) anchor.append(built.wrap);
+    appendOutsideLink(anchor, built.wrap);
     cell.classList.toggle("xcl-lens-dim", settings.dimLowQuality && P.shouldDim(built.list));
   }
 
   function cleanup() {
     belowOwners.clear();
     document.querySelectorAll(".xcl-lens-line").forEach((l) => l.remove());
-    document.querySelectorAll(".xcl-lens-badge").forEach((b) => b.remove());
+    document.querySelectorAll(".xcl-lens-group").forEach((b) => b.remove());
     document.querySelectorAll(".xcl-lens-dim").forEach((c) => c.classList.remove("xcl-lens-dim"));
   }
 

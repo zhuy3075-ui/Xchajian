@@ -1,4 +1,4 @@
-.xcl-lens-badge {
+.xcl-lens-group {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
@@ -12,9 +12,27 @@
   vertical-align: middle;
   cursor: default;
 }
-.xcl-lens-badge > * { flex: none; white-space: nowrap; }
+.xcl-lens-group > * { flex: none; white-space: nowrap; }
+.xcl-lens-badge { display: inline-flex; align-items: center; cursor: pointer; border-radius: 999px; }
 .xcl-lens-line { margin: 1px 0 3px; }
-.xcl-lens-line .xcl-lens-badge { margin-left: 0; }
+.xcl-lens-line .xcl-lens-group { margin-left: 0; }
+.xcl-lens-follow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  border: 1px solid #c9daf3;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #245b9e;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+a.xcl-lens-follow:hover { background: #dceaff; }
+a.xcl-lens-follow:focus-visible { outline: 2px solid #245b9e; outline-offset: 2px; }
+.xcl-lens-follow.is-following { color: #526176; background: #eef1f5; border-color: transparent; }
 .xcl-lens-main {
   padding: 2px 7px;
   border-radius: 999px;
