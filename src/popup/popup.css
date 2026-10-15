@@ -2181,8 +2181,8 @@ details.option-group[open] .option-group-chevron {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
-/* Unified feature navigation; text identity replaces graphic branding. */
-.popup-header { text-align:left; padding-right:35px; }
+/* Unified feature navigation. */
+.popup-header { text-align:left; }
 .workspace-title { font-size:25px; line-height:1.25; font-weight:650; letter-spacing:-.7px; }
 .feature-nav { display:flex; padding:4px; gap:3px; background:var(--bg-elevated); border-radius:10px; margin-bottom:12px; }
 .feature-nav>* { flex:1; border:0; font:600 12px var(--font); text-align:center; padding:11px 4px; border-radius:7px; color:var(--text-secondary); background:transparent; }
@@ -2319,6 +2319,19 @@ details.option-group[open] .option-group-chevron {
 .lens-navigation .export-tab { min-height: 30px; padding-block: 5px; }
 .compact-disclosure { border-top: 1px solid var(--border-subtle); padding-top: 4px; }
 .compact-disclosure > summary { cursor: pointer; padding-block: 6px; color: var(--text-secondary); }
+.popup-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; min-height: 48px; }
+.brand-identity, .header-actions { display: flex; align-items: center; gap: 8px; }
+.brand-identity { min-width: 0; }
+.brand-logo { flex: 0 0 40px; width: 40px; height: 40px; object-fit: contain; }
+.brand-name { min-width: 0; }
+.brand-name .workspace-title { font-size: 21px; line-height: 1.15; letter-spacing: -.6px; }
+.brand-version { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 10px; line-height: 1.3; }
+.header-actions { flex-shrink: 0; gap: 4px; }
+.repository-link { display: inline-flex; align-items: center; gap: 3px; min-height: 32px; padding: 5px 8px; border-radius: 9px; color: var(--text-secondary); font-size: 12px; text-decoration: none; transition: background var(--transition), color var(--transition); }
+.repository-link:hover { color: var(--accent); background: var(--bg-hover); }
+#lens-layout-options { margin-top: 10px; }
+.compact-disclosure[open] > summary { color: var(--text-primary); }
+.compact-disclosure > summary:hover { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;

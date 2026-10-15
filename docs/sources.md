@@ -67,6 +67,8 @@ XClipper 的基线只有 2.8.4 版本记录，未记录唯一上游提交；此�
 
 ## 设计与文档参考
 
+2.9.0 新 Logo 由本项目使用 OpenAI 图像生成工具制作，以交叠纸片和书签组成抽象 X 标志；原图保存在 [`assets/branding/xchajian-logo.png`](../assets/branding/xchajian-logo.png)，工具栏尺寸图保存在 `src/icons/`。该 Logo 并非上述开源项目提供的品牌资源。版本 2.9.0 是本项目的整合版本号，上游基线版本与来源记录不变。
+
 Obsidian 是外部桌面软件；此项目不捆绑其安装包。官方 [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) 只用于参考 README 的“安装 → 使用 → 开发 → 许可”结构，未复用其代码、品牌或截图，也不是本项目必装依赖。它与 XClipper 是不同项目。
 
 弹窗布局和交互参考 Apple Human Interface Guidelines 的[布局](https://developer.apple.com/design/human-interface-guidelines/layout)和[动效](https://developer.apple.com/design/human-interface-guidelines/motion)原则，使用系统字体、圆角、留白与克制的反馈。这是视觉设计参考，不是 Apple 提供的组件或官方认证。
