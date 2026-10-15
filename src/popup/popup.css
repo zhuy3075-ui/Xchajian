@@ -2400,9 +2400,9 @@ details.option-group[open] .option-group-chevron {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-#lens-settings .lens-panel { padding-block: 16px; }
-#lens-settings .setting-row { min-height: 36px; margin-top: 14px; }
-#lens-settings select { min-height: 36px; border-radius: 9px; padding: 5px 8px; font: inherit; }
+#lens-settings .lens-panel { padding-block: 8px; }
+#lens-settings .setting-row { min-height: 30px; margin-top: 6px; }
+#lens-settings select { min-height: 30px; border-radius: 9px; padding: 3px 6px; font: inherit; }
 #lens-settings .danger { min-height: 34px; border-radius: 9px; }
 #lens-settings .tag-options label { min-height: 30px; }
 #lens-settings .section-heading input[type="checkbox"],
@@ -2439,11 +2439,34 @@ details.option-group[open] .option-group-chevron {
   .export-format-field { align-items: stretch; }
   .export-format-field .batch-select { max-width: 100%; }
   .fm-picker-fields { column-count: 1; }
-  #lens-settings .tag-options { grid-template-columns: minmax(0, 1fr); }
+  #lens-settings .tag-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #lens-settings .setting-row:has(select) { flex-wrap: wrap; }
   #lens-settings select { margin-inline-start: auto; }
   .fast-date-range { flex-wrap: wrap; }
 }
+/* A single settings category at a time keeps the browser popup short. */
+.settings-pane[hidden], #lens-settings [data-lens-pane][hidden] { display: none; }
+.popup-container { padding: 14px 16px; gap: 8px; }
+.popup-main { gap: 10px; }
+.settings-topbar { top: 16px; inset-inline-end: 16px; }
+.options { padding: 12px; }
+.settings-navigation { margin: 0; }
+.lens-navigation { margin-block: 6px; }
+#lens-settings .tag-options { gap: 4px 10px; margin-block: 6px; }
+#lens-settings .tag-options label { min-width: 0; }
+#lens-save-status { padding: 4px 0; }
+.option-group + .option-group { margin-top: 4px; padding-top: 4px; }
+.toggle-label { min-height: 34px; padding-block: 5px; }
+.field-label { padding-block: 4px; }
+.field-input { min-height: 32px; }
+.field-label-stacked { gap: 4px; }
+.settings-mode-tabs { margin-top: 6px; }
+.popup-footer { margin-top: 0; }
+#lens-enabled-state { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#lens-settings .tag-options label { min-height: 26px; }
+.lens-navigation .export-tab { min-height: 30px; padding-block: 5px; }
+.compact-disclosure { border-top: 1px solid var(--border-subtle); padding-top: 4px; }
+.compact-disclosure > summary { cursor: pointer; padding-block: 6px; color: var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;

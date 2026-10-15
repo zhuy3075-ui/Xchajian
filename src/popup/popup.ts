@@ -4,19 +4,17 @@ import { initSettingsForm } from './settings-form';
 import { initModeTabs } from './mode';
 import { initFastBatchUi, setStandardJobActive } from './fast-batch-ui';
 import { initLensSettings } from './lens-settings';
+import { initSettingsNavigation } from './navigation';
 import { openObsidianConnection } from '../shared/obsidian-files';
 
 applyI18n();
 initFastBatchUi();
 initSettingsForm();
 initModeTabs();
+initSettingsNavigation();
 void initLensSettings();
 document.getElementById('footer-version')!.textContent = 'v' + chrome.runtime.getManifest().version;
 document.getElementById('btn-connect-obsidian')!.onclick = openObsidianConnection;
-if (location.hash === '#lens') {
-  const section = document.getElementById('lens-settings') as HTMLDetailsElement;
-  section.open = true; section.scrollIntoView({ block: 'start' });
-}
 async function refreshJobState() {
   try {
     const [standard, fast] = await Promise.all([

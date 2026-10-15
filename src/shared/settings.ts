@@ -63,7 +63,7 @@ export interface Settings {
 }
 
 export const SECTION_IDS = ['downloads', 'obsidian', 'frontmatter', 'inline'] as const;
-export const SECTION_MAX_OPEN = 2;
+export const SECTION_MAX_OPEN = 1;
 
 export function allEnabled(keys: readonly string[]): FieldMap {
   return Object.fromEntries(keys.map((k) => [k, true]));
@@ -91,7 +91,7 @@ export const DEFAULT_SETTINGS: Settings = {
   batchZip: false, // off — loose per-item files, matching prior behavior
   frontmatterFields: allEnabled(FRONTMATTER_FIELDS_DEFAULT),
   frontmatterFieldsObsidian: allEnabled(FRONTMATTER_FIELDS_OBSIDIAN),
-  settingsSectionsOpen: ['downloads', 'obsidian'],
+  settingsSectionsOpen: ['obsidian'],
 };
 
 export async function loadSettings(): Promise<Settings> {
@@ -116,7 +116,7 @@ export async function loadSettings(): Promise<Settings> {
           )
         : DEFAULT_SETTINGS.settingsSectionsOpen;
       // Deduplicate while preserving order, then trim to the cap.
-      const settingsSectionsOpen = Array.from(new Set(rawSections)).slice(0, SECTION_MAX_OPEN);
+      const settingsSectionsOpen = Array.from(new Set(rawSections)).slice(-SECTION_MAX_OPEN);
 
       resolve({
         ...DEFAULT_SETTINGS,

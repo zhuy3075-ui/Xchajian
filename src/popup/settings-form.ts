@@ -281,20 +281,11 @@ function applySettingsSections(): void {
   syncSectionDom();
 }
 
-// Enforce two invariants on the open-list:
-//   1. Frontmatter requires Obsidian (its toggle picks which Frontmatter mode
-//      is visible — orphaning Frontmatter would hide that choice).
-//   2. Length ≤ SECTION_MAX_OPEN. Evict from the head (oldest), but never
-//      evict Obsidian while Frontmatter is still open.
+// Keep only the most recently opened group. Frontmatter shows its current mode;
+// the Obsidian-friendly toggle remains available in the Obsidian group.
 function reconcileSections(): void {
-  if (settingsSectionsOpen.includes('frontmatter') && !settingsSectionsOpen.includes('obsidian')) {
-    const fmIdx = settingsSectionsOpen.indexOf('frontmatter');
-    settingsSectionsOpen.splice(fmIdx, 0, 'obsidian');
-  }
   while (settingsSectionsOpen.length > SECTION_MAX_OPEN) {
-    const fmOpen = settingsSectionsOpen.includes('frontmatter');
-    const evictIdx = fmOpen && settingsSectionsOpen[0] === 'obsidian' ? 1 : 0;
-    settingsSectionsOpen.splice(evictIdx, 1);
+    settingsSectionsOpen.shift();
   }
 }
 
@@ -306,11 +297,6 @@ function handleSectionToggle(id: string, opened: boolean): void {
     settingsSectionsOpen.push(id);
   } else {
     settingsSectionsOpen = settingsSectionsOpen.filter((x) => x !== id);
-    // Closing Obsidian implicitly closes Frontmatter — Frontmatter can't
-    // stand alone (see invariant 1 in reconcileSections).
-    if (id === 'obsidian') {
-      settingsSectionsOpen = settingsSectionsOpen.filter((x) => x !== 'frontmatter');
-    }
   }
   reconcileSections();
   syncSectionDom();

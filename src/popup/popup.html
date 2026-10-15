@@ -30,35 +30,44 @@
         </span>
       </div>
 
-      <div class="options">
-        <details id="lens-settings" class="option-group">
-          <summary class="option-group-summary"><span class="option-group-label">粉丝透镜设置</span><span aria-hidden="true">⌄</span></summary>
+      <nav class="settings-navigation export-tabs" aria-label="设置分类">
+        <button type="button" class="export-tab" data-settings-view="lens" aria-controls="settings-lens" aria-pressed="false">粉丝透镜</button>
+        <button type="button" class="export-tab active" data-settings-view="export" aria-controls="settings-export" aria-pressed="true">导出</button>
+        <button type="button" class="export-tab" data-settings-view="more" aria-controls="settings-more" aria-pressed="false">更多设置</button>
+      </nav>
+      <div class="options settings-pane" id="settings-lens" hidden>
+        <section id="lens-settings" class="option-group" aria-label="粉丝透镜设置">
           <fieldset id="lens-form" disabled=""><legend class="sr-only">粉丝透镜配置</legend>
 <section class="lens-panel"><div class="section-heading"><div><h2>浏览增强</h2></div><label class="switch"><input type="checkbox" data-lens-key="enabled" aria-label="启用粉丝透镜"><span></span></label></div><p id="lens-enabled-state" class="quiet"></p></section>
+<div class="lens-navigation export-tabs" role="group" aria-label="粉丝透镜设置分类">
+  <button type="button" class="export-tab active" data-lens-view="display" aria-pressed="true">显示</button>
+  <button type="button" class="export-tab" data-lens-view="tags" aria-pressed="false">标签</button>
+  <button type="button" class="export-tab" data-lens-view="history" aria-pressed="false">历史</button>
+</div>
 <fieldset id="lens-controls"><legend class="sr-only">粉丝透镜设置</legend>
-<section class="lens-panel"><h2>显示方式</h2>
+<section class="lens-panel" data-lens-pane="display"><h2>显示方式</h2>
 <label class="setting-row"><span>粉丝量分级配色</span><input type="checkbox" data-lens-key="tierColors"></label>
 <label class="setting-row"><span>在账号列表显示关注倾向</span><input type="checkbox" data-lens-key="showRatio"></label>
 <label class="setting-row"><span>账号详情卡</span><input type="checkbox" data-lens-key="hoverCard"></label>
 <label class="setting-row"><span>徽标布局</span><select data-lens-key="layout"><option value="auto">自动适应空间</option><option value="inline">与名字同行</option><option value="below">独立一行</option></select></label>
 <label class="setting-row"><span>账号列表最多显示的规则标签</span><select data-lens-key="maxTags"><option value="0">不显示标签</option><option value="1">1 个</option><option value="2">2 个</option><option value="3">3 个</option></select></label>
 </section>
-<section class="lens-panel"><h2>关系与规则标签</h2><p>规则标签仅用于账号列表。</p>
+<section class="lens-panel" data-lens-pane="tags" hidden><h2>关系与规则标签</h2><p>规则标签仅用于账号列表。</p>
 <div class="tag-options"><label><input type="checkbox" data-lens-tag="relation"> 互关 / 关注了你</label><label><input type="checkbox" data-lens-tag="bigV"> 高粉丝比</label><label><input type="checkbox" data-lens-tag="farm"> 粉关接近</label><label><input type="checkbox" data-lens-tag="newAcct"> 新号</label><label><input type="checkbox" data-lens-tag="oldAcct"> 老号</label><label><input type="checkbox" data-lens-tag="engaged"> 样本高互动</label><label><input type="checkbox" data-lens-tag="lowActive"> 样本低互动</label></div>
 <label class="setting-row"><span>淡化“粉关接近 / 样本低互动”账号</span><input type="checkbox" data-lens-key="dimLowQuality"></label>
 <details class="rules"><summary>这些标签如何计算？</summary><p>高粉丝比：粉丝 ≥ 1 万，粉丝 / 关注 ≥ 10。粉关接近：关注 ≥ 1000、粉丝 &lt; 5000、比例在 0.8–1.25 之间。新号：注册不足 90 天；老号：超过 8 年。</p><p>样本互动率 = 已加载推文的赞、转发、回复与引用合计 / 浏览量合计；浏览量至少 2000 才判断，≥ 3% 为高互动，&lt; 0.1% 且粉丝 ≥ 5000 为低互动。规则标签不代表账号真实性或整体质量。</p></details>
 </section>
-<section class="lens-panel"><h2>本地粉丝历史</h2><label class="setting-row"><span>记录浏览过账号的粉丝数<small>仅保存在本机</small></span><input type="checkbox" data-lens-key="trackHistory"></label></section>
-<details class="lens-panel"><summary>高级选项</summary><label class="setting-row"><span>显示页面调试计数</span><input type="checkbox" data-lens-key="debug"></label></details>
+<section class="lens-panel" data-lens-pane="history" hidden><h2>本地粉丝历史</h2><label class="setting-row"><span>记录浏览过账号的粉丝数<small>仅保存在本机</small></span><input type="checkbox" data-lens-key="trackHistory"></label></section>
+<details class="lens-panel" data-lens-pane="history" hidden><summary>高级选项</summary><label class="setting-row"><span>显示页面调试计数</span><input type="checkbox" data-lens-key="debug"></label></details>
 </fieldset>
-<section class="lens-panel history-actions"><span id="lens-history-count">正在读取记录…</span><button id="lens-clear-history" type="button" disabled="" class="danger">清空历史记录</button></section>
+<section class="lens-panel history-actions" data-lens-pane="history" hidden><span id="lens-history-count">正在读取记录…</span><button id="lens-clear-history" type="button" disabled="" class="danger">清空历史记录</button></section>
 </fieldset><p id="lens-save-status" role="status" aria-live="polite">正在加载设置…</p>
 
           <p class="lens-source">源自 <a href="https://github.com/yaohongan/x-follower-lens" target="_blank" rel="noreferrer">x-follower-lens</a>（MIT）</p>
-        </details>
+        </section>
       </div>
 
-      <div class="options">
+      <div class="options settings-pane" id="settings-export">
         <section id="export-settings" class="option-group" aria-labelledby="export-settings-heading">
           <h2 id="export-settings-heading" class="option-group-label" data-i18n="group_export">Export settings</h2>
           <div class="export-tabs settings-mode-tabs" role="group" aria-label="导出设置模式">
@@ -83,6 +92,8 @@
               <option value="csv">CSV (.csv)</option>
             </select>
           </label>
+          <details class="compact-disclosure" id="export-common-options">
+            <summary>通用导出选项</summary>
           <div class="batch-field save-local-field" id="save-local-field" data-tooltip="Off: link to media on X. Images: save images next to the markdown file. Media: save videos as .mp4 too — these are much larger." data-i18n-tooltip="opt_save_local_title">
             <span class="toggle-text">
               <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -133,6 +144,7 @@
             <input type="checkbox" id="chk-zip" class="toggle-input">
             <span class="toggle-switch"></span>
           </label>
+          </details>
           <div id="batch-format-controls" class="batch-format-controls hidden">
           <label class="toggle-label" data-tooltip="When batch-exporting a profile, include reposts too. Off = the profile owner's own posts only." data-i18n-tooltip="opt_include_reposts_title">
             <span class="toggle-text">
@@ -202,7 +214,7 @@
         </section>
       </div>
 
-      <div class="options">
+      <div class="options settings-pane" id="settings-more" hidden>
         <details class="option-group" data-section-id="downloads">
           <summary class="option-group-summary">
             <span class="option-group-label" data-i18n="group_downloads">Downloads</span>
@@ -289,6 +301,8 @@
             <input type="text" id="txt-obsidian-vault" class="field-input" autocomplete="off" spellcheck="false" placeholder="(optional)" data-i18n-placeholder="opt_obsidian_vault_placeholder">
           </label>
           </details>
+          <details class="compact-disclosure" id="obsidian-tags-options">
+            <summary>标签设置</summary>
           <label class="field-label field-label-stacked" id="obsidian-tags-label">
             <span class="field-text">
               <span class="field-text-label" data-tooltip="Comma-separated list of tags emitted in the Obsidian-friendly frontmatter. Type { to insert a placeholder." data-i18n-tooltip="opt_obsidian_tags_title" data-i18n="opt_obsidian_tags">Tags</span>
@@ -321,6 +335,7 @@
             </span>
             <div id="obsidian-tags-preview" class="tag-preview" aria-live="polite"></div>
           </label>
+          </details>
         </details>
 
         <details class="option-group fm-picker" data-section-id="frontmatter">
