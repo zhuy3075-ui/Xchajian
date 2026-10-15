@@ -1,13 +1,18 @@
-# Xchajian：X 内容采集、Obsidian 智库与稿件分发
+# Xchajian
+
+X 内容采集、Obsidian 智库与稿件分发工具。
 
 把 X 上的帖子、长文和单条评论保存为自己的素材，在 Obsidian 中检索，让 AI 提炼、集中确认观点，再把稿件送到目标平台的草稿编辑器。
 
-本仓库整合 **XClipper、渡口、x-follower-lens**，并附带 **Obsidian 空白智库模板、建库脚本和 AI skills**。克隆本仓库即可获得配套源码与资源，不必分别安装三个上游扩展。来源和许可证见[来源与许可](#sources)。
+本仓库在 **XClipper** 基础上整合 **渡口（dukou）与 x-follower-lens**，并附带 **Obsidian 空白智库模板、建库脚本和 AI skills**。克隆本仓库即可获得配套源码与资源，不必分别安装三个上游扩展。来源、复用范围和许可证见[来源与许可](#sources)。
+
+[代码仓库](https://github.com/zhuy3075-ui/Xchajian/tree/pre-release) · [问题反馈](https://github.com/zhuy3075-ui/Xchajian/issues) · [来源清单](docs/sources.md) · [隐私说明](PRIVACY.md) · [许可证](LICENSE.md)
 
 > 当前为 **pre-release 候选版本**，扩展基础版本为 2.8.4。推荐 Windows + Chrome/Edge；Firefox 提供构建，但不支持本版 Obsidian 静默写入。尚未发布商店安装包，也没有默认运行 AI 后台监听。本文针对本整合版，不能直接套用上游商店版的安装步骤。
 
 ## 导航
 
+- [功能概览与快速开始](#overview)
 - [安装范围与运行要求](#requirements)
 - [第一步：构建并加载浏览器插件](#extension)
 - [第二步：安装 Obsidian 并创建智库](#vault)
@@ -20,6 +25,29 @@
 - [常见问题](#troubleshooting)
 - [验收清单、开发与验证](#verification)
 - [来源、配套工作与许可](#sources)
+
+<a id="overview"></a>
+## 功能概览与快速开始
+
+适合需要收藏 X 素材、整理评论、在本地知识库检索和继续创作的用户。
+
+| 功能 | 操作入口 | 结果 |
+| --- | --- | --- |
+| 保存帖子与评论 | X 页面卡片下的“笔记＋” | 写入已授权 Obsidian 目录，显示保存回执；评论按来源 ID 去重 |
+| 复制与导出 | 卡片下的复制、下载及导出菜单 | 正文复制；Markdown、TXT、HTML、JSON、CSV，单条支持打印为 PDF |
+| 批量采集 | X 页面“采集工具” | 导出已加载列表、手动多选，或按设置执行自动采集 |
+| 浏览增强 | 时间线和账号信息卡 | 本地时区的 24 小时时间、粉丝数、关系与可选历史 |
+| 管理偏好 | 工具栏弹窗 | “粉丝透镜 / 导出 / 更多设置”三个分区 |
+| AI 整理（可选） | 本地 AI 工具与随仓 skills | 生成候选、集中确认、确认后入档 |
+| 稿件分发（可选） | 独立稿件页与终端桥 | 导入稿件、导出备份、填入目标平台草稿 |
+
+**只想先试用插件：** 安装符合下表要求的 Node.js 和 Git，按[第一步](#extension)构建，将 `dist` 加载到 Chrome/Edge，然后登录 X 并刷新页面。无需先安装 AI、Obsidian 或终端桥。
+
+**要保存到本地智库：** 继续完成[建库](#vault)和[目录授权](#connect)，先用一条短帖验证磁盘文件，再使用批量功能。
+
+**要安装完整工作流：** 依次完成第一至第四步；只有需要终端送稿或飞书时，才配置对应可选组件。克隆源码不会自动安装桌面软件、授予目录权限或启动 AI。
+
+界面已移除上游反馈、商店评分、来源跳转和旧版安装教程外链，版本号仅作文本显示。来源与版权统一在本文及随仓 NOTICE / LICENSE 中查阅。采集原文链接、用户稿件中的链接、目标平台编辑器和必要 API 连接仍用于对应功能。
 
 ## 工具怎样配合
 
@@ -34,7 +62,7 @@ flowchart LR
     H --> F[AI skill：处理已确认项]
     F --> N[提炼卡片 / 本人观点 / 主题链接]
     W[微信 / 飞书 / 本地 Markdown] --> L[浏览器稿件库]
-    E --> L
+    M -->|手动导入 Markdown| L
     L --> D[X / B站 / 公众号排版器草稿]
     T[终端稿件 skill] -. 可选本地桥 .-> L
 ```
@@ -189,14 +217,15 @@ Windows 若只提供 `py`，将 `python` 改为 `py -3`，先确认版本至少 
 
 ### 1. 填写保存设置
 
-在“内容导出”的 Obsidian 设置中，建议新用户使用相对目录：
+在弹窗“更多设置 → Obsidian”中，建议新用户使用相对目录：
 
 | 配置 | 示例 | 含义 |
 | --- | --- | --- |
 | Vault 名称 | `我的智库` | 与选择的根文件夹名称完全一致 |
 | 素材保存目录 | `02_X素材` | 仓库内主帖/文章目录 |
 | 按博主账号建立文件夹 | 开启 | 例如 `02_X素材/author/`，不以昵称分组 |
-| 在推文上显示内联按钮 | 开启 | 卡片出现保存及复制入口 |
+
+页面保存、复制与下载控件默认显示，无需额外开启。
 
 也支持 `D:\Knowledge\我的智库\02_X素材` 这样的完整素材路径，但必须在已连接库内。**连接页选择仓库根目录 `我的智库`，不要选择 `02_X素材`。**
 
@@ -211,7 +240,7 @@ Windows 若只提供 `py`，将 `python` 改为 `py -3`，先确认版本至少 
 
 ### 3. 保存短帖，再保存单条评论
 
-点击完整短帖操作栏的“笔记＋”。成功提示显示库内实际文件位置，约5秒后消失。文件写入、关闭并读回一致才报告成功；不打开 Obsidian，不逐篇再次确认。
+点击完整短帖操作栏的“笔记＋”。成功提示显示库内实际文件位置，约 5 秒后消失。文件写入、关闭并读回一致才报告成功；不打开 Obsidian，不逐篇再次确认。
 
 在讨论页点击某条评论自身的“笔记＋”：
 
@@ -344,7 +373,7 @@ AI扫描 `02_X素材`、`09_评论`、`01_收件箱/原始素材`，排除索引
 
 弹窗中单条/批量切换仅用于调整**默认设置**：格式、本地媒体、互动数据、元数据、ZIP、转帖、输出方式、采集模式和日期。单条下载使用单条格式，批量格式不影响单条。通用选项共用已有设置值；粉丝透镜与仓库偏好保持独立。页面控件始终开启，位置沿用已有偏好，新用户默认右侧；顶部开关和位置设置区已移除。历史“下载按钮改为复制”的入口已移除，旧值保留用于兼容。
 
-设置弹窗使用浅色渐变背景、圆角卡片和柔和蓝色强调，保留原有分组、选项和保存方式。布局与交互参考 Apple HIG 的[布局](https://developer.apple.com/design/human-interface-guidelines/layout)和[动效](https://developer.apple.com/design/human-interface-guidelines/motion)原则；支持窄窗口、系统暗色模式、键盘焦点和系统“减少动态效果”偏好，无外部字体或新增运行依赖。
+设置弹窗使用浅色渐变背景、圆角卡片和柔和蓝色强调，支持系统暗色模式、键盘焦点和“减少动态效果”偏好。工具栏弹窗使用 416px 宽度，独立页面支持窄窗口。使用系统字体，无需加载外部字体；设计参考见[来源清单](docs/sources.md#设计与文档参考)。
 
 顶部通过“粉丝透镜 / 导出 / 更多设置”切换，避免多个面板纵向堆叠。透镜分为“显示 / 标签 / 历史”，窄窗口也使用两列标签；下载目录、Obsidian、frontmatter 字段和页面工具在“更多设置”中，每次只展开一组。媒体、互动数据、元数据和 ZIP 位于“通用导出选项”，Obsidian 标签在“标签设置”中展开。分区切换保留已保存的选项；常用视图按 600px 高弹窗适配，展开详细规则、额外配置或使用较低窗口时仍可滚动。
 
@@ -383,15 +412,13 @@ AI扫描 `02_X素材`、`09_评论`、`01_收件箱/原始素材`，排除索引
 
 填入结束面板约1.5秒收起，异常保留提示；收起不证明网站已保存，更不表示发布。相同稿件ID会更新库内版本，需要历史版先导出。复杂表格、嵌套结构和平台附件可能无法完整转换。[稿件说明](docs/dukou.md)
 
-### 界面参考
+### 历史界面参考
 
 以下为早期整合候选版的实际扩展截图，使用隔离测试数据；部分文案与粉丝卡片已更新，以本文和当前构建为准。
 
-新版入口见上文操作说明；下图为早期界面参考，不代表当前操作位置。
+新版入口见上文操作说明；以下链接保留早期界面参考，不代表当前操作位置。
 
-<img src="docs/images/popup.png" alt="早期导出界面参考" width="340">
-
-[稿件库](docs/images/library.png) · [窄屏稿件库](docs/images/library-mobile.png) · [粉丝设置参考](docs/images/lens-settings.png)
+[早期导出界面](docs/images/popup.png) · [稿件库](docs/images/library.png) · [窄屏稿件库](docs/images/library-mobile.png) · [粉丝设置参考](docs/images/lens-settings.png)
 
 <a id="bridge"></a>
 ## 可选：终端桥和稿件 skill
@@ -525,6 +552,7 @@ if ($LASTEXITCODE -ne 0) { throw '构建失败' }
 | 新功能没出现 | 核对加载路径不是上游商店版，重新加载扩展并刷新X |
 | 时间线无保存按钮 | 页面控件默认开启；确认加载的是最新 dist，重新加载扩展并刷新 X 页面，再检查目标卡片下方 |
 | 更新后还看到旧导出弹窗 | 确认加载的是本仓库最新 dist，重新加载扩展并刷新 X 页面；新弹窗只有设置与状态 |
+| 弹窗变成窄条、文字逐字换行 | 当前版本已修复原生弹窗尺寸计算；重新构建并加载最新 dist，再关闭重开弹窗 |
 | 提示连接仓库 | 先在Obsidian打开库并确认`.obsidian`存在，再原生目录授权；输入路径不等于授权 |
 | 目录名不一致/不在库内 | 核对选择器根目录、填写路径与Vault名；相对主帖目录建议`02_X素材` |
 | 重试仍失败 | 先修复权限/连接/路径原因；未连接时直接连接，不连续重试 |
@@ -553,7 +581,7 @@ if ($LASTEXITCODE -ne 0) { throw '构建失败' }
 
 ### 新安装验收
 
-- [ ] 构建成功，加载本仓库`dist`，弹窗顶部说明区已移除，粉丝透镜设置可展开；页面三个按钮及采集工具可用，导出菜单的格式下拉框可用。
+- [ ] 构建成功，加载本仓库 `dist`；弹窗“粉丝透镜 / 导出 / 更多设置”可切换，版本号无外链，页面按钮和采集工具可用。
 - [ ] 空白库`--verify`无错误，首页/索引可打开。
 - [ ] 授权目录后保存短帖，在磁盘读到正确正文及来源。
 - [ ] 讨论页评论进入`09_评论`，重复点击不新增副本。
@@ -576,7 +604,7 @@ npm run build:firefox
 
 建库脚本`--verify`可公开复现，但只检查随附结构及链接，不证明外部来源真实，也不替代Obsidian界面验收。Windows是开发验证主环境；真实X/微信/B站/飞书账户、Firefox实机、其他系统与AI提炼质量需在使用环境验收。
 
-本次部署文档整理已在独立工作目录执行`npm ci`、类型检查和双构建；建库预览不写入、实际创建、重复执行不覆盖、32篇文档/8模板/74处双链验证通过。评论相对目录与保存相关92项本地测试通过。原生浏览器授权、真实平台登录和AI入档仍需按上方清单验收。
+历史部署文档验收已在独立工作目录执行 `npm ci`、类型检查和双构建；建库预览不写入、实际创建、重复执行不覆盖、32 篇文档 / 8 模板 / 74 处双链验证通过，评论相对目录与保存相关 92 项本地测试通过。这些是维护记录，不代表每次更新均重测全部平台；原生浏览器授权、真实平台登录和 AI 入档仍需按上方清单验收。
 
 2026-10-11 的`npm audit`报告一项已有开发依赖告警：`source-map-js@1.2.1`（由jsdom/css-tree与vitest/vite/postcss引入），[GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)。这是源映射处理相关的高危拒绝服务告警；构建通过不代表审计通过。本次没有更改依赖锁文件，更新依赖应单独验证，不建议直接盲跑`npm audit fix --force`。
 
@@ -606,11 +634,30 @@ docs/                        功能说明、来源与历史截图
 | [zendegani/XClipper](https://github.com/zendegani/XClipper) | 2.8.4 | X内容提取、单条/批量、多格式、媒体与基础Obsidian入口 | 主体；[PolyForm Noncommercial 1.0.0](LICENSE.md)，Copyright © 2026 Ali Zendegani |
 | [alchaincyf/dukou](https://github.com/alchaincyf/dukou) | 3.3.0，`9c530a3c5f469349e45641456fe8b4bf9a257219` | 稿件采集、草稿填入、飞书、本地桥 | `src/dukou`、`tools/dukou`；[来源](src/dukou/NOTICE.md)、[MIT](src/dukou/LICENSE) |
 | [yaohongan/x-follower-lens](https://github.com/yaohongan/x-follower-lens) | 0.2.3，`ccb66fbf8fb0d34fa77494d406dcebd72cbb646a` | 已加载账号统计、粉丝徽标、规则标签 | `src/lens`；[来源](src/lens/NOTICE.md)、[MIT](src/lens/LICENSE) |
-| JSZip | 上游随附3.10.1 | 稿件ZIP打包 | `src/dukou/jszip.min.js`保留声明，按MIT使用 |
+| [Stuk/jszip](https://github.com/Stuk/jszip) | 渡口随附 3.10.1 | 稿件 ZIP 打包 | `src/dukou/jszip.min.js` 保留声明，按 MIT 使用 |
+| [nodeca/pako](https://github.com/nodeca/pako) | 嵌入随附 JSZip，未独立升级 | ZIP 的压缩实现 | 同一文件内，保留原有许可声明；不是额外浏览器扩展 |
 
 基线不代表上游最新版。安装使用本README的目录、构建与授权步骤，不混用上游单体扩展命令。
 
-**配套工作与本地改动：**
+XClipper 目前仅记录本地基础版本 2.8.4，未在来源记录中锁定上游提交，因此不推测其提交号。渡口和粉丝透镜的固定提交、复用文件及修改范围见[完整来源清单](docs/sources.md)。本次文档更新不会自动升级上述模块。
+
+### 开发依赖与参考项目
+
+构建与本地验证还使用以下仓库；它们与直接整合的三个插件项目分开列示。准确版本和传递依赖以 [package-lock.json](package-lock.json) 为准，许可证以各依赖随附文件为准。
+
+| 仓库 | 在本项目中的用途 |
+| --- | --- |
+| [evanw/esbuild](https://github.com/evanw/esbuild) | 打包扩展脚本 |
+| [microsoft/TypeScript](https://github.com/microsoft/TypeScript) | TypeScript 编译与类型检查 |
+| [vitest-dev/vitest](https://github.com/vitest-dev/vitest) | 开发者本地自动化测试 |
+| [jsdom/jsdom](https://github.com/jsdom/jsdom) | 本地 DOM 测试环境 |
+| [puppeteer/puppeteer](https://github.com/puppeteer/puppeteer) | 浏览器交互验收与截图；包括 `puppeteer-core`、`@puppeteer/browsers` |
+| [DefinitelyTyped/DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) | Chrome 与 jsdom 的类型声明 |
+| [obsidianmd/obsidian-clipper](https://github.com/obsidianmd/obsidian-clipper) | 仅参考 README 信息结构，未合入代码，也不是安装依赖 |
+
+Apple Human Interface Guidelines 仅作为界面设计参考，不是代码依赖；具体文档见[设计与文档参考](docs/sources.md#设计与文档参考)。
+
+### 配套工作与本地改动
 
 - 智库搭建：目录、原生索引、8模板、AI协议与“候选自动保存→用户集中确认→按需正式入档”，整理为`obsidian-content-vault`。分发空白模板，不含私人笔记。
 - 保存排查与改进：完整路径解析、按作者归档，演进为目录授权静默写入；旧URI/长文剪贴板交接不再作为当前安装方案。
@@ -620,3 +667,9 @@ docs/                        功能说明、来源与历史截图
 Obsidian是需自行安装的外部软件，不随仓库再分发；官方Obsidian Web Clipper不是代码上游或必装组件。模型、AI工具与平台账户各自管理。
 
 **整合不会把XClipper根许可变为MIT，也不代表整套产品可无条件商用。** 使用和再分发应保留许可与署名，按[根许可证](LICENSE.md)核对适用范围；模块独立许可见各自文件。更多依据见[来源清单](docs/sources.md)。
+
+### 反馈与贡献
+
+本整合版的问题请提交到 [Xchajian Issues](https://github.com/zhuy3075-ui/Xchajian/issues)，附分支、提交号、复现步骤、预期与实际结果。涉及本地保存时附脱敏路径和错误信息，不上传私人笔记或密钥。
+
+提交修改前运行类型检查和对应浏览器构建，说明已验证的环境及尚未验证的部分。界面修改应验证真实工具栏弹窗；固定宽度的普通网页截图不能代替原生弹窗验收。复用外部代码时同步记录来源、固定版本和许可，不把上游商店链接当作本整合版的安装入口。

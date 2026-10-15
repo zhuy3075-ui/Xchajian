@@ -1,6 +1,6 @@
 # 来源与配套资源
 
-本文记录 Xchajian 的来源关系与安装依据。核对日期：2026-10-11。上游后续变化不自动等于本仓库已升级。
+本文记录 Xchajian 的来源关系与安装依据。整理日期：2026-10-15，整合版本以本地 NOTICE、许可文件和锁文件为准。上游后续变化不自动等于本仓库已升级。
 
 ## 代码来源
 
@@ -9,9 +9,37 @@
 | XClipper | package/manifest基础版本2.8.4；X解析、导出、批量、媒体、基础Obsidian接口 | [上游](https://github.com/zendegani/XClipper)、[本地根许可](../LICENSE.md) |
 | 渡口 dukou | 3.3.0，提交`9c530a3c5f469349e45641456fe8b4bf9a257219`；稿件库、适配器、飞书、Node桥 | [固定提交](https://github.com/alchaincyf/dukou/tree/9c530a3c5f469349e45641456fe8b4bf9a257219)、[本地NOTICE](../src/dukou/NOTICE.md)、[MIT](../src/dukou/LICENSE)、[桥MIT](../tools/dukou/LICENSE) |
 | x-follower-lens | 0.2.3，提交`ccb66fbf8fb0d34fa77494d406dcebd72cbb646a`；统计解析与徽标基础 | [固定提交](https://github.com/yaohongan/x-follower-lens/tree/ccb66fbf8fb0d34fa77494d406dcebd72cbb646a)、[本地NOTICE](../src/lens/NOTICE.md)、[MIT](../src/lens/LICENSE) |
-| JSZip | 渡口随附3.10.1，按MIT使用 | [保留文件头声明的源码](../src/dukou/jszip.min.js) |
+| JSZip | 渡口随附 3.10.1，按 MIT 使用 | [仓库](https://github.com/Stuk/jszip)、[保留文件头声明的源码](../src/dukou/jszip.min.js) |
+| pako | 嵌入渡口随附的 JSZip，未作为独立包升级 | [仓库](https://github.com/nodeca/pako)、同一 JSZip 文件中的声明；以随附实现与声明为准 |
 
 上游渡口README的状态字段与整合时扩展版本字段可能不一致，此处按本地NOTICE记录整合基线；不把上游当前README中的能力一概当成已合入。
+
+XClipper 的基线只有 2.8.4 版本记录，未记录唯一上游提交；此处不补造提交号。渡口和粉丝透镜的固定提交链接用于追溯整合来源，不代表当前上游分支。
+
+### 整合范围与本地适配
+
+| 模块 | 主要复用位置 | 本整合版的改动 |
+| --- | --- | --- |
+| XClipper | `src/content`、`src/ast`、`src/graphql`、`src/background`、`src/shared` | 页面保存/复制/导出入口、目录授权静默保存、评论归档去重、24 小时时间；弹窗改为统一设置 |
+| 渡口 | `src/dukou`、`tools/dukou` | 稿件库及平台适配、本地桥；后台和权限适配、路径调整、错误反馈；CLI 使用 `.cjs` |
+| 粉丝透镜 | `src/lens`、`src/popup/lens-settings.ts` | 被动读取已加载数据、中文解释卡片、历史与设置校验；配置合入主弹窗 |
+
+扩展页面不再显示上游更新日志、问题反馈、商店评分、来源跳转及上游 skill 安装链接。文档中的出处、LICENSE / NOTICE 和第三方代码原有声明继续保留；构建同时复制根 LICENSE 到 `dist` / `dist-firefox`。这项界面精简不修改原文、稿件里的链接，不阻断目标平台编辑器、媒体请求或 API。
+
+## 开发依赖
+
+以下来自 [package.json](../package.json) 的直接开发依赖；完整版本树见 [package-lock.json](../package-lock.json)。这些工具用于构建、类型检查和本地验证，不要求用户另装同名浏览器插件。
+
+| 软件包 | 源仓库 | 用途 |
+| --- | --- | --- |
+| `esbuild` | [evanw/esbuild](https://github.com/evanw/esbuild) | 打包脚本 |
+| `typescript` | [microsoft/TypeScript](https://github.com/microsoft/TypeScript) | 类型检查 |
+| `vitest` | [vitest-dev/vitest](https://github.com/vitest-dev/vitest) | 本地测试 |
+| `jsdom` | [jsdom/jsdom](https://github.com/jsdom/jsdom) | DOM 测试环境 |
+| `puppeteer-core`、`@puppeteer/browsers` | [puppeteer/puppeteer](https://github.com/puppeteer/puppeteer) | 隔离浏览器验收、截图 |
+| `@types/chrome`、`@types/jsdom` | [DefinitelyTyped/DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped) | 类型声明 |
+
+本表不是全部传递依赖的许可证清单；再分发依赖时应同时保留对应软件包自带的许可文件。
 
 ## 配套设计与改动的归属
 
@@ -37,7 +65,11 @@
 | Codex仓库级/用户级skills | [Build skills](https://learn.chatgpt.com/docs/build-skills) |
 | 飞书应用、接口与权限 | [飞书开放平台文档](https://open.feishu.cn/document/home/index) |
 
-Obsidian是外部桌面软件；此项目不捆绑其安装包。官方[Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper)只用于参考README的“安装→使用→开发→许可”结构，未复用其代码、品牌或截图，也不是本项目必装依赖。它与XClipper是不同项目。
+## 设计与文档参考
+
+Obsidian 是外部桌面软件；此项目不捆绑其安装包。官方 [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) 只用于参考 README 的“安装 → 使用 → 开发 → 许可”结构，未复用其代码、品牌或截图，也不是本项目必装依赖。它与 XClipper 是不同项目。
+
+弹窗布局和交互参考 Apple Human Interface Guidelines 的[布局](https://developer.apple.com/design/human-interface-guidelines/layout)和[动效](https://developer.apple.com/design/human-interface-guidelines/motion)原则，使用系统字体、圆角、留白与克制的反馈。这是视觉设计参考，不是 Apple 提供的组件或官方认证。
 
 ## 文档与验证边界
 

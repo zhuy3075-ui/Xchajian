@@ -138,6 +138,8 @@ async function build() {
 
   // Copy static assets
   writeManifest();
+  // Keep the root copyright notice and license in distributed extension builds.
+  cpSync(resolve(__dirname, 'LICENSE.md'), resolve(__dirname, outDir, 'LICENSE.md'));
   cpSync(resolve(__dirname, 'src/popup/popup.html'), resolve(__dirname, outDir, 'popup.html'));
   cpSync(resolve(__dirname, 'src/popup/popup.css'), resolve(__dirname, outDir, 'popup.css'));
   cpSync(resolve(__dirname, 'src/print/print.html'), resolve(__dirname, outDir, 'print.html'));

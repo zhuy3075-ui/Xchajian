@@ -1,18 +1,9 @@
-// Review-ask state. After a user has produced a number of exports (files, not
-// Copy-to-clipboard), the popup shows a one-time, dismissible banner asking for
-// a Chrome Web Store review. The counter lives in chrome.storage.local so every
-// surface (popup, inline button, context menu, batch) can add to it; the banner
-// itself only ever appears in the popup.
-//
-// Cadence (see issue: "ask after N exports"): first ask at THRESHOLD. "Rate" or
-// "No thanks" closes it forever; "Maybe later" re-arms exactly once, SNOOZE_GAP
-// exports later, after which any dismissal closes it. We never nag in a loop.
+// Legacy export-count storage retained for compatibility.
+// Xchajian does not display a review prompt or link to an upstream store.
 
 export const REVIEW_KEY = 'xclipper_review';
 export const REVIEW_THRESHOLD = 30;
 export const REVIEW_SNOOZE_GAP = 50;
-export const REVIEW_URL =
-  'https://chromewebstore.google.com/detail/xclipper/epmmehilhbpkgcjbcohgkmihlalagkho/reviews';
 
 export interface ReviewState {
   // Qualifying exports so far.
