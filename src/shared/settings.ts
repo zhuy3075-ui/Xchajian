@@ -85,8 +85,8 @@ export const DEFAULT_SETTINGS: Settings = {
   obsidianTagsTemplate: '', // empty → use DEFAULT_TAGS_TEMPLATE in post-process
   downloadFolder: '', // empty → save directly in Downloads
   filenameTemplate: '', // empty → legacy {handle}-{id}.md / {handle}-{slug}.md
-  singleFormat: 'html',
-  batchFormat: 'html',
+  singleFormat: 'md',
+  batchFormat: 'md',
   batchOutput: 'separate', // per-item files only; 'both' adds a combined file
   batchZip: false, // off — loose per-item files, matching prior behavior
   frontmatterFields: allEnabled(FRONTMATTER_FIELDS_DEFAULT),
@@ -122,9 +122,6 @@ export async function loadSettings(): Promise<Settings> {
         ...DEFAULT_SETTINGS,
         ...saved,
         showInlineButton: true,
-        singleFormat: 'html',
-        pageExportFormat: 'html',
-        batchFormat: 'html',
         frontmatterFields,
         frontmatterFieldsObsidian,
         settingsSectionsOpen,

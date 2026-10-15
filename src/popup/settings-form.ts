@@ -97,11 +97,11 @@ export function currentFrontmatterFields(obsidianFriendly: boolean): FieldMap {
 // ─── Single-export format selector (md + html / json / txt / csv) ──
 // Keep the existing singleFormat storage key when replacing the button grid.
 export function readSingleFormat(): BatchFormat {
-  return 'html';
+  return (singleFormatSelect.value as BatchFormat) || 'md';
 }
 
-export function applySingleFormat(_fmt: BatchFormat): void {
-  singleFormatSelect.value = 'html';
+export function applySingleFormat(fmt: BatchFormat): void {
+  singleFormatSelect.value = fmt;
 }
 
 // The form as a Settings object — what persistAll saves, and what the action
@@ -115,7 +115,7 @@ export function readSettingsForm(): Settings {
     closeTabAfterExport: chkCloseTab.checked,
     inlineButtonCopies: legacyInlineCopies,
     pageToolsSide: savedToolsSide,
-    pageExportFormat: 'html',
+    pageExportFormat: preferredPageFormat,
     showInlineButton: true,
     inlineStats: chkInlineStats.checked,
     includeReposts: chkIncludeReposts.checked,
@@ -127,7 +127,7 @@ export function readSettingsForm(): Settings {
     downloadFolder: txtDownloadFolder.value.trim(),
     filenameTemplate: txtFilenameTemplate.value.trim(),
     singleFormat: readSingleFormat(),
-    batchFormat: 'html',
+    batchFormat: batchFormatSelect.value as BatchFormat,
     batchOutput: readBatchOutput(),
     batchZip: chkZip.checked,
     frontmatterFields,
@@ -138,6 +138,7 @@ export function readSettingsForm(): Settings {
 
 let settingsReady = false;
 let legacyInlineCopies = false;
+let preferredPageFormat: Settings['pageExportFormat'];
 let savedToolsSide: Settings['pageToolsSide'];
 export function persistAll(): void {
   if (!settingsReady) return;
@@ -225,7 +226,7 @@ function syncBatchToggles(): void {
   gate(chkMetadata, fmt === 'md' || fmt === 'csv');
   // Same greying rule for the save-locally group, but it's a radio set in a
   // .batch-field rather than a .toggle-label, so gate() doesn't fit it.
-  const saveLocalDisabled = true; // HTML retains remote media links.
+  const saveLocalDisabled = batchMode && fmt !== 'md';
   for (const r of [saveLocalOff, saveLocalImages, saveLocalMedia]) r.disabled = saveLocalDisabled;
   saveLocalField.classList.toggle('disabled', saveLocalDisabled);
   // Zip means different things per mode, so it gates differently. In Batch it
@@ -408,6 +409,7 @@ export function initSettingsForm(): void {
     setSaveLocal(settings.downloadImages ? (settings.saveVideos ? 'media' : 'images') : 'off');
     chkMetadata.checked = settings.includeMetadata;
     chkCloseTab.checked = settings.closeTabAfterExport;
+    preferredPageFormat = settings.pageExportFormat;
     savedToolsSide = settings.pageToolsSide;
     legacyInlineCopies = settings.inlineButtonCopies;
 
@@ -555,6 +557,7 @@ export function initSettingsForm(): void {
     persistAll();
   });
   chkCloseTab.addEventListener('change', persistAll);
+  singleFormatSelect.addEventListener('change', () => { preferredPageFormat = readSingleFormat(); persistAll(); });
   chkInlineStats.addEventListener('change', persistAll);
   chkIncludeReposts.addEventListener('change', persistAll);
   chkObsidianFriendly.addEventListener('change', () => {

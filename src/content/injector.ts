@@ -120,7 +120,7 @@ function makeButton(onClick: (e: Event) => void, obsidian = false): HTMLElement 
   wrapper.setAttribute('role', 'button');
   wrapper.setAttribute('tabindex', '0');
   wrapper.setAttribute('aria-label', obsidian ? '添加到 Obsidian' : '下载');
-  wrapper.title = obsidian ? '保存此条内容到 Obsidian' : '下载 HTML 文件';
+  wrapper.title = obsidian ? '保存此条内容到 Obsidian' : '按默认单条格式下载';
   wrapper.style.cssText = [
     'display:inline-flex',
     'align-items:center',
@@ -180,7 +180,7 @@ function makeExportOptions(url: () => string | null): HTMLElement {
   button.setAttribute('aria-label', '导出选项');
   button.setAttribute('aria-haspopup', 'dialog');
   button.setAttribute('aria-expanded', 'false');
-  button.title = '导出范围与 HTML 选项';
+  button.title = '选择格式、范围或复制为其他格式';
   button.style.padding = '8px 4px';
   button.querySelector('path')!.setAttribute('d', 'M6.7 8.3 12 13.6l5.3-5.3 1.4 1.4L12 16.4 5.3 9.7z');
   return button;

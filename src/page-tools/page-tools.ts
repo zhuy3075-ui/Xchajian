@@ -1,8 +1,8 @@
-import { loadSettings, SETTINGS_KEY } from '../shared/settings';
+import { loadSettings, SETTINGS_KEY, type BatchFormat } from '../shared/settings';
 import type { BatchStatusResponse, FastBatchStatusResponse, HarvestResponse } from '../types/messages';
 import { EXPORTED_LEDGER_KEY, INCOMPLETE_LEDGER_KEY, RESUME_CURSOR_KEY, DATE_CURSOR_KEY, statusIdOf } from '../background/batch-state';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const start = el<HTMLButtonElement>('start'), scope = el<HTMLSelectElement>('scope');
+const start = el<HTMLButtonElement>('start'), format = el<HTMLSelectElement>('format'), scope = el<HTMLSelectElement>('scope');
 const pause = el<HTMLButtonElement>('pause'), stop = el<HTMLButtonElement>('stop');
 const error = el('error'), progress = el('progress');
 let tabId: number | undefined;
@@ -10,7 +10,7 @@ let active = false, fastActive = false, paused = false, polling = false, startin
 let harvest: HarvestResponse = { source: null, urls: [] };
 let latestEngine = 'manual';
 let shownFast = false;
-
+let revision = 0;
 const names = { bookmarks: '书签', likes: '喜欢', profile: '主页帖子', timeline: '时间线' };
 function fail(err: unknown): void { error.hidden = false; error.textContent = err instanceof Error ? err.message : String(err); }
 async function send(action: string, extra = {}) {
@@ -52,7 +52,7 @@ async function poll(): Promise<void> {
       : '自动翻页仅支持书签、喜欢和主页；请先在插件设置中启用自动或快速采集。'
       : '仅处理本页已经加载过的条目，不自动翻页；每条使用现有完整线程采集方式。';
     start.disabled = starting || active || !(automatic ? supported : context.source && fresh.length);
-
+    format.disabled = active || starting;
     scope.disabled = active || starting;
     el<HTMLButtonElement>('select').disabled = active || starting;
     for (const id of ['reset-history', 'reset-queue']) el<HTMLButtonElement>(id).disabled = active || starting;
@@ -83,7 +83,7 @@ on('start', async () => {
   if (starting || active) return;
   starting = true; start.disabled = true;
   const sourceAtClick = harvest.source, handleAtClick = harvest.handle;
-  const selectedScope = scope.value;
+  const selectedScope = scope.value, selectedFormat = format.value as BatchFormat;
   try {
     const current = await page('XCLIPPER_HARVEST') as HarvestResponse;
     if (current.source !== sourceAtClick || current.handle !== handleAtClick) throw new Error('页面来源已切换，请核对范围后重新开始。');
@@ -94,24 +94,32 @@ on('start', async () => {
       if (saved.batchMode !== latestEngine) throw new Error('采集设置已更改，请核对后重试。');
       // Fast engine snapshots the existing format setting at start.
       const raw = await chrome.storage.local.get(SETTINGS_KEY);
-      await chrome.storage.local.set({ [SETTINGS_KEY]: { ...(raw[SETTINGS_KEY] as object || {}), batchFormat: 'html' } });
+      await chrome.storage.local.set({ [SETTINGS_KEY]: { ...(raw[SETTINGS_KEY] as object || {}), batchFormat: selectedFormat } });
       await send('FAST_BATCH_START', { source: current.source, handle: current.handle,
         expandThreads: saved.batchMode !== 'super', paginate: saved.fastPaginateMode || 'recent',
         fromDate: saved.fastDateFrom || undefined, toDate: saved.fastDateTo || undefined });
     } else {
       if (!current.source || !current.urls.length) throw new Error('本页尚未加载可导出的条目。');
       await send('BATCH_START', { urls: current.urls, origin: current.source, handle: current.handle,
-        format: 'html', output: settings.batchOutput });
+        format: selectedFormat, output: selectedFormat === 'csv' ? 'combined' : settings.batchOutput });
     }
     active = true;
   } finally { starting = false; }
 });
-
+format.onchange = () => {
+  revision++;
+  void chrome.storage.local.get(SETTINGS_KEY).then(raw => chrome.storage.local.set({
+    [SETTINGS_KEY]: { ...(raw[SETTINGS_KEY] as object || {}), batchFormat: format.value },
+  })).catch(fail);
+};
 scope.onchange = () => { void poll(); };
 async function init(): Promise<void> {
   // Unlike active-tab queries, getCurrent binds this iframe to its own X tab.
   const tab = await chrome.tabs.getCurrent();
   tabId = tab?.id;
+  const initial = revision;
+  const settings = await loadSettings();
+  if (revision === initial) format.value = settings.batchFormat;
   await poll();
   window.setInterval(() => { if (!document.hidden) void poll(); }, 1000);
 }

@@ -65,8 +65,26 @@
           <div class="export-tabs settings-mode-tabs" role="group" aria-label="导出设置模式">
             <button id="settings-mode-single" class="export-tab active" type="button" aria-pressed="true" data-i18n="group_single">Single export</button>
             <button id="settings-mode-batch" class="export-tab" type="button" aria-pressed="false" data-i18n="group_batch">Batch export</button>
-          </div><p>下载格式：HTML (.html)</p><input type="hidden" id="single-format" value="html"><input type="hidden" id="batch-format" value="html">
-          <p class="settings-export-hint">单条和批量均下载 HTML；下列通用选项共用，批量专用选项仅在批量模式显示。</p>
+          </div><label class="batch-field export-format-field" id="single-default-format">
+            <span class="batch-field-label">默认单条格式</span>
+            <select id="single-format" class="batch-select">
+              <option value="md">Markdown (.md)</option>
+              <option value="txt">Text (.txt)</option>
+              <option value="html">HTML (.html)</option>
+              <option value="json">JSON (.json)</option>
+              <option value="csv">CSV (.csv)</option>
+            </select>
+          </label><label class="batch-field export-format-field" id="batch-default-format">
+            <span class="batch-field-label">默认批量格式</span>
+            <select id="batch-format" class="batch-select">
+              <option value="md">Markdown (.md)</option>
+              <option value="txt">Text (.txt)</option>
+              <option value="html">HTML (.html)</option>
+              <option value="json">JSON (.json)</option>
+              <option value="csv">CSV (.csv)</option>
+            </select>
+          </label>
+          <p class="settings-export-hint">在这里设置默认格式；实际导出时也可在页面菜单中选择。下列通用选项由单条和批量共用，批量专用选项仅在批量模式显示。</p>
           <div class="batch-field save-local-field" id="save-local-field" data-tooltip="Off: link to media on X. Images: save images next to the markdown file. Media: save videos as .mp4 too — these are much larger." data-i18n-tooltip="opt_save_local_title">
             <span class="toggle-text">
               <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

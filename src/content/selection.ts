@@ -5,7 +5,7 @@
 // injector's mutation observer) as cells re-mount.
 
 import { obsidianCardUrl as getStatusUrl } from './obsidian-card';
-import { loadSettings } from '../shared/settings';
+import { loadSettings, type BatchFormat } from '../shared/settings';
 import { pageNotice } from './page-notice';
 
 const SELECT_MARK_ATTR = 'data-xclipper-select';
@@ -16,6 +16,7 @@ let selectionMode = false;
 const selectedUrls = new Set<string>();
 let selectionBar: HTMLElement | null = null;
 let selectionCountEl: HTMLElement | null = null;
+let selectionFormat: HTMLSelectElement | null = null;
 let starting = false;
 
 function syncMark(mark: HTMLElement, selected: boolean): void {
@@ -145,15 +146,24 @@ export function enterSelection(): void {
 
   selectionCountEl = document.createElement('span');
   selectionBar.appendChild(selectionCountEl);
-
+  const format = document.createElement('select');
+  format.setAttribute('aria-label', '批量导出格式');
+  format.style.cssText = 'font:inherit;padding:8px;max-width:130px;color:#172b4d;background:white;';
+  for (const value of ['md', 'txt', 'html', 'json', 'csv']) format.add(new Option(value.toUpperCase(), value));
+  selectionFormat = format;
+  let edited = false;
+  format.onchange = () => { edited = true; };
+  void loadSettings().then(settings => { if (!edited && format.isConnected) format.value = settings.batchFormat; });
+  selectionBar.append(format);
   selectionBar.appendChild(
     barButton('导出所选', true, () => {
       if (selectedUrls.size === 0 || starting) return;
       starting = true;
       const urls = Array.from(selectedUrls);
+      const format = selectionFormat?.value as BatchFormat || 'md';
       void loadSettings().then(settings => {
         chrome.runtime.sendMessage(
-          { action: 'BATCH_START', urls, origin: 'selection', format: 'html', output: settings.batchOutput },
+          { action: 'BATCH_START', urls, origin: 'selection', format, output: format === 'csv' ? 'combined' : settings.batchOutput },
           (resp) => {
             const error = chrome.runtime.lastError;
             starting = false;
@@ -194,4 +204,5 @@ export function exitSelection(): void {
   selectionBar?.remove();
   selectionBar = null;
   selectionCountEl = null;
+  selectionFormat = null;
 }

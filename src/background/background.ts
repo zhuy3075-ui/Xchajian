@@ -84,13 +84,18 @@ function registerContextMenus(): void {
       chrome.contextMenus.create({ ...common, id, type: 'separator' });
     };
 
+    item(MENU_PDF, 'ctx_export_pdf', 'Export tweet as PDF');
     item(MENU_OBSIDIAN, 'ctx_obsidian_tweet', 'Add tweet to Obsidian');
     sep(MENU_SEP1);
     item(MENU_COPY, 'ctx_copy_tweet', 'Copy tweet as Markdown');
+    item(MENU_SAVE, 'ctx_save_tweet', 'Download tweet as Markdown');
     item(MENU_COPY_SINGLE, 'ctx_copy_just_this_tweet', 'Copy just this tweet (no thread)');
     sep(MENU_SEP2);
     item(MENU_COPY_TXT, 'ctx_copy_txt', 'Copy tweet as txt');
+    item(MENU_TXT, 'ctx_download_txt', 'Download tweet as txt');
     item(MENU_HTML, 'ctx_download_html', 'Download tweet as html');
+    item(MENU_JSON, 'ctx_download_json', 'Download tweet as json');
+    item(MENU_CSV, 'ctx_download_csv', 'Download tweet as csv');
   });
 }
 
