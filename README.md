@@ -8,6 +8,8 @@
 
 **这份教程对应正式版 v2.9.0。** 内容操作在 X 页面完成；浏览器工具栏弹窗只负责设置和 Obsidian 目录连接。
 
+`pre-release` 候选分支已接入 XpandMax 0.9.4 的关注流程并做本地适配：等待原生菜单、兼容隐藏的粉丝详情卡、支持提交前 Esc 取消；关注状态未知或已屏蔽的账号不显示关注控件。候选代码需从 `pre-release` 构建、重新加载 `dist` 并刷新 X；下方 v2.9.0 正式下载包尚不包含这些更新。来源及许可见[来源清单](docs/sources.md)。
+
 [代码仓库](https://github.com/zhuy3075-ui/Xchajian) · [问题反馈](https://github.com/zhuy3075-ui/Xchajian/issues) · [来源清单](docs/sources.md) · [许可证](LICENSE.md)
 
 > 当前正式版为 **2.9.0**。稳定代码位于 `main`，后续候选改动位于 `pre-release`。推荐 Windows + Chrome/Edge。扩展管理页显示“知拾 — X 内容收藏与账号洞察”与蓝色书签图标；上游 XClipper 基线仍为 2.8.4。

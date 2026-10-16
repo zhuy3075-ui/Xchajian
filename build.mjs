@@ -124,7 +124,7 @@ async function build() {
     ...commonOptions, entryPoints: [resolve(__dirname, `src/lens/${name}.js`)],
     outfile: resolve(lensDir, `${name}.js`), format: 'iife',
   }));
-  for (const file of ['content.css', 'LICENSE', 'NOTICE.md']) {
+  for (const file of ['content.css', 'LICENSE', 'XPANDMAX-LICENSE', 'NOTICE.md']) {
     cpSync(resolve(__dirname, 'src/lens', file), resolve(lensDir, file));
   }
   cpSync(resolve(__dirname, 'src/workbench.css'), resolve(__dirname, outDir, 'workbench.css'));

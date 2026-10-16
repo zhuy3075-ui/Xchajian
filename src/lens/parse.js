@@ -24,8 +24,9 @@ const num = v => count(v) ?? 0;
       tweets: count(tc.tweets ?? legacy.statuses_count),
       createdAt: typeof created === 'string' && Number.isFinite(Date.parse(created)) ? new Date(created).toISOString() : null,
       followedBy: (rp.followed_by ?? legacy.followed_by) === true,   // 对方关注了我
-      iFollow: (rp.following ?? legacy.following) === true,        // 我关注了对方
-      followRequested: (rp.follow_request_sent ?? legacy.follow_request_sent) === true,
+      iFollow: typeof (rp.following ?? legacy.following) === 'boolean' ? (rp.following ?? legacy.following) : null,        // 我关注了对方
+      followRequested: (rp.follow_request_sent ?? legacy.follow_request_sent ?? u.follow_request_sent) === true,
+      followBlocked: (rp.blocking ?? legacy.blocking) === true || (rp.blocked_by ?? legacy.blocked_by) === true,
     };
   }
 

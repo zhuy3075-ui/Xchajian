@@ -1,6 +1,6 @@
 # 来源与配套资源
 
-本文记录知拾（仓库名 Xchajian）的来源关系与安装依据。整理日期：2026-10-15，整合版本以本地 NOTICE、许可文件和锁文件为准。上游后续变化不自动等于本仓库已升级。
+本文记录知拾（仓库名 Xchajian）的来源关系与安装依据。整理日期：2026-10-16，整合版本以本地 NOTICE、许可文件和锁文件为准。上游后续变化不自动等于本仓库已升级。
 
 ## 代码来源
 
@@ -9,6 +9,7 @@
 | XClipper | package/manifest基础版本2.8.4；X解析、导出、批量、媒体、基础Obsidian接口 | [上游](https://github.com/zendegani/XClipper)、[本地根许可](../LICENSE.md) |
 | 渡口 dukou | 3.3.0，提交`9c530a3c5f469349e45641456fe8b4bf9a257219`；稿件库、适配器、飞书、Node桥 | [固定提交](https://github.com/alchaincyf/dukou/tree/9c530a3c5f469349e45641456fe8b4bf9a257219)、[本地NOTICE](../src/dukou/NOTICE.md)、[MIT](../src/dukou/LICENSE)、[桥MIT](../tools/dukou/LICENSE) |
 | x-follower-lens | 0.2.3，提交`ccb66fbf8fb0d34fa77494d406dcebd72cbb646a`；统计解析与徽标基础 | [固定提交](https://github.com/yaohongan/x-follower-lens/tree/ccb66fbf8fb0d34fa77494d406dcebd72cbb646a)、[本地NOTICE](../src/lens/NOTICE.md)、[MIT](../src/lens/LICENSE) |
+| XpandMax | 0.9.4，提交`c28279214295bdae52b325a07d28c817c1994542`；关注模块的等待与原生菜单流程，已针对知拾适配 | [固定源码](https://github.com/yiren-ai/xpandmax/blob/c28279214295bdae52b325a07d28c817c1994542/extension/follow.js)、[本地实现](../src/lens/xpandmax-follow.js)、[NOTICE](../src/lens/NOTICE.md)、[MIT](../src/lens/XPANDMAX-LICENSE) |
 | JSZip | 渡口随附 3.10.1，按 MIT 使用 | [仓库](https://github.com/Stuk/jszip)、[保留文件头声明的源码](../src/dukou/jszip.min.js) |
 | pako | 嵌入渡口随附的 JSZip，未作为独立包升级 | [仓库](https://github.com/nodeca/pako)、同一 JSZip 文件中的声明；以随附实现与声明为准 |
 
@@ -23,6 +24,7 @@ XClipper 的基线只有 2.8.4 版本记录，未记录唯一上游提交；此�
 | XClipper | `src/content`、`src/ast`、`src/graphql`、`src/background`、`src/shared` | 页面保存/复制/导出入口、目录授权静默保存、评论归档去重、24 小时时间；弹窗改为统一设置 |
 | 渡口 | `src/dukou`、`tools/dukou` | 稿件库及平台适配、本地桥；后台和权限适配、路径调整、错误反馈；CLI 使用 `.cjs` |
 | 粉丝透镜 | `src/lens`、`src/popup/lens-settings.ts` | 被动读取已加载数据、中文解释卡片、历史与设置校验；配置合入主弹窗 |
+| XpandMax 关注 | `src/lens/xpandmax-follow.js`、`src/lens/follow-control.js` | 以 DOM 变化等待菜单、支持取消及页面离开清理；对接现有成功响应，保留隐藏卡片与准确账号保护；未整合其余功能 |
 
 扩展页面不再显示上游更新日志、问题反馈、商店评分、来源跳转及上游 skill 安装链接。文档中的出处、LICENSE / NOTICE 和第三方代码原有声明继续保留；构建同时复制根 LICENSE 到 `dist` / `dist-firefox`。这项界面精简不修改原文、稿件里的链接，不阻断目标平台编辑器、媒体请求或 API。
 

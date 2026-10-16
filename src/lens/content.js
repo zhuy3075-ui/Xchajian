@@ -138,6 +138,7 @@ import { createFollowButton, currentHandle, isFollowResult } from './follow-cont
     // The follow control is a sibling of the details button, never nested in it.
     const group = document.createElement('span');
     group.className = 'xcl-lens-group';
+    group.dataset.lensActor = currentHandle() || '';
 
     const wrap = document.createElement("span");
     wrap.className = "xcl-lens-badge";
@@ -210,6 +211,14 @@ import { createFollowButton, currentHandle, isFollowResult } from './follow-cont
     return JSON.stringify([handle, visibleUser, s, settingsVer, compact, currentHandle()]);
   }
 
+  // Fresh counts must not detach the button whose native follow is in flight.
+  // Account/source changes and blocking still invalidate that operation.
+  function keepPendingFollow(group, handle) {
+    return group?.isConnected && group.dataset.lensActor === (currentHandle() || '') &&
+      group.querySelector('.xcl-lens-badge')?.dataset.lensHandle === handle &&
+      group.querySelector('.xcl-lens-follow')?.getAttribute('aria-busy') === 'true' && !users.get(handle)?.followBlocked;
+  }
+
   // ----- 推文头部:行内 / 单独一行 / 自动 -----
   const placed = new WeakMap();   // User-Name 元素 -> { badge, line, sig }
   const belowOwners = new Map();  // Detached/replaced React name nodes must not leave a sibling badge.
@@ -252,6 +261,7 @@ import { createFollowButton, currentHandle, isFollowResult } from './follow-cont
     }
     const sig = sigOf(handle, false);
     if (rec && rec.badge.isConnected && rec.sig === sig) return;
+    if (rec && keepPendingFollow(rec.badge, handle)) return;
     if (rec) { rec.badge.remove(); if (rec.line) rec.line.remove(); }
 
     const built = buildBadge(handle, false, true, un);
@@ -285,6 +295,7 @@ import { createFollowButton, currentHandle, isFollowResult } from './follow-cont
     const sig = sigOf(handle, compact);
     const old = cell.querySelector(".xcl-lens-group");
     if (old && old.querySelector('.xcl-lens-badge')?.dataset.lensHandle === handle && old.dataset.lensSig === sig) return;
+    if (keepPendingFollow(old, handle)) return;
     if (old) old.remove();
     const built = buildBadge(handle, compact, false, cell);
     if (!built || !anchor) return;
